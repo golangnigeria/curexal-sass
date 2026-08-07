@@ -164,7 +164,7 @@ export function WaitlistPage() {
   const activePainPoints = PAIN_POINTS[persona] || PAIN_POINTS.Patient;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter">
+    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter overflow-x-hidden">
       <SEOHead
         title="Early Access Registration — Curexal Healthcare"
         description="Join Curexal's connected healthcare waitlist and get priority access for your facility."
@@ -172,79 +172,79 @@ export function WaitlistPage() {
 
       <MarketingNavbar />
 
-      <main className="pt-20 sm:pt-24 pb-16 px-3.5 sm:px-6 max-w-2xl mx-auto">
-        <div className="text-center max-w-xl mx-auto mb-5 sm:mb-8">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-2.5 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
+      <main className="pt-20 sm:pt-24 pb-16 px-3.5 sm:px-6 max-w-xl mx-auto w-full overflow-x-hidden">
+        <div className="text-center max-w-xl mx-auto mb-4 sm:mb-6">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-2 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             Priority Early Access Registration
           </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1.5">
-            Join the Curexal Platform Waitlist
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1">
+            Join the Curexal Waitlist
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-snug">
             Reserve your early access spot for connected healthcare operations.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xl w-full box-border">
           {submitted ? (
-            <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-5 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
-                  <CheckCircle2 className="w-7 h-7" />
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-4 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2.5">
+                <div className="w-11 h-11 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                   🎉 You're on the list, {fullName}!
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
                   We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>. We'll reach out as early access slots open.
                 </p>
-                <div className="grid grid-cols-2 gap-2 pt-1 text-left">
+                <div className="grid grid-cols-2 gap-1.5 pt-1 text-left">
                   {[
-                    "✓ Early Product Updates",
-                    "✓ Direct Team Support",
-                    "✓ Priority Beta Access",
-                    "✓ VIP Onboarding Support",
+                    "✓ Early Updates",
+                    "✓ Direct Team Access",
+                    "✓ Priority Beta",
+                    "✓ VIP Support",
                   ].map((item) => (
-                    <span key={item} className="text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
+                    <span key={item} className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
                       {item}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+              <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
                 <Button
                   onClick={() => {
                     navigator.clipboard?.writeText("https://curexal.com/waitlist");
                     toast.success("Waitlist link copied!");
                   }}
                   variant="outline"
-                  className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full sm:w-1/2 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>Share Waitlist Link</span>
                 </Button>
                 <Link to="/" className="w-full sm:w-1/2">
-                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl">
+                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl">
                     Return to Homepage
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
-            <div>
+            <div className="w-full">
               {/* Step Counter Indicator */}
-              <div className="flex items-center justify-between pb-2.5 mb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
+                  <span className="w-5 h-5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
                     {step}/5
                   </span>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                     Step {step} of 5
                   </span>
                 </div>
-                <div className="w-24 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div className="w-20 sm:w-24 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div
                     className="bg-[#0F766E] h-full transition-all duration-300"
                     style={{ width: `${(step / 5) * 100}%` }}
@@ -252,14 +252,14 @@ export function WaitlistPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-3.5 w-full" noValidate>
                 {/* STEP 1: Persona Selection */}
                 {step === 1 && (
                   <div className="space-y-3">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 1: Who are you joining as?
                     </h3>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                       {PERSONAS.map((item) => {
                         const Icon = item.icon;
                         const active = persona === item.id;
@@ -268,27 +268,26 @@ export function WaitlistPage() {
                             key={item.id}
                             type="button"
                             onClick={() => setPersona(item.id)}
-                            className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                            className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 ${active ? "text-[#0F766E] dark:text-teal-300" : "opacity-60"}`} />
+                            <Icon className={`w-4 h-4 mb-1 ${active ? "text-[#0F766E] dark:text-teal-300" : "opacity-60"}`} />
                             <span className="text-center truncate w-full">{item.label}</span>
                           </button>
                         );
                       })}
                     </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         onClick={() => setStep(2)}
-                        className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                       >
                         <span>Continue to Step 2</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -296,14 +295,14 @@ export function WaitlistPage() {
 
                 {/* STEP 2: Contact Info */}
                 {step === 2 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 2: Tell us about yourself
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                           Full Name <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -312,11 +311,11 @@ export function WaitlistPage() {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                           Email Address <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -325,14 +324,14 @@ export function WaitlistPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                           Phone Number <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -341,11 +340,11 @@ export function WaitlistPage() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           required
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                           Facility / Company (Optional)
                         </label>
                         <Input
@@ -353,50 +352,50 @@ export function WaitlistPage() {
                           placeholder="Apex Diagnostic Center"
                           value={organization}
                           onChange={(e) => setOrganization(e.target.value)}
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Country</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Country</label>
                         <Input
                           type="text"
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">State</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">State</label>
                         <Input
                           type="text"
                           placeholder="Lagos"
                           value={state}
                           onChange={(e) => setState(e.target.value)}
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">City</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">City</label>
                         <Input
                           type="text"
                           placeholder="Ikeja"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
 
                     {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(1)}
-                        className="w-1/3 sm:w-1/4 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -408,10 +407,10 @@ export function WaitlistPage() {
                             setStep(3);
                           }
                         }}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
                       >
-                        <span>Continue to Step 3</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <span className="truncate">Continue to Step 3</span>
+                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                       </Button>
                     </div>
                   </div>
@@ -419,7 +418,7 @@ export function WaitlistPage() {
 
                 {/* STEP 3: Operational Challenge */}
                 {step === 3 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 3: What's your biggest challenge?
                     </h3>
@@ -427,7 +426,7 @@ export function WaitlistPage() {
                       Select the main issue you experience as a <strong className="text-[#0F766E] dark:text-teal-400">{persona}</strong>:
                     </p>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {activePainPoints.map((item) => {
                         const active = selectedPainPoint === item;
                         return (
@@ -435,13 +434,13 @@ export function WaitlistPage() {
                             key={item}
                             type="button"
                             onClick={() => setSelectedPainPoint(item)}
-                            className={`w-full p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            className={`w-full p-2 rounded-xl border text-[11px] font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            <span>{item}</span>
+                            <span className="leading-snug">{item}</span>
                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
                               {active && <Check className="w-2.5 h-2.5" />}
                             </div>
@@ -451,12 +450,12 @@ export function WaitlistPage() {
                     </div>
 
                     {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(2)}
-                        className="w-1/3 sm:w-1/4 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -464,10 +463,10 @@ export function WaitlistPage() {
                       <Button
                         type="button"
                         onClick={() => setStep(4)}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
                       >
-                        <span>Continue to Step 4</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <span className="truncate">Continue to Step 4</span>
+                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                       </Button>
                     </div>
                   </div>
@@ -475,7 +474,7 @@ export function WaitlistPage() {
 
                 {/* STEP 4: Urgency & Timeline */}
                 {step === 4 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 4: How soon do you need Curexal?
                     </h3>
@@ -488,7 +487,7 @@ export function WaitlistPage() {
                             key={t}
                             type="button"
                             onClick={() => setTimeline(t)}
-                            className={`p-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                            className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
@@ -501,12 +500,12 @@ export function WaitlistPage() {
                     </div>
 
                     {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(3)}
-                        className="w-1/3 sm:w-1/4 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -514,18 +513,18 @@ export function WaitlistPage() {
                       <Button
                         type="button"
                         onClick={() => setStep(5)}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
                       >
-                        <span>Final Step</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <span className="truncate">Final Step</span>
+                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 5: Participation Preference & Final Submit */}
+                {/* STEP 5: Participation Preference & Final Submit (No Mobile Overflow!) */}
                 {step === 5 && (
-                  <div className="space-y-3 animate-in fade-in duration-150">
+                  <div className="space-y-2.5 animate-in fade-in duration-150">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 5: How would you like to participate?
                     </h3>
@@ -539,18 +538,18 @@ export function WaitlistPage() {
                             key={opt.id}
                             type="button"
                             onClick={() => setShapingPreference(opt.id)}
-                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2 ${
+                            className={`p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2 ${
                               active
                                 ? "bg-teal-50/90 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-xs"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "bg-[#0F766E] text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>
-                              <Icon className="w-3.5 h-3.5" />
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "bg-[#0F766E] text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>
+                              <Icon className="w-3 h-3" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-xs font-bold leading-tight truncate">{opt.label}</h4>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{opt.desc}</p>
+                              <h4 className="text-[11px] sm:text-xs font-bold leading-tight truncate">{opt.label}</h4>
+                              <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{opt.desc}</p>
                             </div>
                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
                               {active && <Check className="w-2.5 h-2.5" />}
@@ -560,13 +559,13 @@ export function WaitlistPage() {
                       })}
                     </div>
 
-                    {/* Bottom Action Bar: Back & Final Submit Side by Side */}
-                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    {/* Bottom Action Bar: Back & Final Submit Side by Side (Responsive Text) */}
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(4)}
-                        className="w-1/3 sm:w-1/4 h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="px-3 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back</span>
@@ -574,10 +573,11 @@ export function WaitlistPage() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-11 text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
                       >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{loading ? "Submitting..." : "Complete Early Access Registration"}</span>
+                        <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate hidden sm:inline">{loading ? "Registering..." : "Complete Early Access Registration"}</span>
+                        <span className="truncate sm:hidden">{loading ? "Registering..." : "Complete Registration"}</span>
                       </Button>
                     </div>
 
