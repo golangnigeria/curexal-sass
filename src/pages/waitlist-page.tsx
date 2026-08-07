@@ -19,6 +19,10 @@ import {
   Share2,
   Check,
   Sparkles,
+  MessageSquare,
+  FlaskRound,
+  Rocket,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiUrl } from "@/api";
@@ -123,6 +127,13 @@ const DEFAULT_ROADMAP_VOTES = [
   { id: "booking", title: "Online Diagnostic Appointment Booking", count: 480, category: "Marketplace", percent: 59 },
   { id: "emr", title: "Clinic EMR & Electronic Ordering", count: 390, category: "Clinic", percent: 48 },
   { id: "b2b", title: "Medical Supply B2B Marketplace", count: 310, category: "Supplier", percent: 39 },
+];
+
+const SHAPING_OPTIONS = [
+  { id: "Yes, 15-minute customer interview", label: "15-Min User Interview", desc: "Speak directly with system architects", icon: MessageSquare },
+  { id: "Yes, Early Beta Tester", label: "Early Beta Tester", desc: "Get priority access to unreleased features", icon: FlaskRound },
+  { id: "Notify me on Launch Day", label: "Launch Day Alert", desc: "Instant notification when we go live", icon: Rocket },
+  { id: "Keep me updated via Email", label: "Email Updates", desc: "Weekly product & engineering progress", icon: Mail },
 ];
 
 export function WaitlistPage() {
@@ -230,41 +241,41 @@ export function WaitlistPage() {
 
       <MarketingNavbar />
 
-      <main className="pt-20 sm:pt-24 pb-16 px-4 sm:px-6 max-w-3xl mx-auto">
-        <div className="text-center max-w-xl mx-auto mb-6 sm:mb-8">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-3 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[11px] font-bold uppercase tracking-wider">
+      <main className="pt-20 sm:pt-24 pb-16 px-3.5 sm:px-6 max-w-3xl mx-auto">
+        <div className="text-center max-w-xl mx-auto mb-5 sm:mb-8">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-2.5 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             Customer Research & Early Access Hub
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-2">
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1.5">
             Help Shape Curexal's Platform
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
+          <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-snug">
             Select your operational challenges and vote on the features built first.
           </p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl">
           {submitted ? (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-5 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
-                  <CheckCircle2 className="w-7 h-7" />
+            <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-4 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2.5">
+                <div className="w-11 h-11 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   🎉 You're on the list, {fullName}!
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
-                  We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>. We'll update you as features launch.
+                  We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-left">
+                <div className="grid grid-cols-2 gap-1.5 pt-1 text-left">
                   {[
                     "✓ Early Product Updates",
                     "✓ Feature Voting Rights",
                     "✓ Priority Beta Access",
-                    "✓ Priority Onboarding Support",
+                    "✓ VIP Onboarding",
                   ].map((item) => (
-                    <span key={item} className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-2 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                    <span key={item} className="text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-1.5 sm:p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
                       {item}
                     </span>
                   ))}
@@ -272,23 +283,23 @@ export function WaitlistPage() {
               </div>
 
               {/* Feature Voting System */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-[#0F766E]" />
                     <span>Vote on Next Features</span>
                   </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Click to cast vote</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Single-tap vote</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {DEFAULT_ROADMAP_VOTES.map((item) => {
                     const currentCount = userVotes[item.id] || item.count;
                     const isVoted = votedItems[item.id];
                     return (
                       <div
                         key={item.id}
-                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2"
+                        className="p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2"
                       >
                         <div className="flex-1 min-w-0">
                           <span className="text-[9px] font-extrabold uppercase text-[#0F766E] dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded">
@@ -297,11 +308,11 @@ export function WaitlistPage() {
                           <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate">
                             {item.title}
                           </p>
-                          <span className="text-[11px] text-slate-500 font-medium">{currentCount} votes</span>
+                          <span className="text-[10px] text-slate-500 font-medium">{currentCount} votes</span>
                         </div>
                         <button
                           onClick={() => handleVote(item.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border ${
                             isVoted
                               ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"
                               : "bg-[#0F766E] text-white hover:bg-[#115E59] border-transparent"
@@ -323,13 +334,13 @@ export function WaitlistPage() {
                     toast.success("Waitlist link copied!");
                   }}
                   variant="outline"
-                  className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-1/2 h-9 sm:h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>Share Waitlist Hub</span>
                 </Button>
                 <Link to="/" className="w-full sm:w-1/2">
-                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl">
+                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 sm:h-10 text-xs rounded-xl">
                     Return to Homepage
                   </Button>
                 </Link>
@@ -338,12 +349,12 @@ export function WaitlistPage() {
           ) : (
             <div>
               {/* Form Navigation Header */}
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
                     {step}/6
                   </span>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     Step {step} of 6
                   </span>
                 </div>
@@ -357,11 +368,11 @@ export function WaitlistPage() {
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
                 {/* STEP 1: Persona Selection */}
                 {step === 1 && (
                   <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 1: Who are you joining as?
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
@@ -373,13 +384,13 @@ export function WaitlistPage() {
                             key={item.id}
                             type="button"
                             onClick={() => setPersona(item.id)}
-                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                            className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            <Icon className={`w-5 h-5 mb-1 ${active ? "text-[#0F766E] dark:text-teal-300" : "opacity-60"}`} />
+                            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 ${active ? "text-[#0F766E] dark:text-teal-300" : "opacity-60"}`} />
                             <span className="text-center truncate w-full">{item.label}</span>
                           </button>
                         );
@@ -388,7 +399,7 @@ export function WaitlistPage() {
                     <Button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 sm:h-10 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Continue to Step 2</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -396,16 +407,16 @@ export function WaitlistPage() {
                   </div>
                 )}
 
-                {/* STEP 2: Contact Info with Required Phone */}
+                {/* STEP 2: Contact Info */}
                 {step === 2 && (
                   <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 2: Tell us about yourself
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                           Full Name <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -414,11 +425,11 @@ export function WaitlistPage() {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                           Email Address <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -427,14 +438,14 @@ export function WaitlistPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                           Phone Number <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -443,11 +454,11 @@ export function WaitlistPage() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           required
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                           Facility / Company (Optional)
                         </label>
                         <Input
@@ -455,39 +466,39 @@ export function WaitlistPage() {
                           placeholder="Apex Diagnostic Center"
                           value={organization}
                           onChange={(e) => setOrganization(e.target.value)}
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Country</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Country</label>
                         <Input
                           type="text"
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">State</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">State</label>
                         <Input
                           type="text"
                           placeholder="Lagos"
                           value={state}
                           onChange={(e) => setState(e.target.value)}
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">City</label>
+                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">City</label>
                         <Input
                           type="text"
                           placeholder="Ikeja"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          className="h-10 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
                         />
                       </div>
                     </div>
@@ -499,7 +510,7 @@ export function WaitlistPage() {
                           setStep(3);
                         }
                       }}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Continue to Step 3</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -510,7 +521,7 @@ export function WaitlistPage() {
                 {/* STEP 3: Operational Challenge */}
                 {step === 3 && (
                   <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 3: What's your biggest challenge?
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -525,15 +536,15 @@ export function WaitlistPage() {
                             key={item}
                             type="button"
                             onClick={() => setSelectedPainPoint(item)}
-                            className={`w-full p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            className={`w-full p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
                             <span>{item}</span>
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-3 h-3" />}
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
+                              {active && <Check className="w-2.5 h-2.5" />}
                             </div>
                           </button>
                         );
@@ -543,7 +554,7 @@ export function WaitlistPage() {
                     <Button
                       type="button"
                       onClick={() => setStep(4)}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Vote on Features</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -554,7 +565,7 @@ export function WaitlistPage() {
                 {/* STEP 4: Feature Excitement */}
                 {step === 4 && (
                   <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 4: Vote on feature priorities
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -569,15 +580,15 @@ export function WaitlistPage() {
                             key={feat}
                             type="button"
                             onClick={() => toggleFeature(feat)}
-                            className={`p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
                             <span className="leading-snug">{feat}</span>
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${active ? "bg-[#0F766E] border-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-3 h-3" />}
+                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${active ? "bg-[#0F766E] border-[#0F766E] text-white" : "border-slate-300"}`}>
+                              {active && <Check className="w-2.5 h-2.5" />}
                             </div>
                           </button>
                         );
@@ -587,7 +598,7 @@ export function WaitlistPage() {
                     <Button
                       type="button"
                       onClick={() => setStep(5)}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Continue to Step 5</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -598,11 +609,11 @@ export function WaitlistPage() {
                 {/* STEP 5: Urgency & Timeline */}
                 {step === 5 && (
                   <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       Step 5: How soon do you need this?
                     </h3>
 
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {["Immediately", "Within 3 months", "Within 6 months", "Just exploring"].map((t) => {
                         const active = timeline === t;
                         return (
@@ -610,7 +621,7 @@ export function WaitlistPage() {
                             key={t}
                             type="button"
                             onClick={() => setTimeline(t)}
-                            className={`p-3.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                            className={`p-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
@@ -625,7 +636,7 @@ export function WaitlistPage() {
                     <Button
                       type="button"
                       onClick={() => setStep(6)}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Final Step</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -633,35 +644,37 @@ export function WaitlistPage() {
                   </div>
                 )}
 
-                {/* STEP 6: Co-Creation Options */}
+                {/* STEP 6: LAST PHASE — Co-Creation & Final Submit (Mobile Responsive) */}
                 {step === 6 && (
-                  <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                      Step 6: Would you like to help shape Curexal?
+                  <div className="space-y-3 animate-in fade-in duration-150">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                      Step 6: How would you like to participate?
                     </h3>
 
-                    <div className="space-y-2">
-                      {[
-                        "Yes, 15-minute customer interview",
-                        "Yes, Early Beta Tester",
-                        "Notify me on Launch Day",
-                        "Keep me updated via Email",
-                      ].map((pref) => {
-                        const active = shapingPreference === pref;
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {SHAPING_OPTIONS.map((opt) => {
+                        const active = shapingPreference === opt.id;
+                        const Icon = opt.icon;
                         return (
                           <button
-                            key={pref}
+                            key={opt.id}
                             type="button"
-                            onClick={() => setShapingPreference(pref)}
-                            className={`w-full p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            onClick={() => setShapingPreference(opt.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2 ${
                               active
-                                ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
+                                ? "bg-teal-50/90 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-xs"
                                 : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            <span>{pref}</span>
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-3 h-3" />}
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "bg-[#0F766E] text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-bold leading-tight truncate">{opt.label}</h4>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{opt.desc}</p>
+                            </div>
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
+                              {active && <Check className="w-2.5 h-2.5" />}
                             </div>
                           </button>
                         );
@@ -671,11 +684,16 @@ export function WaitlistPage() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-11 text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 mt-4 cursor-pointer"
+                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 sm:h-11 text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 mt-3 cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>{loading ? "Submitting..." : "Complete Registration & Vote"}</span>
+                      <span>{loading ? "Submitting..." : "Complete Registration & Save Votes"}</span>
                     </Button>
+
+                    <p className="text-[9px] text-center text-slate-400 flex items-center justify-center gap-1 pt-0.5">
+                      <ShieldCheck className="w-3 h-3 text-[#0F766E]" />
+                      <span>Zero spam. HIPAA & NDPR data compliance.</span>
+                    </p>
                   </div>
                 )}
               </form>
