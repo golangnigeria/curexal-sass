@@ -118,9 +118,7 @@ export function BookDemoPage() {
 
           {/* Logo & Coming Soon Badge */}
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-[#0F766E] flex items-center justify-center border border-teal-500/30 shadow-sm">
-              <Activity className="h-4 w-4 text-white" />
-            </div>
+            <img src="/logo-symbol.svg" alt="Curexal Logo" className="w-8 h-8 rounded-xl shadow-sm" />
             <span className="font-extrabold text-xl tracking-tight text-white">Curexal</span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />

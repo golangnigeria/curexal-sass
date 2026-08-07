@@ -74,9 +74,7 @@ export function MarketingNavbar() {
               className="flex items-center gap-2 group flex-shrink-0 cursor-pointer"
               id="marketing-logo"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#0F766E] flex items-center justify-center group-hover:bg-[#115E59] transition-colors shadow-sm">
-                <Activity className="h-4 w-4 text-white" />
-              </div>
+              <img src="/logo-symbol.svg" alt="Curexal Logo" className="w-8 h-8 rounded-xl shadow-sm group-hover:scale-105 transition-transform" />
               <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
                 Curexal
               </span>

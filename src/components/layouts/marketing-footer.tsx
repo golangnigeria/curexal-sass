@@ -52,9 +52,7 @@ export function MarketingFooter() {
           {/* Brand — spans 2 columns */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
-              <div className="w-8 h-8 rounded-[10px] bg-[#0F766E] flex items-center justify-center">
-                <Activity className="h-4 w-4 text-white" />
-              </div>
+              <img src="/logo-symbol.svg" alt="Curexal Logo" className="w-8 h-8 rounded-xl shadow-sm group-hover:scale-105 transition-transform" />
               <span className="font-bold text-[15px] tracking-tight text-gray-900 dark:text-white">
                 Curexal
               </span>
