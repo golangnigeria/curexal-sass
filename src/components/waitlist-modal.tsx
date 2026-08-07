@@ -15,7 +15,6 @@ import {
   Pill,
   ArrowRight,
   ArrowLeft,
-  ThumbsUp,
   Share2,
   Check,
   MessageSquare,
@@ -96,50 +95,6 @@ const PAIN_POINTS: Record<string, string[]> = {
   ],
 };
 
-const FEATURE_OPTIONS: Record<string, string[]> = {
-  Patient: [
-    "View all my lab results in 1 unified vault",
-    "Book diagnostic test appointments online",
-    "Compare lab test prices across facilities",
-    "Order prescription medicines with delivery",
-    "Telemedicine doctor consultations",
-    "Digital Health Wallet & Payment Ledger",
-    "AI Health Assistant for diagnostic explanations",
-  ],
-  Laboratory: [
-    "ISO 15189 LIMS Platform",
-    "WhatsApp Automated Result Notifications",
-    "Pathologist Validation Gateway & Sign-off",
-    "Online Test Booking Storefront",
-    "Reagent Inventory & Stock Alerts",
-    "Analyzer Instrument Data Sync APIs",
-    "Automated Billing & Patient Invoicing",
-  ],
-  Clinic: [
-    "Clinic EMR & Digital Lab Ordering",
-    "Patient Result Inbox & Notification Sync",
-    "Online Appointment Booking Engine",
-    "Multi-location Patient Record Sync",
-    "Telemedicine & Video Consultations",
-  ],
-  "Medical Supplier": [
-    "B2B Online Storefront & Product Catalog",
-    "Vendor Order Dashboard & Processing",
-    "Automated B2B Payment Settlement",
-    "Stock Analytics & Demand Forecasting",
-    "Bulk Discounts & Contract Pricing Tiers",
-  ],
-};
-
-const DEFAULT_ROADMAP_VOTES = [
-  { id: "vault", title: "Unified Patient Results Vault", count: 840, category: "Patient", percent: 88 },
-  { id: "lims", title: "ISO 15189 LIMS & Barcoding Engine", count: 620, category: "Laboratory", percent: 74 },
-  { id: "whatsapp", title: "WhatsApp Result Notifications", count: 510, category: "Communication", percent: 66 },
-  { id: "booking", title: "Online Diagnostic Appointment Booking", count: 480, category: "Marketplace", percent: 59 },
-  { id: "emr", title: "Clinic EMR & Electronic Ordering", count: 390, category: "Clinic", percent: 48 },
-  { id: "b2b", title: "Medical Supply B2B Marketplace", count: 310, category: "Supplier", percent: 39 },
-];
-
 const SHAPING_OPTIONS = [
   { id: "Yes, 15-minute customer interview", label: "15-Min User Interview", desc: "Speak directly with system architects", icon: MessageSquare },
   { id: "Yes, Early Beta Tester", label: "Early Beta Tester", desc: "Get priority access to unreleased features", icon: FlaskRound },
@@ -159,33 +114,11 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
   const [organization, setOrganization] = useState("");
 
   const [selectedPainPoint, setSelectedPainPoint] = useState("");
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [timeline, setTimeline] = useState("Within 3 months");
   const [shapingPreference, setShapingPreference] = useState("Yes, Early Beta Tester");
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [userVotes, setUserVotes] = useState<Record<string, number>>({});
-  const [votedItems, setVotedItems] = useState<Record<string, boolean>>({});
-
-  const toggleFeature = (feature: string) => {
-    if (selectedFeatures.includes(feature)) {
-      setSelectedFeatures(selectedFeatures.filter((f) => f !== feature));
-    } else {
-      setSelectedFeatures([...selectedFeatures, feature]);
-    }
-  };
-
-  const handleVote = (voteId: string) => {
-    if (votedItems[voteId]) {
-      toast.info("You already voted for this feature!");
-      return;
-    }
-    const current = userVotes[voteId] || DEFAULT_ROADMAP_VOTES.find((v) => v.id === voteId)?.count || 0;
-    setUserVotes({ ...userVotes, [voteId]: current + 1 });
-    setVotedItems({ ...votedItems, [voteId]: true });
-    toast.success("Vote recorded! Thank you for directing our roadmap.");
-  };
 
   const validateRequired = () => {
     const missing: string[] = [];
@@ -216,7 +149,6 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
       persona,
       organization,
       biggestPainPoint: selectedPainPoint,
-      desiredFeatures: selectedFeatures,
       timeline,
       shapingPreference,
     };
@@ -247,7 +179,6 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
   };
 
   const activePainPoints = PAIN_POINTS[persona] || PAIN_POINTS.Patient;
-  const activeFeatureOptions = FEATURE_OPTIONS[persona] || FEATURE_OPTIONS.Patient;
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
@@ -257,10 +188,10 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
-                  {step}/6
+                  {step}/5
                 </div>
                 <span className="text-[10px] sm:text-xs font-bold text-[#0F766E] dark:text-teal-400 uppercase tracking-wider">
-                  Early Access & Roadmap
+                  Early Access Registration
                 </span>
               </div>
               {step > 1 && (
@@ -276,88 +207,39 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
               {step === 1 && "Who are you joining as?"}
               {step === 2 && "Tell us about yourself"}
               {step === 3 && "What's your biggest challenge?"}
-              {step === 4 && "Vote on feature priorities"}
-              {step === 5 && "When do you need this?"}
-              {step === 6 && "How would you like to participate?"}
+              {step === 4 && "When do you need Curexal?"}
+              {step === 5 && "How would you like to participate?"}
             </DialogTitle>
           </DialogHeader>
         )}
 
         {submitted ? (
-          <div className="py-2 space-y-3.5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="py-3 space-y-4 animate-in fade-in zoom-in-95 duration-200">
             {/* Confirmation Banner */}
-            <div className="p-3.5 sm:p-5 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2">
-              <div className="w-10 h-10 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 className="w-5 h-5" />
+            <div className="p-4 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2.5">
+              <div className="w-12 h-12 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <div className="space-y-0.5">
-                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                   🎉 You're on the list, {fullName}!
                 </h3>
-                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 max-w-xs mx-auto leading-snug">
-                  Registered for <strong className="text-[#0F766E] dark:text-teal-300">{persona}</strong> early access.
+                <p className="text-xs text-slate-600 dark:text-slate-300 max-w-xs mx-auto leading-relaxed">
+                  Thank you for registering as a <strong className="text-[#0F766E] dark:text-teal-300">{persona}</strong>. Your early access slot has been reserved.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 pt-1 text-left">
+              <div className="grid grid-cols-2 gap-1.5 pt-2 text-left">
                 {[
                   "✓ Priority Beta Access",
-                  "✓ Feature Voting Rights",
+                  "✓ Direct Team Access",
                   "✓ Launch Announcements",
                   "✓ VIP Onboarding Support",
                 ].map((item) => (
-                  <span key={item} className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
+                  <span key={item} className="text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
                     {item}
                   </span>
                 ))}
-              </div>
-            </div>
-
-            {/* Community Feature Voting System */}
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#0F766E]" />
-                  <span>Vote for Next Features</span>
-                </h4>
-                <span className="text-[9px] text-slate-400 font-medium">Single-tap vote</span>
-              </div>
-
-              <div className="space-y-1.5 max-h-[35dvh] overflow-y-auto pr-1">
-                {DEFAULT_ROADMAP_VOTES.map((item) => {
-                  const currentCount = userVotes[item.id] || item.count;
-                  const isVoted = votedItems[item.id];
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 shadow-xs"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <span className="text-[8px] font-extrabold uppercase text-[#0F766E] dark:text-teal-400 bg-teal-50 dark:bg-teal-950/80 px-1 py-0.2 rounded">
-                            {item.category}
-                          </span>
-                          <span className="text-[9px] text-slate-400">{item.percent}% demand</span>
-                        </div>
-                        <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                          {item.title}
-                        </p>
-                        <span className="text-[9px] text-slate-500 font-medium">{currentCount} votes</span>
-                      </div>
-                      <button
-                        onClick={() => handleVote(item.id)}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer border ${
-                          isVoted
-                            ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"
-                            : "bg-[#0F766E] text-white hover:bg-[#115E59] border-transparent"
-                        }`}
-                      >
-                        {isVoted ? <Check className="w-3 h-3" /> : <ThumbsUp className="w-3 h-3" />}
-                        <span>{isVoted ? "Voted" : "Vote"}</span>
-                      </button>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
@@ -365,17 +247,17 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
               <Button
                 onClick={() => {
                   navigator.clipboard?.writeText("https://curexal.com/waitlist");
-                  toast.success("Waitlist hub link copied!");
+                  toast.success("Waitlist link copied!");
                 }}
                 variant="outline"
-                className="w-full sm:w-1/2 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-slate-200 dark:border-slate-800"
+                className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-slate-200 dark:border-slate-800"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Share Hub</span>
+                <span>Share Waitlist Link</span>
               </Button>
               <Button
                 onClick={resetAndClose}
-                className="w-full sm:w-1/2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl"
+                className="w-full sm:w-1/2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl"
               >
                 Done
               </Button>
@@ -383,11 +265,11 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="py-2 space-y-3" noValidate>
-            {/* STEP 1: Compact Persona Selection */}
+            {/* STEP 1: Persona Selection */}
             {step === 1 && (
               <div className="space-y-2.5">
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Select your role to personalize feature voting:
+                  Select your role to customize your early access setup:
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {PERSONAS.map((item) => {
@@ -421,7 +303,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
               </div>
             )}
 
-            {/* STEP 2: Compact Contact Info */}
+            {/* STEP 2: Contact Info */}
             {step === 2 && (
               <div className="space-y-2.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -563,55 +445,14 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                   onClick={() => setStep(4)}
                   className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
                 >
-                  <span>Vote on Features</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            )}
-
-            {/* STEP 4: Feature Voting Wishlist */}
-            {step === 4 && (
-              <div className="space-y-2.5">
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Vote on all features you want built first into Curexal:
-                </p>
-
-                <div className="space-y-1.5 max-h-[42dvh] overflow-y-auto pr-1">
-                  {activeFeatureOptions.map((feat) => {
-                    const active = selectedFeatures.includes(feat);
-                    return (
-                      <button
-                        key={feat}
-                        type="button"
-                        onClick={() => toggleFeature(feat)}
-                        className={`w-full p-2.5 rounded-xl border text-[11px] font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                          active
-                            ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
-                            : "bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                        }`}
-                      >
-                        <span className="leading-snug">{feat}</span>
-                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${active ? "bg-[#0F766E] border-[#0F766E] text-white" : "border-slate-300"}`}>
-                          {active && <Check className="w-2.5 h-2.5" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={() => setStep(5)}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
-                >
                   <span>Continue</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
             )}
 
-            {/* STEP 5: Urgency & Timeline */}
-            {step === 5 && (
+            {/* STEP 4: Urgency & Timeline */}
+            {step === 4 && (
               <div className="space-y-2.5">
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   How soon do you need Curexal?
@@ -639,7 +480,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
 
                 <Button
                   type="button"
-                  onClick={() => setStep(6)}
+                  onClick={() => setStep(5)}
                   className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
                 >
                   <span>Final Step</span>
@@ -648,8 +489,8 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
               </div>
             )}
 
-            {/* STEP 6: LAST PHASE — Co-Creation & Final Submit (Ultra Mobile Responsive) */}
-            {step === 6 && (
+            {/* STEP 5: Participation Preference & Final Submit */}
+            {step === 5 && (
               <div className="space-y-2.5 animate-in fade-in duration-150">
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                   How would you like to participate with our product team?
@@ -691,7 +532,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                   className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 sm:h-11 text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 mt-2 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{loading ? "Registering..." : "Complete Registration & Save Votes"}</span>
+                  <span>{loading ? "Registering..." : "Complete Early Access Registration"}</span>
                 </Button>
 
                 <p className="text-[9px] text-center text-slate-400 flex items-center justify-center gap-1 pt-0.5">

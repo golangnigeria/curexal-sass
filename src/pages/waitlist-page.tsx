@@ -15,7 +15,6 @@ import {
   Pill,
   ArrowRight,
   ArrowLeft,
-  ThumbsUp,
   Share2,
   Check,
   Sparkles,
@@ -85,50 +84,6 @@ const PAIN_POINTS: Record<string, string[]> = {
   ],
 };
 
-const FEATURE_OPTIONS: Record<string, string[]> = {
-  Patient: [
-    "View all my lab results in 1 unified vault",
-    "Book diagnostic test appointments online",
-    "Compare lab test prices across facilities",
-    "Order prescription medicines with delivery",
-    "Telemedicine doctor consultations",
-    "Digital Health Wallet & Payment Ledger",
-    "AI Health Assistant for diagnostic explanations",
-  ],
-  Laboratory: [
-    "ISO 15189 LIMS Platform",
-    "WhatsApp Automated Result Notifications",
-    "Pathologist Validation Gateway & Sign-off",
-    "Online Test Booking Storefront",
-    "Reagent Inventory & Stock Alerts",
-    "Analyzer Instrument Data Sync APIs",
-    "Automated Billing & Patient Invoicing",
-  ],
-  Clinic: [
-    "Clinic EMR & Digital Lab Ordering",
-    "Patient Result Inbox & Notification Sync",
-    "Online Appointment Booking Engine",
-    "Multi-location Patient Record Sync",
-    "Telemedicine & Video Consultations",
-  ],
-  "Medical Supplier": [
-    "B2B Online Storefront & Product Catalog",
-    "Vendor Order Dashboard & Processing",
-    "Automated B2B Payment Settlement",
-    "Stock Analytics & Demand Forecasting",
-    "Bulk Discounts & Contract Pricing Tiers",
-  ],
-};
-
-const DEFAULT_ROADMAP_VOTES = [
-  { id: "vault", title: "Unified Patient Results Vault", count: 840, category: "Patient", percent: 88 },
-  { id: "lims", title: "ISO 15189 LIMS & Barcoding Engine", count: 620, category: "Laboratory", percent: 74 },
-  { id: "whatsapp", title: "WhatsApp Result Notifications", count: 510, category: "Communication", percent: 66 },
-  { id: "booking", title: "Online Diagnostic Appointment Booking", count: 480, category: "Marketplace", percent: 59 },
-  { id: "emr", title: "Clinic EMR & Electronic Ordering", count: 390, category: "Clinic", percent: 48 },
-  { id: "b2b", title: "Medical Supply B2B Marketplace", count: 310, category: "Supplier", percent: 39 },
-];
-
 const SHAPING_OPTIONS = [
   { id: "Yes, 15-minute customer interview", label: "15-Min User Interview", desc: "Speak directly with system architects", icon: MessageSquare },
   { id: "Yes, Early Beta Tester", label: "Early Beta Tester", desc: "Get priority access to unreleased features", icon: FlaskRound },
@@ -148,33 +103,11 @@ export function WaitlistPage() {
   const [organization, setOrganization] = useState("");
 
   const [selectedPainPoint, setSelectedPainPoint] = useState("");
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [timeline, setTimeline] = useState("Within 3 months");
   const [shapingPreference, setShapingPreference] = useState("Yes, Early Beta Tester");
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [userVotes, setUserVotes] = useState<Record<string, number>>({});
-  const [votedItems, setVotedItems] = useState<Record<string, boolean>>({});
-
-  const toggleFeature = (feature: string) => {
-    if (selectedFeatures.includes(feature)) {
-      setSelectedFeatures(selectedFeatures.filter((f) => f !== feature));
-    } else {
-      setSelectedFeatures([...selectedFeatures, feature]);
-    }
-  };
-
-  const handleVote = (voteId: string) => {
-    if (votedItems[voteId]) {
-      toast.info("You already voted for this feature!");
-      return;
-    }
-    const current = userVotes[voteId] || DEFAULT_ROADMAP_VOTES.find((v) => v.id === voteId)?.count || 0;
-    setUserVotes({ ...userVotes, [voteId]: current + 1 });
-    setVotedItems({ ...votedItems, [voteId]: true });
-    toast.success("Vote recorded! Thank you for directing our roadmap.");
-  };
 
   const validateRequired = () => {
     const missing: string[] = [];
@@ -205,7 +138,6 @@ export function WaitlistPage() {
       persona,
       organization,
       biggestPainPoint: selectedPainPoint,
-      desiredFeatures: selectedFeatures,
       timeline,
       shapingPreference,
     };
@@ -230,13 +162,12 @@ export function WaitlistPage() {
   };
 
   const activePainPoints = PAIN_POINTS[persona] || PAIN_POINTS.Patient;
-  const activeFeatureOptions = FEATURE_OPTIONS[persona] || FEATURE_OPTIONS.Patient;
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter">
       <SEOHead
-        title="Early Access & Product Discovery Hub — Curexal Healthcare"
-        description="Help shape Curexal's connected healthcare platform, vote on engineering roadmap features, and get priority early access."
+        title="Early Access Registration — Curexal Healthcare"
+        description="Join Curexal's connected healthcare waitlist and get priority access for your facility."
       />
 
       <MarketingNavbar />
@@ -245,85 +176,40 @@ export function WaitlistPage() {
         <div className="text-center max-w-xl mx-auto mb-5 sm:mb-8">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-2.5 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            Customer Research & Early Access Hub
+            Priority Early Access Registration
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1.5">
-            Help Shape Curexal's Platform
+            Join the Curexal Platform Waitlist
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-snug">
-            Select your operational challenges and vote on the features built first.
+            Reserve your early access spot for connected healthcare operations.
           </p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl">
           {submitted ? (
             <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-4 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2.5">
-                <div className="w-11 h-11 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
-                  <CheckCircle2 className="w-6 h-6" />
+              <div className="p-5 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   🎉 You're on the list, {fullName}!
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
-                  We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>.
+                  We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>. We'll reach out as early access slots open.
                 </p>
-                <div className="grid grid-cols-2 gap-1.5 pt-1 text-left">
+                <div className="grid grid-cols-2 gap-2 pt-1 text-left">
                   {[
                     "✓ Early Product Updates",
-                    "✓ Feature Voting Rights",
+                    "✓ Direct Team Support",
                     "✓ Priority Beta Access",
-                    "✓ VIP Onboarding",
+                    "✓ VIP Onboarding Support",
                   ].map((item) => (
-                    <span key={item} className="text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-1.5 sm:p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
+                    <span key={item} className="text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
                       {item}
                     </span>
                   ))}
-                </div>
-              </div>
-
-              {/* Feature Voting System */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#0F766E]" />
-                    <span>Vote on Next Features</span>
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-medium">Single-tap vote</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {DEFAULT_ROADMAP_VOTES.map((item) => {
-                    const currentCount = userVotes[item.id] || item.count;
-                    const isVoted = votedItems[item.id];
-                    return (
-                      <div
-                        key={item.id}
-                        className="p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[9px] font-extrabold uppercase text-[#0F766E] dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded">
-                            {item.category}
-                          </span>
-                          <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate">
-                            {item.title}
-                          </p>
-                          <span className="text-[10px] text-slate-500 font-medium">{currentCount} votes</span>
-                        </div>
-                        <button
-                          onClick={() => handleVote(item.id)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border ${
-                            isVoted
-                              ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : "bg-[#0F766E] text-white hover:bg-[#115E59] border-transparent"
-                          }`}
-                        >
-                          {isVoted ? <Check className="w-3.5 h-3.5" /> : <ThumbsUp className="w-3.5 h-3.5" />}
-                          <span>{isVoted ? "Voted" : "Vote"}</span>
-                        </button>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
 
@@ -334,13 +220,13 @@ export function WaitlistPage() {
                     toast.success("Waitlist link copied!");
                   }}
                   variant="outline"
-                  className="w-full sm:w-1/2 h-9 sm:h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>Share Waitlist Hub</span>
+                  <span>Share Waitlist Link</span>
                 </Button>
                 <Link to="/" className="w-full sm:w-1/2">
-                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 sm:h-10 text-xs rounded-xl">
+                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl">
                     Return to Homepage
                   </Button>
                 </Link>
@@ -352,10 +238,10 @@ export function WaitlistPage() {
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
-                    {step}/6
+                    {step}/5
                   </span>
                   <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    Step {step} of 6
+                    Step {step} of 5
                   </span>
                 </div>
                 {step > 1 && (
@@ -556,61 +442,17 @@ export function WaitlistPage() {
                       onClick={() => setStep(4)}
                       className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span>Vote on Features</span>
+                      <span>Continue to Step 4</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 )}
 
-                {/* STEP 4: Feature Excitement */}
+                {/* STEP 4: Urgency & Timeline */}
                 {step === 4 && (
                   <div className="space-y-3">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 4: Vote on feature priorities
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Select all features you want built first into Curexal:
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {activeFeatureOptions.map((feat) => {
-                        const active = selectedFeatures.includes(feat);
-                        return (
-                          <button
-                            key={feat}
-                            type="button"
-                            onClick={() => toggleFeature(feat)}
-                            className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                              active
-                                ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
-                                : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                          >
-                            <span className="leading-snug">{feat}</span>
-                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${active ? "bg-[#0F766E] border-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-2.5 h-2.5" />}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <Button
-                      type="button"
-                      onClick={() => setStep(5)}
-                      className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Continue to Step 5</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* STEP 5: Urgency & Timeline */}
-                {step === 5 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 5: How soon do you need this?
+                      Step 4: How soon do you need Curexal?
                     </h3>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -635,7 +477,7 @@ export function WaitlistPage() {
 
                     <Button
                       type="button"
-                      onClick={() => setStep(6)}
+                      onClick={() => setStep(5)}
                       className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Final Step</span>
@@ -644,11 +486,11 @@ export function WaitlistPage() {
                   </div>
                 )}
 
-                {/* STEP 6: LAST PHASE — Co-Creation & Final Submit (Mobile Responsive) */}
-                {step === 6 && (
+                {/* STEP 5: Participation Preference & Final Submit */}
+                {step === 5 && (
                   <div className="space-y-3 animate-in fade-in duration-150">
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 6: How would you like to participate?
+                      Step 5: How would you like to participate?
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -687,7 +529,7 @@ export function WaitlistPage() {
                       className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 sm:h-11 text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 mt-3 cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>{loading ? "Submitting..." : "Complete Registration & Save Votes"}</span>
+                      <span>{loading ? "Submitting..." : "Complete Early Access Registration"}</span>
                     </Button>
 
                     <p className="text-[9px] text-center text-slate-400 flex items-center justify-center gap-1 pt-0.5">
