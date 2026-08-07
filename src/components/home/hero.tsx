@@ -89,14 +89,14 @@ export function Hero() {
                   </button>
                 </Link>
 
-                <button
-                  onClick={() => setWaitlistOpen(true)}
-                  id="hero-waitlist"
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-teal-200 dark:border-teal-800/80 bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-300 text-xs sm:text-sm font-bold hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-all cursor-pointer shadow-xs"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-[#0F766E]" />
-                  <span>Join Waitlist</span>
-                </button>
+                <Link to="/waitlist" id="hero-waitlist" className="flex-1 sm:flex-initial">
+                  <button
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-teal-200 dark:border-teal-800/80 bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-300 text-xs sm:text-sm font-bold hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-[#0F766E]" />
+                    <span>Join Waitlist</span>
+                  </button>
+                </Link>
               </div>
 
               {/* Trust signals */}

@@ -184,8 +184,20 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
     <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogContent className="max-w-lg w-[95vw] sm:w-full bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-2xl z-[999999] max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto font-inter">
         {!submitted && (
-          <DialogHeader className="space-y-1 text-left pb-2 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between">
+          <DialogHeader className="space-y-1.5 text-left pb-2.5 border-b border-slate-100 dark:border-slate-800 pr-8">
+            {/* Top Navigation Bar: Clearly Separated Left Back Button & Right Close Button */}
+            <div className="flex items-center gap-2">
+              {step > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-0 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+              ) : null}
+
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
                   {step}/5
@@ -194,16 +206,9 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                   Early Access Registration
                 </span>
               </div>
-              {step > 1 && (
-                <button
-                  onClick={() => setStep(step - 1)}
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 cursor-pointer border-0 bg-transparent"
-                >
-                  <ArrowLeft className="w-3 h-3" /> Back
-                </button>
-              )}
             </div>
-            <DialogTitle className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+
+            <DialogTitle className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight pt-1">
               {step === 1 && "Who are you joining as?"}
               {step === 2 && "Tell us about yourself"}
               {step === 3 && "What's your biggest challenge?"}
@@ -250,14 +255,14 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                   toast.success("Waitlist link copied!");
                 }}
                 variant="outline"
-                className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-slate-200 dark:border-slate-800"
+                className="w-full sm:w-1/2 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-slate-200 dark:border-slate-800 cursor-pointer"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Share Waitlist Link</span>
               </Button>
               <Button
                 onClick={resetAndClose}
-                className="w-full sm:w-1/2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl"
+                className="w-full sm:w-1/2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-xl cursor-pointer"
               >
                 Done
               </Button>
@@ -295,7 +300,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                 <Button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
+                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Continue</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -402,7 +407,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                       setStep(3);
                     }
                   }}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
+                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Continue</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -443,7 +448,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                 <Button
                   type="button"
                   onClick={() => setStep(4)}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
+                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Continue</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -481,7 +486,7 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
                 <Button
                   type="button"
                   onClick={() => setStep(5)}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5"
+                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Final Step</span>
                   <ArrowRight className="w-3.5 h-3.5" />

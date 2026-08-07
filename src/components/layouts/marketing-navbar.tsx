@@ -168,12 +168,13 @@ export function MarketingNavbar() {
 
           {/* Desktop Right Actions */}
           <div className="hidden lg:flex items-center gap-3">
-            <button
-              onClick={() => setWaitlistOpen(true)}
-              className="px-4 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200/80 dark:border-teal-800/80 text-xs font-bold transition-all cursor-pointer shadow-xs"
-            >
-              Join Waitlist
-            </button>
+            <Link to="/waitlist">
+              <button
+                className="px-4 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200/80 dark:border-teal-800/80 text-xs font-bold transition-all cursor-pointer shadow-xs"
+              >
+                Join Waitlist
+              </button>
+            </Link>
 
             <Link to="/book-demo" id="nav-book-demo">
               <button className="px-5 py-2 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white text-xs font-bold transition-all shadow-sm cursor-pointer border-0">
@@ -184,13 +185,14 @@ export function MarketingNavbar() {
 
           {/* Mobile Header Controls */}
           <div className="flex items-center gap-1.5 lg:hidden flex-shrink-0">
-            <button
-              onClick={() => setWaitlistOpen(true)}
-              className="px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/80 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
-            >
-              <Sparkles className="w-3 h-3 text-[#0F766E]" />
-              <span>Waitlist</span>
-            </button>
+            <Link to="/waitlist">
+              <button
+                className="px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/80 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <Sparkles className="w-3 h-3 text-[#0F766E]" />
+                <span>Waitlist</span>
+              </button>
+            </Link>
 
             <Link to="/book-demo">
               <button className="px-2.5 py-1 rounded-lg bg-[#0F766E] text-white text-[11px] font-bold border-0 cursor-pointer">
