@@ -49,7 +49,7 @@ export function MarketingFooter() {
         {/* Main Grid */}
         <div className="grid grid-cols-2 md:grid-cols-7 gap-10 pb-12 border-b border-gray-200 dark:border-[#1F2937]">
 
-          {/* Brand — spans 2 columns */}
+          {/* Brand: spans 2 columns */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
               <img src="/logo-symbol.svg" alt="Curexal Logo" className="w-8 h-8 rounded-xl shadow-sm group-hover:scale-105 transition-transform" />
@@ -57,8 +57,8 @@ export function MarketingFooter() {
                 Curexal
               </span>
             </Link>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[220px]">
-              Enterprise healthcare cloud for diagnostic laboratories, clinics, and patients.
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[240px]">
+              The connected healthcare operating network for African laboratories, clinics, pharmacies, and patients.
             </p>
             <div className="flex items-center gap-2.5 mt-6">
               {[

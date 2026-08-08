@@ -290,7 +290,7 @@ export function SecurityCompliance() {
             { label: "ISO 15189 Aligned", sub: "Pathology Quality Workflows" },
             { label: "Immutable Audit Log", sub: "SHA-256 Signed History" },
             { label: "Fine-Grained RBAC", sub: "Role Isolation Enforced" },
-            { label: "AES-256 & TLS 1.3", sub: "End-to-End Encryption" },
+            { label: "AES-256 & TLS 1.3", sub: "Data Encryption" },
           ].map((item) => (
             <div key={item.label} className="p-3 rounded-[12px] bg-slate-900/60 border border-slate-800">
               <span className="text-xs font-bold text-white block">{item.label}</span>

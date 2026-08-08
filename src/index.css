@@ -42,7 +42,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Curexal Brand Teal — exact spec */
+  /* Curexal Brand Teal: exact spec */
   --curexal-primary: #0F766E;
   --curexal-primary-hover: #115E59;
   --curexal-accent: #14B8A6;
@@ -239,20 +239,34 @@
 .card-radius { border-radius: 14px; }
 .dialog-radius { border-radius: 18px; }
 
-/* ── Subtle animations — fade, slide, scale only ── */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+/* ── Subtle animations: fade, slide, scale only ── */
+.animate-fade-up {
+  animation: fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes slide-right {
-  from { opacity: 0; transform: translateX(-16px); }
-  to   { opacity: 1; transform: translateX(0); }
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes marquee {
@@ -276,7 +290,7 @@
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
 
-/* ── Hover interactions — scale 1.02, no bounce ─── */
+/* ── Hover interactions: scale 1.02, no bounce ─── */
 .hover-lift {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }

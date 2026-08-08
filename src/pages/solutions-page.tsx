@@ -3,20 +3,21 @@ import { MarketingFooter } from "@/components/layouts/marketing-footer";
 import { SEOHead } from "@/components/seo/seo-head";
 import { Link } from "react-router-dom";
 import { FlaskConical, Stethoscope, User, ShoppingBag, ArrowRight } from "lucide-react";
+import { BusinessGrowth } from "@/components/home/business-growth";
 
 const solutions = [
   {
     id: "lims",
     icon: FlaskConical,
     label: "Laboratory LIMS",
-    headline: "End-to-End Laboratory Information Management",
-    desc: "Automate specimen accessioning, barcode label generation, analyzer auto-result ingestion, and multi-tier pathologist validation. Built for ISO 15189 accredited pathology environments.",
+    headline: "Laboratory Requisition and Results Workflow",
+    desc: "Automate specimen accessioning, barcode label generation, analyzer auto-result ingestion, and multi-tier pathologist validation. Built for ISO 15189 pathology environments.",
     features: [
       "Specimen chain of custody tracking",
       "Auto-interface with Sysmex, Mindray, Roche analyzers",
-      "Pathologist digital stamp & e-signature",
-      "Turnaround time analytics & TAT breach alerts",
-      "Accession number generation & label printing",
+      "Pathologist digital stamp and e-signature",
+      "Turnaround time analytics and TAT breach alerts",
+      "Accession number generation and label printing",
       "Quality control charts (Levey-Jennings)",
     ],
     href: "/book-demo",
@@ -30,7 +31,7 @@ const solutions = [
     desc: "Enable physicians to place electronic lab orders, view results directly in the clinical chart, and manage patient visits, all connected to the laboratory workflow.",
     features: [
       "Electronic lab test ordering",
-      "Real-time result dispatch to clinical chart",
+      "Direct result dispatch to clinical chart",
       "Patient visit notes and consultation records",
       "Prescription management",
       "Vital signs tracking",
@@ -60,14 +61,14 @@ const solutions = [
     id: "marketplace",
     icon: ShoppingBag,
     label: "Diagnostic Marketplace",
-    headline: "A Public Platform for Patients to Find Accredited Labs",
+    headline: "A Public Network for Patients to Find Accredited Labs",
     desc: "Patients can search by test name, compare prices across accredited laboratories, filter by location and turnaround time, and book diagnostic appointments, all from one interface.",
     features: [
       "Search by test name, lab name, or location",
       "Price comparison across partner laboratories",
       "Home sample phlebotomy scheduling",
-      "Real-time turnaround time visibility",
-      "Verified accreditation badges (ISO 15189, MLSCN)",
+      "Turnaround time visibility",
+      "Verified accreditation badges",
       "Instant digital report delivery post-testing",
     ],
     href: "/marketplace",
@@ -79,8 +80,8 @@ export function SolutionsPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] font-inter">
       <SEOHead
-        title="Healthcare Solutions — LIMS, EMR & Marketplace"
-        description="Enterprise solutions for diagnostic laboratories, outpatient clinics, and public healthcare marketplaces."
+        title="Healthcare Solutions: LIMS, EMR and Marketplace Network"
+        description="Software capabilities for diagnostic laboratories, outpatient clinics, and public healthcare networks."
       />
       <MarketingNavbar />
 
@@ -145,6 +146,8 @@ export function SolutionsPage() {
           );
         })}
       </main>
+
+      <BusinessGrowth />
 
       <MarketingFooter />
     </div>

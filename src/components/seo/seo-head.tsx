@@ -9,13 +9,13 @@ interface SEOHeadProps {
 
 export function SEOHead({
   title,
-  description = "Curexal — Enterprise Healthcare Platform & Public Marketplace. Seamlessly connect laboratories, clinics, hospitals, pharmacies, and medical vendors.",
+  description = "Curexal connects laboratories, clinics, hospitals, pharmacies and medical suppliers on a single healthcare operating network.",
   ogType = "website",
   canonicalUrl,
 }: SEOHeadProps) {
   useEffect(() => {
     // Update Title
-    const fullTitle = title.includes("Curexal") ? title : `${title} | Curexal Healthcare Platform`;
+    const fullTitle = title.includes("Curexal") ? title : `${title} | Curexal Healthcare Network`;
     document.title = fullTitle;
 
     // Update Meta Description

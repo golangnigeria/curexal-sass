@@ -31,7 +31,7 @@ export interface Tenant {
 const TenantContext = createContext<Tenant | null>(null);
 
 /**
- * Portal TenantProvider — passthrough wrapper.
+ * Portal TenantProvider: passthrough wrapper.
  * Does NOT block rendering. Individual pages/components fetch tenant
  * data as needed from the session or API.
  */

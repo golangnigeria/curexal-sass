@@ -69,13 +69,15 @@ export function PlatformModules() {
       <div className="max-w-[1280px] mx-auto px-6">
 
         {/* Header */}
-        <div className="max-w-2xl mb-12">
-          <div className="accent-line mb-4" />
-          <h2 className="text-section text-gray-900 dark:text-white mb-4">
-            A Complete Operating Network.<br />Not Just Another App.
+        <div className="max-w-3xl mb-12">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-400 text-xs font-bold uppercase tracking-wider">
+            Operational Capabilities
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+            The operational foundation that makes coordination possible.
           </h2>
-          <p className="text-body text-gray-500 dark:text-gray-400">
-            Most competitors build hospital software, or lab software, or a patient portal, or a marketplace. Curexal builds all four as one connected ecosystem, because healthcare doesn't stop at the hospital gate.
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+            Laboratory LIMS, Clinical EMR, Pharmacy, Billing, Inventory, and Radiology are not standalone products. They are components of the operating system that enables secure cross-organizational coordination.
           </p>
         </div>
 

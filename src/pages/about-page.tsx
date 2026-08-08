@@ -2,27 +2,29 @@ import { MarketingNavbar } from "@/components/layouts/marketing-navbar";
 import { MarketingFooter } from "@/components/layouts/marketing-footer";
 import { SEOHead } from "@/components/seo/seo-head";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShieldCheck, Network, Lock, Sparkles, Building2, CheckCircle2 } from "lucide-react";
 
 export function AboutPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] font-inter">
       <SEOHead
-        title="About Curexal — Connected Healthcare Infrastructure"
-        description="Learn about Curexal's mission to build connected digital infrastructure for laboratories, clinics, and healthcare providers."
+        title="About Curexal: Connected Healthcare Operating System"
+        description="Learn why Curexal is building the connected digital operating network for African healthcare providers and patients."
       />
       <MarketingNavbar />
 
       {/* Header */}
-      <div className="pt-28 pb-16 bg-[#F8FAFC] dark:bg-[#0B1120] border-b border-gray-100 dark:border-[#1F2937]">
+      <div className="pt-28 pb-16 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200/60 dark:border-slate-800">
         <div className="max-w-[1280px] mx-auto px-6">
-          <div className="max-w-2xl">
-            <div className="accent-line mb-4" />
-            <h1 className="text-hero text-gray-900 dark:text-white mb-5">
-              Building the Operating Network<br />for African Healthcare.
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-400 text-xs font-bold uppercase tracking-wider">
+              Product Philosophy & Mission
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mb-5">
+              We believe healthcare is too fragmented.
             </h1>
-            <p className="text-body text-gray-500 dark:text-gray-400">
-              Curexal was built by a team frustrated with disconnected healthcare systems, paper referrals, and manual coordination across Africa. We set out to build the infrastructure that enables independent healthcare providers to collaborate as one connected system, without sacrificing their independence or ownership of data.
+            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+              A patient can visit one organization for consultation, another for diagnostics, another for imaging, and another for medication. Yet these healthcare organizations often operate using completely disconnected software systems.
             </p>
           </div>
         </div>
@@ -30,69 +32,91 @@ export function AboutPage() {
 
       <main className="max-w-[1280px] mx-auto px-6 py-16 space-y-20">
 
-        {/* Mission */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <div>
-            <h2 className="text-section text-gray-900 dark:text-white mb-4">Our Mission</h2>
-            <p className="text-body text-gray-500 dark:text-gray-400 mb-4">
-              We believe every patient in Africa deserves access to accurate, timely, and affordable diagnostic care, and that every healthcare provider deserves infrastructure that actually works for how they operate.
-            </p>
-            <p className="text-body text-gray-500 dark:text-gray-400 mb-4">
-              Most healthcare software is built for countries with reliable electricity and always-on internet. Curexal is intentionally engineered for unstable connectivity, power interruptions, WhatsApp-first communication, local payment rails, and African healthcare workflows. That isn't localization, it's product strategy.
-            </p>
-            <p className="text-body text-gray-500 dark:text-gray-400">
-              Our competitors sell software. Curexal sells a new operating model for healthcare, where thousands of independent providers function like one coordinated healthcare network.
+        {/* Mission Statement Section */}
+        <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-[#0F766E] to-[#115E59] text-white shadow-xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-teal-200 text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Our Mission</span>
+          </div>
+          <blockquote className="text-xl sm:text-3xl font-extrabold leading-tight tracking-tight text-white max-w-4xl">
+            "To build the digital backbone of healthcare delivery in Africa by connecting providers, patients, and partners on a single operating network."
+          </blockquote>
+        </div>
+
+        {/* What Curexal Is: Healthcare OS */}
+        <div className="space-y-8">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
+              Curexal is a Healthcare Operating System.
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+              Traditional healthcare software often focuses strictly on the boundary of one organization. Curexal is designed to connect multiple independent healthcare organizations while preserving their data boundaries and operational independence.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Founded", value: "2026" },
-              { label: "Data Sovereignty", value: "100%" },
-              { label: "ISO 15189", value: "Ready" },
-              { label: "Uptime SLA", value: "99.9%" },
-            ].map((s) => (
-              <div key={s.label} className="card-enterprise p-6">
-                <span className="text-[28px] font-bold text-gray-900 dark:text-white">{s.value}</span>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{s.label}</p>
+
+          {/* Model Comparison Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-rose-500">Traditional Software Model</h3>
+              <div className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">Clinic → Isolated System</p>
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">Laboratory → Isolated System</p>
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">Pharmacy → Isolated System</p>
+                <p className="p-2.5 rounded-xl bg-[#FFF1F2] dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-900">Patient → Disconnected Experience</p>
               </div>
-            ))}
+            </div>
+
+            <div className="p-6 sm:p-8 rounded-3xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[#0F766E] dark:text-teal-400">The Curexal Network Model</h3>
+              <div className="space-y-2.5 text-xs text-slate-800 dark:text-slate-200 font-medium">
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">Clinic ──┐</p>
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">Laboratory ──┼──→ CUREXAL NETWORK</p>
+                <p className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">Pharmacy ──┤</p>
+                <p className="p-2.5 rounded-xl bg-[#F0FDFA] dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 font-bold border border-teal-300 dark:border-teal-700">Patient ───┘ (Coordinated Care Journey)</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Vision in one sentence */}
-        <div className="card-enterprise p-8 border-[#0F766E]/20 bg-[#F0FDFA]/50 dark:bg-[#0F766E]/5">
-          <h2 className="text-section text-gray-900 dark:text-white mb-4">The Vision</h2>
-          <p className="text-[17px] leading-relaxed text-gray-700 dark:text-gray-300 max-w-3xl">
-            Curexal is building the operating network that enables independent healthcare providers across Africa to collaborate as one connected healthcare system, without sacrificing their independence or ownership of data.
+        {/* Collaboration By Default */}
+        <div className="space-y-4 max-w-3xl">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Healthcare collaboration should be the default.
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            When a doctor creates a diagnostic referral, the receiving laboratory should know immediately. When a pathologist authorizes a test report, the referring doctor should receive the result without making the patient act as a courier. Cross-organizational coordination is built into our core architecture.
           </p>
         </div>
 
-        {/* Careers */}
-        <div id="careers" className="card-enterprise p-8">
-          <h2 className="text-section text-gray-900 dark:text-white mb-4">Careers</h2>
-          <p className="text-body text-gray-500 dark:text-gray-400 mb-6 max-w-2xl">
-            We're building a small, focused team solving hard problems in African healthcare infrastructure. We hire for clarity of thinking, ownership mindset, and genuine care for the mission.
+        {/* Tenant Privacy & Data Isolation */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950 text-[#0F766E] flex items-center justify-center">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tenant Privacy & Data Isolation Architecture</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Cross-organizational coordination with strict tenant boundaries</p>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            Curexal is built on a schema-per-tenant architecture. Every healthcare organization operates within its own dedicated database schema, ensuring complete data isolation. Data exchange between facilities occurs strictly through encrypted, audit-logged cross-tenant APIs only when authorized by clinical workflow context.
           </p>
-          <a href="mailto:careers@curexal.com">
-            <button className="flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-[#0F766E] hover:bg-[#115E59] text-white text-sm font-semibold transition-colors cursor-pointer border-0">
-              View Open Roles
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </a>
         </div>
 
-        {/* Contact */}
+        {/* Contact Footer */}
         <div id="contact" className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
             { label: "General Enquiries", email: "hello@curexal.com" },
-            { label: "Sales & Partnerships", email: "sales@curexal.com" },
-            { label: "Technical Support", email: "support@curexal.com" },
+            { label: "Early Access & Pilots", email: "pilots@curexal.com" },
+            { label: "Engineering & Architecture", email: "tech@curexal.com" },
           ].map((c) => (
-            <div key={c.label} className="card-enterprise p-6">
-              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">{c.label}</p>
+            <div key={c.label} className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{c.label}</p>
               <a
                 href={`mailto:${c.email}`}
-                className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] transition-colors"
+                className="text-sm font-bold text-[#0F766E] dark:text-teal-400 hover:underline"
               >
                 {c.email}
               </a>
@@ -106,3 +130,4 @@ export function AboutPage() {
     </div>
   );
 }
+

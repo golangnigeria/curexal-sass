@@ -2,17 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Activity,
   CheckCircle2,
   User,
-  Building2,
   ShoppingBag,
   ShieldCheck,
   Stethoscope,
-  FlaskConical,
-  Building,
-  Pill,
   ArrowRight,
   ArrowLeft,
   Share2,
@@ -22,78 +18,34 @@ import {
   FlaskRound,
   Rocket,
   Mail,
+  Network,
+  Building2,
+  FlaskConical,
+  Activity,
+  ChevronRight,
+  Sliders,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiUrl } from "@/api";
 import { SEOHead } from "@/components/seo/seo-head";
 import { MarketingNavbar } from "@/components/layouts/marketing-navbar";
 import { MarketingFooter } from "@/components/layouts/marketing-footer";
-import type { PersonaType } from "@/components/waitlist-modal";
 import { saveWaitlistToSupabase } from "@/lib/supabase";
+import { WaitlistStats } from "@/components/home/waitlist-stats";
 
-const PERSONAS: { id: PersonaType; label: string; icon: any }[] = [
-  { id: "Patient", label: "Patient", icon: User },
-  { id: "Laboratory", label: "Laboratory", icon: FlaskConical },
-  { id: "Clinic", label: "Clinic", icon: Stethoscope },
-  { id: "Hospital", label: "Hospital", icon: Building },
-  { id: "Pharmacy", label: "Pharmacy", icon: Pill },
-  { id: "Medical Supplier", label: "Supplier", icon: ShoppingBag },
-  { id: "Diagnostic Centre", label: "Diagnostic", icon: Building2 },
-  { id: "Doctor", label: "Doctor", icon: User },
-  { id: "Other", label: "Other", icon: Sparkles },
-];
+export type PersonaCategory = "Patient" | "Organization" | "Supplier";
 
-const PAIN_POINTS: Record<string, string[]> = {
-  Patient: [
-    "Waiting too long for laboratory test results",
-    "Finding accredited laboratories near me",
-    "Losing paper medical & laboratory records",
-    "Booking diagnostic test appointments online",
-    "Paying for healthcare tests safely online",
-  ],
-  Laboratory: [
-    "Managing PDF report delivery to patients & doctors",
-    "Specimen sample tracking & barcoding",
-    "Analyzer instrument interfaces & LIMS integration",
-    "Billing & inventory tracking",
-    "ISO 15189 compliance & audit log readiness",
-  ],
-  Clinic: [
-    "Clinical EMR lab ordering & paper referral delays",
-    "Receiving verified diagnostic results from external labs",
-    "Multi-branch clinic synchronization",
-    "Patient appointment scheduling & follow-ups",
-  ],
-  Hospital: [
-    "Pathology validation queues & lab director sign-offs",
-    "Cross-department EHR/EMR order syncing",
-    "Inventory & reagent stock tracking",
-    "Regulatory compliance audit logging",
-  ],
-  Pharmacy: [
-    "Finding reliable medical supply vendors",
-    "Stock visibility & expiry management",
-    "Online prescription ordering & customer delivery",
-    "B2B payment collection",
-  ],
-  "Medical Supplier": [
-    "Finding accredited clinic & laboratory buyers",
-    "Managing online B2B orders & storefront",
-    "Stock visibility across regional warehouses",
-    "Automating buyer payment collections",
-  ],
-};
-
-const SHAPING_OPTIONS = [
-  { id: "Yes, 15-minute customer interview", label: "15-Min User Interview", desc: "Speak directly with system architects", icon: MessageSquare },
-  { id: "Yes, Early Beta Tester", label: "Early Beta Tester", desc: "Get priority access to unreleased features", icon: FlaskRound },
-  { id: "Notify me on Launch Day", label: "Launch Day Alert", desc: "Instant notification when we go live", icon: Rocket },
-  { id: "Keep me updated via Email", label: "Email Updates", desc: "Weekly product & engineering progress", icon: Mail },
+const STEP_TITLES = [
+  "Select Your Role",
+  "Your Information",
+  "Coordination Research",
+  "Launch Urgency",
+  "Co-Design Participation",
 ];
 
 export function WaitlistPage() {
   const [step, setStep] = useState<number>(1);
-  const [persona, setPersona] = useState<PersonaType>("Patient");
+  const [personaCategory, setPersonaCategory] = useState<PersonaCategory>("Patient");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -101,19 +53,43 @@ export function WaitlistPage() {
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [organization, setOrganization] = useState("");
+  const [orgType, setOrgType] = useState("Clinic");
 
-  const [selectedPainPoint, setSelectedPainPoint] = useState("");
+  // Research Survey State
+  const [disconnectedArea, setDisconnectedArea] = useState("Getting results back to my doctor");
+  const [breakdownStory, setBreakdownStory] = useState("");
+  const [placesInvolved, setPlacesInvolved] = useState("3-5 places");
+  const [selfCoordinatedTasks, setSelfCoordinatedTasks] = useState("");
+  const [automaticCoordinationDesire, setAutomaticCoordinationDesire] = useState("Auto-deliver lab reports directly to my doctor's chart");
+  const [selectedTrustFactors, setSelectedTrustFactors] = useState<string[]>(["Data privacy guarantees"]);
+
+  const [externalPartners, setExternalPartners] = useState<string[]>(["Clinics", "Laboratories"]);
+  const [referralBreakdownStory, setReferralBreakdownStory] = useState("");
+  const [visibilityLossPoints, setVisibilityLossPoints] = useState<string[]>(["Sample collection status", "Final report delivery"]);
+  const [communicationChannels, setCommunicationChannels] = useState<string[]>(["WhatsApp messages", "Phone calls"]);
+  const [unresolvedImpact, setUnresolvedImpact] = useState("");
+  const [topWorkflowChoice, setTopWorkflowChoice] = useState("Digital Lab Referrals & Results");
+
   const [timeline, setTimeline] = useState("Within 3 months");
   const [shapingPreference, setShapingPreference] = useState("Yes, Early Beta Tester");
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isDuplicateUser, setIsDuplicateUser] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  const validateRequired = () => {
+  const toggleArrayItem = (list: string[], setList: (val: string[]) => void, item: string) => {
+    if (list.includes(item)) {
+      setList(list.filter((i) => i !== item));
+    } else {
+      setList([...list, item]);
+    }
+  };
+
+  const validateContactInfo = () => {
     const missing: string[] = [];
     if (!fullName.trim()) missing.push("Full Name");
     if (!email.trim()) missing.push("Email Address");
-    if (!phone.trim()) missing.push("Phone Number");
 
     if (missing.length > 0) {
       toast.error(`Please fill in required fields: ${missing.join(", ")}`);
@@ -124,7 +100,7 @@ export function WaitlistPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateRequired()) return;
+    if (!validateContactInfo()) return;
 
     setLoading(true);
 
@@ -135,116 +111,176 @@ export function WaitlistPage() {
       country,
       state,
       city,
-      persona,
-      organization,
-      biggestPainPoint: selectedPainPoint,
+      persona: personaCategory === "Organization" ? orgType : personaCategory,
+      organization: organization || orgType,
+      biggestPainPoint: breakdownStory || referralBreakdownStory || disconnectedArea,
+      desiredFeatures: [
+        ...visibilityLossPoints,
+        ...externalPartners.map((p) => `Partner: ${p}`),
+        ...communicationChannels.map((c) => `Channel: ${c}`),
+      ],
       timeline,
       shapingPreference,
+      orgType,
+      externalPartners,
+      referralBreakdownStory,
+      visibilityLossPoints,
+      communicationChannels,
+      unresolvedImpact,
+      topWorkflowChoice,
+      trustFactors: selectedTrustFactors,
+      disconnectedArea,
+      placesInvolved,
+      selfCoordinatedTasks,
+      automaticCoordinationDesire,
+      testPilotInterest: shapingPreference,
     };
 
-    try {
-      await saveWaitlistToSupabase(payload);
-      await fetch(getApiUrl("/waitlist"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).catch(() => null);
+    const result = await saveWaitlistToSupabase(payload);
 
-      setLoading(false);
+    fetch(getApiUrl("/waitlist"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => null);
+
+    setLoading(false);
+
+    if (result.status === "SUCCESS") {
       setSubmitted(true);
-      toast.success("Spot reserved on our priority waitlist!");
-    } catch (err) {
-      console.info("Waitlist response stored locally:", payload);
-      setLoading(false);
+      setIsDuplicateUser(false);
+      setFeedbackMessage(result.message);
+      toast.success(result.message);
+    } else if (result.status === "DUPLICATE") {
       setSubmitted(true);
-      toast.success("Spot reserved on our priority waitlist!");
+      setIsDuplicateUser(true);
+      setFeedbackMessage("You're already on the Curexal early access list. We'll keep you updated on progress.");
+      toast.info("You're already registered on our priority waitlist!");
+    } else if (result.status === "VALIDATION_ERROR") {
+      toast.error(result.message);
+    } else {
+      toast.error(result.message || "Unable to save your request right now. Please try again.");
     }
   };
 
-  const activePainPoints = PAIN_POINTS[persona] || PAIN_POINTS.Patient;
-
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter overflow-x-hidden relative">
       <SEOHead
-        title="Early Access Registration — Curexal Healthcare"
-        description="Join Curexal's connected healthcare waitlist and get priority access for your facility."
+        title="Help Us Build Curexal: Early Access & Customer Research"
+        description="Join Curexal's customer discovery waitlist and tell us where healthcare coordination breaks down for you."
       />
 
       <MarketingNavbar />
 
-      <main className="pt-20 sm:pt-24 pb-16 px-3.5 sm:px-6 max-w-xl mx-auto w-full overflow-x-hidden">
-        <div className="text-center max-w-xl mx-auto mb-4 sm:mb-6">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-2 rounded-full border border-teal-500/30 bg-teal-500/10 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            Priority Early Access Registration
+      {/* Hero Ambient Backdrop */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-b from-teal-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none z-0" />
+
+      <main className="relative z-10 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 max-w-4xl mx-auto w-full">
+        
+        {/* Premium Page Header & Co-Design Positioning */}
+        <div className="text-center max-w-2xl mx-auto mb-8 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 text-xs font-extrabold uppercase tracking-wider shadow-xs">
+            <Sparkles className="w-4 h-4 text-[#0F766E] dark:text-teal-400" />
+            <span>EARLY ACCESS RESEARCH &amp; CO-DESIGN</span>
           </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1">
-            Join the Curexal Waitlist
+
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
+            Help Us Build The Healthcare Operating Network.
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-snug">
-            Reserve your early access spot for connected healthcare operations.
+
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+            What would healthcare look like if independent clinics, laboratories, pharmacies, suppliers, and patients could seamlessly coordinate? Tell us where care currently breaks down for you.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xl w-full box-border">
+        {/* Live Marketing Statistics Component */}
+        <WaitlistStats />
+
+        {/* Co-Design Questionnaire Container */}
+        <div className="bg-white dark:bg-[#0B1120]/90 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-10 shadow-2xl backdrop-blur-xl w-full">
           {submitted ? (
-            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-4 sm:p-6 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-2.5">
-                <div className="w-11 h-11 rounded-full bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-md">
-                  <CheckCircle2 className="w-6 h-6" />
+            <div className="space-y-6 py-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-8 sm:p-10 rounded-3xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#0F766E] text-white flex items-center justify-center mx-auto shadow-lg">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                  🎉 You're on the list, {fullName}!
-                </h2>
-                <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
-                  We've reserved your priority access slot for <strong className="text-[#0F766E] dark:text-teal-300">{persona}s</strong>. We'll reach out as early access slots open.
-                </p>
-                <div className="grid grid-cols-2 gap-1.5 pt-1 text-left">
-                  {[
-                    "✓ Early Updates",
-                    "✓ Direct Team Access",
-                    "✓ Priority Beta",
-                    "✓ VIP Support",
-                  ].map((item) => (
-                    <span key={item} className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 truncate">
-                      {item}
-                    </span>
-                  ))}
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {isDuplicateUser ? `Welcome Back, ${fullName}!` : `🎉 Thank You, ${fullName}!`}
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto leading-relaxed font-medium">
+                    {feedbackMessage}
+                  </p>
+                </div>
+
+                <div className="pt-2 flex flex-wrap justify-center gap-2 max-w-md mx-auto text-xs font-semibold text-[#0F766E] dark:text-teal-300">
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">
+                    ✓ Priority Access Reserved
+                  </span>
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">
+                    ✓ Research Input Recorded
+                  </span>
                 </div>
               </div>
 
-              <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center gap-3">
                 <Button
                   onClick={() => {
                     navigator.clipboard?.writeText("https://curexal.com/waitlist");
-                    toast.success("Waitlist link copied!");
+                    toast.success("Waitlist research link copied!");
                   }}
                   variant="outline"
-                  className="w-full sm:w-1/2 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-1/2 h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-2 border-slate-200 dark:border-slate-800 cursor-pointer"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Share Waitlist Link</span>
+                  <Share2 className="w-4 h-4 text-[#0F766E]" />
+                  <span>Share Co-Design Link</span>
                 </Button>
                 <Link to="/" className="w-full sm:w-1/2">
-                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs rounded-xl">
+                  <Button className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-11 text-xs rounded-xl cursor-pointer border-0 shadow-md">
                     Return to Homepage
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="w-full">
-              {/* Step Counter Indicator */}
-              <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-bold text-[10px]">
-                    {step}/5
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Step {step} of 5
-                  </span>
+            <div className="w-full space-y-6">
+              
+              {/* Stepper Header Bar */}
+              <div className="space-y-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-xl bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-[#0F766E] dark:text-teal-400 font-black text-xs">
+                      0{step}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0F766E] dark:text-teal-400 block">
+                        Stage 0{step} of 05
+                      </span>
+                      <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        {STEP_TITLES[step - 1]}
+                      </h2>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <div
+                        key={s}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          s === step
+                            ? "w-8 bg-[#0F766E]"
+                            : s < step
+                            ? "w-4 bg-teal-200 dark:bg-teal-900"
+                            : "w-4 bg-slate-200 dark:bg-slate-800"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="w-20 sm:w-24 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+
+                {/* Mobile Line Progress */}
+                <div className="sm:hidden w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div
                     className="bg-[#0F766E] h-full transition-all duration-300"
                     style={{ width: `${(step / 5) * 100}%` }}
@@ -252,57 +288,104 @@ export function WaitlistPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3.5 w-full" noValidate>
-                {/* STEP 1: Persona Selection */}
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                
+                {/* ── STEP 1: PERSONA / ROLE SELECTION ── */}
                 {step === 1 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 1: Who are you joining as?
-                    </h3>
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                      {PERSONAS.map((item) => {
+                  <div className="space-y-5 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Where do you experience healthcare from?
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Select your role so we can tailor our customer discovery research to your exact operational reality.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {[
+                        {
+                          id: "Patient" as PersonaCategory,
+                          title: "Patient / Care Recipient",
+                          desc: "I receive healthcare and want connected medical records, referrals, and lab results.",
+                          icon: User,
+                        },
+                        {
+                          id: "Organization" as PersonaCategory,
+                          title: "Healthcare Provider",
+                          desc: "Clinic, laboratory, pharmacy, hospital, or diagnostic center operator.",
+                          icon: Stethoscope,
+                        },
+                        {
+                          id: "Supplier" as PersonaCategory,
+                          title: "Supplier / Partner",
+                          desc: "Medical equipment, reagents, pharmaceuticals, or healthcare support services.",
+                          icon: ShoppingBag,
+                        },
+                      ].map((item) => {
                         const Icon = item.icon;
-                        const active = persona === item.id;
+                        const active = personaCategory === item.id;
                         return (
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => setPersona(item.id)}
-                            className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                            onClick={() => setPersonaCategory(item.id)}
+                            className={`w-full p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
                               active
-                                ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
-                                : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                ? "bg-teal-50/90 dark:bg-teal-950/60 border-[#0F766E] shadow-sm ring-1 ring-[#0F766E]/30"
+                                : "bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                             }`}
                           >
-                            <Icon className={`w-4 h-4 mb-1 ${active ? "text-[#0F766E] dark:text-teal-300" : "opacity-60"}`} />
-                            <span className="text-center truncate w-full">{item.label}</span>
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${active ? "bg-[#0F766E] text-white" : "bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700"}`}>
+                                <Icon className="w-4.5 h-4.5" />
+                              </div>
+                              <div className="space-y-0.5 min-w-0 flex-1">
+                                <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight">
+                                  {item.title}
+                                </h4>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal truncate">
+                                  {item.desc}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300 dark:border-slate-700"}`}>
+                              {active && <Check className="w-3 h-3" />}
+                            </div>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+
+                    <div className="pt-3">
                       <Button
                         type="button"
                         onClick={() => setStep(2)}
-                        className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-12 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md border-0"
                       >
-                        <span>Continue to Step 2</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <span>Continue to Your Information</span>
+                        <ArrowRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 2: Contact Info */}
+                {/* ── STEP 2: CONTACT INFORMATION ── */}
                 {step === 2 && (
-                  <div className="space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 2: Tell us about yourself
-                    </h3>
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Tell us about yourself
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        We'll use your contact details to reserve your priority early access slot.
+                      </p>
+                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
+                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
                           Full Name <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -311,11 +394,11 @@ export function WaitlistPage() {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-10 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
+                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
                           Email Address <span className="text-rose-500">*</span>
                         </label>
                         <Input
@@ -324,162 +407,346 @@ export function WaitlistPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-10 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
-                          Phone Number <span className="text-rose-500">*</span>
+                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          Phone Number
                         </label>
                         <Input
                           type="tel"
                           placeholder="+234 800 000 0000"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          required
-                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-10 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
-                          Facility / Company (Optional)
+                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          Facility / Business Name (Optional)
                         </label>
                         <Input
                           type="text"
-                          placeholder="Apex Diagnostic Center"
+                          placeholder="Apex Diagnostics"
                           value={organization}
                           onChange={(e) => setOrganization(e.target.value)}
-                          className="h-8 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-10 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Country</label>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Country</label>
                         <Input
                           type="text"
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
-                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">State</label>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">State</label>
                         <Input
                           type="text"
                           placeholder="Lagos"
                           value={state}
                           onChange={(e) => setState(e.target.value)}
-                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">City</label>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">City</label>
                         <Input
                           type="text"
                           placeholder="Ikeja"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          className="h-8 text-[11px] bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="h-9 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                         />
                       </div>
                     </div>
 
-                    {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(1)}
-                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
+                        className="px-5 h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="w-4 h-4" />
                         <span>Back</span>
                       </Button>
                       <Button
                         type="button"
                         onClick={() => {
-                          if (validateRequired()) {
-                            setStep(3);
-                          }
+                          if (validateContactInfo()) setStep(3);
                         }}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-11 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md border-0"
                       >
-                        <span className="truncate">Continue to Step 3</span>
-                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Continue to Research Questions</span>
+                        <ArrowRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 3: Operational Challenge */}
+                {/* ── STEP 3: DEEP COORDINATION DISCOVERY QUESTIONS ── */}
                 {step === 3 && (
-                  <div className="space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 3: What's your biggest challenge?
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Select the main issue you experience as a <strong className="text-[#0F766E] dark:text-teal-400">{persona}</strong>:
-                    </p>
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    {personaCategory === "Patient" && (
+                      <div className="space-y-3">
+                        <div className="space-y-0.5">
+                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                            Patient Care Friction Discovery
+                          </h3>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Help us identify where your care journey breaks down.
+                          </p>
+                        </div>
 
-                    <div className="space-y-1.5">
-                      {activePainPoints.map((item) => {
-                        const active = selectedPainPoint === item;
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => setSelectedPainPoint(item)}
-                            className={`w-full p-2 rounded-xl border text-[11px] font-semibold text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                              active
-                                ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
-                                : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                          >
-                            <span className="leading-snug">{item}</span>
-                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-2.5 h-2.5" />}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+                            Q1: Where does healthcare feel most disconnected for you?
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[
+                              "Finding the right provider",
+                              "Moving between providers",
+                              "Getting diagnostic tests",
+                              "Getting results back to my doctor",
+                              "Booking appointments/services",
+                              "Getting medicines/products",
+                              "Keeping my health records together",
+                              "Communicating with doctors",
+                            ].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setDisconnectedArea(opt)}
+                                className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
+                                  disconnectedArea === opt
+                                    ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E] font-bold"
+                                    : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                    {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                            Q2: Tell us what happened the last time you experienced this.
+                          </label>
+                          <Textarea
+                            placeholder="e.g. I had to travel across town twice to pick up paper lab results because the lab couldn't send them directly to my doctor..."
+                            value={breakdownStory}
+                            onChange={(e) => setBreakdownStory(e.target.value)}
+                            className="text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl h-24"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                            Q3: What did you have to do yourself that you wish providers coordinated automatically?
+                          </label>
+                          <Input
+                            placeholder="e.g. Hand-deliver paper test requests and explain my history again..."
+                            value={selfCoordinatedTasks}
+                            onChange={(e) => setSelfCoordinatedTasks(e.target.value)}
+                            className="h-10 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {personaCategory === "Organization" && (
+                      <div className="space-y-3">
+                        <div className="space-y-0.5">
+                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                            Healthcare Provider Operations Discovery
+                          </h3>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Help us identify where referrals or partner communications break down.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+                            Q1: What type of organization do you operate?
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["Clinic", "Laboratory", "Imaging Center", "Pharmacy", "Hospital", "Diagnostic Centre"].map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setOrgType(t)}
+                                className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                  orgType === t
+                                    ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
+                                    : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+                            Q2: Which external partners do you regularly coordinate with? (Select all that apply)
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Clinics", "Laboratories", "Imaging centers", "Pharmacies", "Hospitals", "Suppliers"].map((partner) => {
+                              const selected = externalPartners.includes(partner);
+                              return (
+                                <button
+                                  key={partner}
+                                  type="button"
+                                  onClick={() => toggleArrayItem(externalPartners, setExternalPartners, partner)}
+                                  className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                                    selected
+                                      ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
+                                      : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                                  }`}
+                                >
+                                  <span>{partner}</span>
+                                  {selected && <Check className="w-3.5 h-3.5 text-[#0F766E]" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                            Q3: What currently happens when you refer a patient to another provider?
+                          </label>
+                          <Textarea
+                            placeholder="e.g. We give them a paper slip and have no visibility into whether they completed the test..."
+                            value={referralBreakdownStory}
+                            onChange={(e) => setReferralBreakdownStory(e.target.value)}
+                            className="text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl h-20"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+                            Q4: How do you currently communicate with partner organizations?
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Phone calls", "WhatsApp messages", "Paper slips", "Email attachments", "Separate software"].map((ch) => {
+                              const selected = communicationChannels.includes(ch);
+                              return (
+                                <button
+                                  key={ch}
+                                  type="button"
+                                  onClick={() => toggleArrayItem(communicationChannels, setCommunicationChannels, ch)}
+                                  className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                                    selected
+                                      ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
+                                      : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                                  }`}
+                                >
+                                  <span>{ch}</span>
+                                  {selected && <Check className="w-3.5 h-3.5 text-[#0F766E]" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {personaCategory === "Supplier" && (
+                      <div className="space-y-3">
+                        <div className="space-y-0.5">
+                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                            Supplier Order &amp; Settlement Coordination
+                          </h3>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Help us simplify B2B supply procurement and buyer fulfillment.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+                            What healthcare products do you supply?
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Medical Equipment", "Reagents & Lab Supplies", "Pharmaceuticals", "Support Services"].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setOrgType(opt)}
+                                className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                  orgType === opt
+                                    ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
+                                    : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                            Where does B2B order &amp; payment coordination break down today?
+                          </label>
+                          <Textarea
+                            placeholder="e.g. Delayed purchase order verification and manual payment collection..."
+                            value={referralBreakdownStory}
+                            onChange={(e) => setReferralBreakdownStory(e.target.value)}
+                            className="text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl h-24"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(2)}
-                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
+                        className="px-5 h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="w-4 h-4" />
                         <span>Back</span>
                       </Button>
                       <Button
                         type="button"
                         onClick={() => setStep(4)}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-11 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md border-0"
                       >
-                        <span className="truncate">Continue to Step 4</span>
-                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Continue to Launch Timeline</span>
+                        <ArrowRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 4: Urgency & Timeline */}
+                {/* ── STEP 4: LAUNCH TIMELINE & URGENCY ── */}
                 {step === 4 && (
-                  <div className="space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 4: How soon do you need Curexal?
-                    </h3>
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                        How soon do you need Curexal?
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Help us prioritize onboarding slots based on operational urgency.
+                      </p>
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {["Immediately", "Within 3 months", "Within 6 months", "Just exploring"].map((t) => {
                         const active = timeline === t;
                         return (
@@ -487,10 +754,10 @@ export function WaitlistPage() {
                             key={t}
                             type="button"
                             onClick={() => setTimeline(t)}
-                            className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                            className={`p-3 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${
                               active
-                                ? "bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E]"
-                                : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
+                                : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                           >
                             {t}
@@ -499,38 +766,47 @@ export function WaitlistPage() {
                       })}
                     </div>
 
-                    {/* Bottom Action Bar: Back & Continue Side by Side */}
-                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(3)}
-                        className="px-3 h-9 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
+                        className="px-5 h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="w-4 h-4" />
                         <span>Back</span>
                       </Button>
                       <Button
                         type="button"
                         onClick={() => setStep(5)}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-9 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-w-0"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-11 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md border-0"
                       >
-                        <span className="truncate">Final Step</span>
-                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Final Step: Participation</span>
+                        <ArrowRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 5: Participation Preference & Final Submit (No Mobile Overflow!) */}
+                {/* ── STEP 5: CO-DESIGN PARTICIPATION PREFERENCE & FINAL SUBMIT ── */}
                 {step === 5 && (
-                  <div className="space-y-2.5 animate-in fade-in duration-150">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                      Step 5: How would you like to participate?
-                    </h3>
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                        How would you like to participate with our product team?
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Choose your co-design involvement preference.
+                      </p>
+                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {SHAPING_OPTIONS.map((opt) => {
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { id: "Yes, 15-minute customer interview", label: "15-Min User Interview", desc: "Speak directly with system architects", icon: MessageSquare },
+                        { id: "Yes, Early Beta Tester", label: "Early Beta Tester", desc: "Get priority access to unreleased features", icon: FlaskRound },
+                        { id: "Notify me on Launch Day", label: "Launch Day Alert", desc: "Instant notification when we go live", icon: Rocket },
+                        { id: "Keep me updated via Email", label: "Email Updates", desc: "Weekly product & engineering progress", icon: Mail },
+                      ].map((opt) => {
                         const active = shapingPreference === opt.id;
                         const Icon = opt.icon;
                         return (
@@ -538,52 +814,47 @@ export function WaitlistPage() {
                             key={opt.id}
                             type="button"
                             onClick={() => setShapingPreference(opt.id)}
-                            className={`p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2 ${
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
                               active
-                                ? "bg-teal-50/90 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-xs"
-                                : "bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
+                                : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
                             }`}
                           >
-                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "bg-[#0F766E] text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>
-                              <Icon className="w-3 h-3" />
+                            <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "bg-[#0F766E] text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>
+                              <Icon className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-[11px] sm:text-xs font-bold leading-tight truncate">{opt.label}</h4>
-                              <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{opt.desc}</p>
-                            </div>
-                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 mt-0.5 ${active ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-slate-300"}`}>
-                              {active && <Check className="w-2.5 h-2.5" />}
+                              <h4 className="text-xs font-bold leading-tight">{opt.label}</h4>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{opt.desc}</p>
                             </div>
                           </button>
                         );
                       })}
                     </div>
 
-                    {/* Bottom Action Bar: Back & Final Submit Side by Side (Responsive Text) */}
-                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setStep(4)}
-                        className="px-3 h-10 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer flex-shrink-0"
+                        className="px-4 h-10 text-xs font-bold rounded-lg flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="w-4 h-4" />
                         <span>Back</span>
                       </Button>
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 text-xs rounded-lg shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
                       >
-                        <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate hidden sm:inline">{loading ? "Registering..." : "Complete Early Access Registration"}</span>
-                        <span className="truncate sm:hidden">{loading ? "Registering..." : "Complete Registration"}</span>
+                        <Sparkles className="w-4 h-4" />
+                        <span>{loading ? "Submitting Co-Design Input..." : "Complete Co-Design Registration"}</span>
                       </Button>
                     </div>
 
-                    <p className="text-[9px] text-center text-slate-400 flex items-center justify-center gap-1 pt-0.5">
-                      <ShieldCheck className="w-3 h-3 text-[#0F766E]" />
-                      <span>Zero spam. HIPAA & NDPR data compliance.</span>
+                    <p className="text-[10px] text-center text-slate-400 flex items-center justify-center gap-1 pt-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#0F766E]" />
+                      <span>Zero spam. Strict tenant data boundaries &amp; NDPR privacy controls.</span>
                     </p>
                   </div>
                 )}

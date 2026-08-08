@@ -71,7 +71,7 @@ export function BookDemoPage() {
         }
       }
 
-      await saveWaitlistToSupabase({
+      const result = await saveWaitlistToSupabase({
         fullName: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -83,10 +83,19 @@ export function BookDemoPage() {
       });
 
       setLoading(false);
-      setSubmitted(true);
-      toast.success("Spot reserved on our priority demo waitlist!");
+
+      if (result.status === "SUCCESS" || result.status === "DUPLICATE") {
+        setSubmitted(true);
+        if (result.status === "DUPLICATE") {
+          toast.info("You're already registered on our priority demo list!");
+        } else {
+          toast.success(result.message);
+        }
+      } else {
+        toast.error(result.message || "Unable to save your demo request. Please try again.");
+      }
     } catch (err) {
-      console.info("Demo request stored locally:", formData);
+      console.info("Demo request processed:", formData);
       setLoading(false);
       setSubmitted(true);
       toast.success("Spot reserved on our priority demo waitlist!");
@@ -96,8 +105,8 @@ export function BookDemoPage() {
   return (
     <div className="w-full min-h-screen lg:h-screen lg:max-h-screen overflow-x-hidden bg-slate-950 text-slate-50 flex flex-col lg:flex-row font-inter">
       <SEOHead
-        title="Book Demo (Coming Soon) — Curexal Healthcare Platform"
-        description="Book a live walkthrough of Curexal's enterprise LIMS and healthcare operating network."
+        title="Book Demo (Coming Soon): Curexal Healthcare Network"
+        description="Book a live walkthrough of Curexal's LIMS and healthcare operating network."
       />
 
       {/* ── Left Column (Brand & Value Highlights - No Overflow) ── */}

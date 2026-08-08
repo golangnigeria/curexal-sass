@@ -111,7 +111,7 @@ export function PatientMarketplacePage() {
               Healthcare & Medical Marketplace
             </h1>
             <p className="text-base md:text-lg text-slate-600 dark:text-slate-400">
-              Browse accredited laboratories, clinics, hospitals, pharmacies, and medical supply vendors powered by real-time backend verification.
+              Browse accredited laboratories, clinics, hospitals, pharmacies, and medical supply vendors verified by backend network records.
             </p>
           </div>
 

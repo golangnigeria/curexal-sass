@@ -1,5 +1,6 @@
 import { MarketingNavbar } from "@/components/layouts/marketing-navbar";
 import { MarketingFooter } from "@/components/layouts/marketing-footer";
+import { SEOHead } from "@/components/seo/seo-head";
 import { Link } from "react-router-dom";
 import { Code2, Webhook, Key, Layers, ArrowRight } from "lucide-react";
 
@@ -47,6 +48,10 @@ console.log(response.data);
 export function DevelopersPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] font-sans">
+      <SEOHead
+        title="Developer API & Integration Documentation: Curexal Network"
+        description="RESTful APIs, event webhooks and SDKs to integrate diagnostic laboratory and clinical workflows."
+      />
       <MarketingNavbar />
 
       {/* Header */}
@@ -59,7 +64,7 @@ export function DevelopersPage() {
                 Build on<br />Curexal.
               </h1>
               <p className="text-body text-gray-500 dark:text-gray-400 mb-8">
-                RESTful APIs, real-time webhooks, and SDKs to integrate diagnostic laboratory workflows into your own applications.
+                RESTful APIs, event webhooks, and SDKs to integrate diagnostic laboratory workflows into your own applications.
               </p>
               <Link to="/book-demo">
                 <button

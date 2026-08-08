@@ -41,6 +41,10 @@ const sections = [
 export function ResourcesPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] font-sans">
+      <SEOHead
+        title="Resources and Documentation: Curexal Healthcare Network"
+        description="Technical documentation, integration specs, compliance guidelines and platform insights."
+      />
       <MarketingNavbar />
 
       <div className="pt-28 pb-16 bg-[#F8FAFC] dark:bg-[#0B1120] border-b border-gray-100 dark:border-[#1F2937]">
