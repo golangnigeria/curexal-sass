@@ -1,11 +1,31 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, ShieldCheck, Stethoscope, FlaskConical, Pill, User, Network, RefreshCw, ShoppingBag, CheckCircle2 } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  ShieldCheck,
+  Stethoscope,
+  FlaskConical,
+  Pill,
+  User,
+  Network,
+  RefreshCw,
+  ShoppingBag,
+  CheckCircle2,
+  Lock,
+  Clock,
+  FileText,
+  Activity,
+  Send,
+  Building2,
+  ChevronRight,
+  Database
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistModal } from "@/components/waitlist-modal";
 
 export function Hero() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"clinic" | "lab" | "patient">("lab");
 
   return (
     <>
@@ -29,7 +49,9 @@ export function Hero() {
 
             {/* Left: Coordination Content */}
             <div className="lg:col-span-6 flex flex-col items-start text-left">
-
+              <p className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-[#0F766E] dark:text-teal-400 mb-3 sm:mb-4">
+                The Connection layer of healthcare
+              </p>
 
               {/* Main Headline */}
               <h1 className="text-3xl xs:text-4xl sm:text-[48px] lg:text-[54px] font-black leading-[1.08] tracking-tight text-slate-900 dark:text-white mb-4 sm:mb-6">
@@ -53,7 +75,6 @@ export function Hero() {
                   id="hero-primary-cta"
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white text-sm font-bold transition-all shadow-md cursor-pointer border-0"
                 >
-                  <Sparkles className="h-4 w-4 text-teal-200" />
                   <span>Join Early Access</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -86,182 +107,204 @@ export function Hero() {
 
             </div>
 
-            {/* Right: Living Healthcare Network Visual (Framer Motion Animated) */}
+            {/* Right: Realistic Multi-Facility Healthcare Operating Console */}
             <div className="lg:col-span-6 flex items-center justify-center mt-4 lg:mt-0 w-full">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-                className="relative w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] aspect-square flex items-center justify-center mx-auto box-border"
-              >
+              <div className="w-full max-w-[500px] bg-slate-900/95 dark:bg-[#0c1322]/95 border border-slate-700/80 dark:border-slate-800/90 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl">
                 
-                {/* 1. Rotating SVG Network Dash Rings */}
-                <motion.svg
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 w-full h-full pointer-events-none opacity-30"
-                  viewBox="0 0 400 400"
-                  fill="none"
-                >
-                  <circle cx="200" cy="200" r="145" stroke="#0F766E" strokeWidth="1.5" strokeDasharray="8 8" />
-                  <circle cx="200" cy="200" r="95" stroke="#0D9488" strokeWidth="1" strokeDasharray="4 4" />
-                </motion.svg>
-
-                {/* 2. Flowing Animated Connection Rays */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 400 400" fill="none">
-                  {/* Connection lines */}
-                  <line x1="200" y1="55" x2="200" y2="150" stroke="#0F766E" strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-                  <line x1="330" y1="325" x2="240" y2="240" stroke="#0D9488" strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-                  <line x1="70" y1="325" x2="160" y2="240" stroke="#14B8A6" strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-                  <line x1="55" y1="175" x2="150" y2="190" stroke="#2DD4BF" strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-                  <line x1="345" y1="175" x2="250" y2="190" stroke="#0F766E" strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-
-                  {/* Flowing Pulse Particles */}
-                  <motion.circle
-                    r="3.5"
-                    fill="#14B8A6"
-                    animate={{ cx: [200, 200], cy: [55, 150] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
-                  />
-                  <motion.circle
-                    r="3.5"
-                    fill="#0D9488"
-                    animate={{ cx: [330, 240], cy: [325, 240] }}
-                    transition={{ duration: 2.6, repeat: Infinity, ease: "linear", delay: 0.4 }}
-                  />
-                  <motion.circle
-                    r="3.5"
-                    fill="#2DD4BF"
-                    animate={{ cx: [70, 160], cy: [325, 240] }}
-                    transition={{ duration: 2.4, repeat: Infinity, ease: "linear", delay: 0.8 }}
-                  />
-                  <motion.circle
-                    r="3.5"
-                    fill="#0F766E"
-                    animate={{ cx: [55, 150], cy: [175, 190] }}
-                    transition={{ duration: 2.1, repeat: Infinity, ease: "linear", delay: 0.2 }}
-                  />
-                  <motion.circle
-                    r="3.5"
-                    fill="#14B8A6"
-                    animate={{ cx: [345, 250], cy: [175, 190] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear", delay: 0.6 }}
-                  />
-                </svg>
-
-                {/* 3. Central Hub: CUREXAL OPERATING NETWORK (Circular Hub) */}
-                <motion.div
-                  animate={{ y: [-3, 3, -3] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="relative z-20 flex flex-col items-center justify-center p-4 rounded-full bg-gradient-to-b from-[#0F766E] to-[#115E59] text-white border border-teal-400/40 text-center w-32 h-32 sm:w-36 sm:h-36 group cursor-pointer shadow-lg"
-                >
-                  {/* Glowing Radar Circle Ring Behind Hub */}
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute inset-0 rounded-full bg-teal-500/25 pointer-events-none"
-                  />
-
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center mb-1">
-                    <Network className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-white">CUREXAL</span>
-                  <span className="text-[8px] sm:text-[9px] text-teal-200 font-bold tracking-tight">OPERATING NETWORK</span>
-                </motion.div>
-
-                {/* 4. Floating Satellite Nodes */}
-
-                {/* Node 1: Clinic (Top Center) */}
-                <motion.div
-                  animate={{ y: [-4, 4, -4] }}
-                  transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-                  whileHover={{ scale: 1.08 }}
-                  className="absolute top-[3%] left-1/2 -translate-x-1/2 z-10 flex flex-col items-center cursor-pointer"
-                >
-                  <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950 flex items-center justify-center text-[#0F766E] dark:text-teal-400">
-                      <Stethoscope className="w-3.5 h-3.5" />
+                {/* Console Header Bar */}
+                <div className="px-4 py-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-800 dark:text-white">CLINIC</span>
+                    <span className="text-[11px] font-mono text-slate-400 pl-1">
+                      curexal-control-plane // v2.4
+                    </span>
                   </div>
-                  <span className="mt-1 text-[8px] sm:text-[9px] font-bold text-[#0F766E] dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800/80">
-                    Digital Referral
-                  </span>
-                </motion.div>
 
-                {/* Node 2: Laboratory (Bottom Right) */}
-                <motion.div
-                  animate={{ y: [4, -4, 4] }}
-                  transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  whileHover={{ scale: 1.08 }}
-                  className="absolute bottom-[4%] right-[2%] z-10 flex flex-col items-end cursor-pointer"
-                >
-                  <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950 flex items-center justify-center text-[#0F766E] dark:text-teal-400">
-                      <FlaskConical className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>SYNCED</span>
+                  </div>
+                </div>
+
+                {/* Facility Node Switcher Tabs */}
+                <div className="p-2.5 bg-slate-900 border-b border-slate-800/80 flex items-center gap-1.5">
+                  <button
+                    onClick={() => setActiveTab("clinic")}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border-0 ${
+                      activeTab === "clinic"
+                        ? "bg-[#0F766E] text-white shadow-sm font-bold"
+                        : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    }`}
+                  >
+                    <Stethoscope className="w-3.5 h-3.5" />
+                    <span className="truncate">1. Clinic EMR</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("lab")}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border-0 ${
+                      activeTab === "lab"
+                        ? "bg-[#0F766E] text-white shadow-sm font-bold"
+                        : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    }`}
+                  >
+                    <FlaskConical className="w-3.5 h-3.5" />
+                    <span className="truncate">2. Lab LIMS</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("patient")}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border-0 ${
+                      activeTab === "patient"
+                        ? "bg-[#0F766E] text-white shadow-sm font-bold"
+                        : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span className="truncate">3. Patient Vault</span>
+                  </button>
+                </div>
+
+                {/* Console Content Window */}
+                <div className="p-4 sm:p-5 space-y-4">
+                  <AnimatePresence mode="wait">
+                    {activeTab === "clinic" && (
+                      <motion.div
+                        key="clinic"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-3"
+                      >
+                        <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
+                          <span className="font-semibold text-white">St. Nicholas Outpatient Clinic</span>
+                          <span className="font-mono text-[11px] text-teal-400">Dr. M. Adebayo, MD</span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400">Electronic Requisition</span>
+                            <span className="font-mono text-teal-300 font-bold">REQ-2026-8891</span>
+                          </div>
+                          <p className="text-xs font-bold text-white">Patient: Amara Eze (34y, Female)</p>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">Fasting Blood Sugar</span>
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">Lipid Profile</span>
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">HbA1c</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal-950/40 border border-teal-800/50 text-[11px]">
+                          <span className="text-teal-300 flex items-center gap-1.5">
+                            <Send className="w-3.5 h-3.5 text-teal-400" />
+                            Routed to Everight Pathology Lab
+                          </span>
+                          <span className="text-emerald-400 font-mono font-bold">Direct Dispatch</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "lab" && (
+                      <motion.div
+                        key="lab"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-3"
+                      >
+                        <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
+                          <span className="font-semibold text-white">Everight Diagnostic & Pathology</span>
+                          <span className="font-mono text-[11px] text-teal-400">LIS Auto-Ingest Node</span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-mono">SPECIMEN #SP-9941</span>
+                            <span className="flex items-center gap-1 text-emerald-400 font-bold text-[10px]">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              VERIFIED
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                              <p className="text-[10px] text-slate-400">Analyzer Link</p>
+                              <p className="font-mono font-bold text-white text-xs mt-0.5">Mindray BS-800</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                              <p className="text-[10px] text-slate-400">Validation Signer</p>
+                              <p className="font-mono font-bold text-teal-300 text-xs mt-0.5">Dr. C. Okonjo, FRCPath</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-[11px]">
+                          <span className="text-emerald-300 flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                            Digital PDF Signed & Ready
+                          </span>
+                          <span className="text-emerald-400 font-mono font-bold">Turnaround: 38 mins</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "patient" && (
+                      <motion.div
+                        key="patient"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-3"
+                      >
+                        <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
+                          <span className="font-semibold text-white">Patient Unified Health Vault</span>
+                          <span className="font-mono text-[11px] text-teal-400">Encrypted Delivery</span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400">Latest Diagnostic Record</span>
+                            <span className="font-mono text-teal-300 font-bold">Today, 11:42 AM</span>
+                          </div>
+                          <p className="text-xs font-bold text-white">Complete Metabolic Panel (CMP)</p>
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">WhatsApp PDF Sent</span>
+                            <span className="px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 text-[10px] font-bold">Clinic Chart Updated</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal-950/40 border border-teal-800/50 text-[11px]">
+                          <span className="text-teal-300 flex items-center gap-1.5">
+                            <Pill className="w-3.5 h-3.5 text-teal-400" />
+                            E-Prescription Routed to Pharmacy
+                          </span>
+                          <span className="text-teal-300 font-mono font-bold">Zero Paper</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Multi-Tenant Security & Network Status Footer */}
+                  <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Lock className="w-3 h-3 text-[#0F766E]" />
+                      <span>Schema Isolation: 100%</span>
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-800 dark:text-white">LABORATORY</span>
-                  </div>
-                  <span className="mt-1 text-[8px] sm:text-[9px] font-bold text-[#0F766E] dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800/80">
-                    Verified Results
-                  </span>
-                </motion.div>
-
-                {/* Node 3: Pharmacy (Bottom Left) */}
-                <motion.div
-                  animate={{ y: [-4, 4, -4] }}
-                  transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  whileHover={{ scale: 1.08 }}
-                  className="absolute bottom-[4%] left-[2%] z-10 flex flex-col items-start cursor-pointer"
-                >
-                  <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950 flex items-center justify-center text-[#0F766E] dark:text-teal-400">
-                      <Pill className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-teal-400">
+                      <Activity className="w-3 h-3" />
+                      <span>FHIR HL7 Endpoints Live</span>
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-800 dark:text-white">PHARMACY</span>
                   </div>
-                  <span className="mt-1 text-[8px] sm:text-[9px] font-bold text-[#0F766E] dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800/80">
-                    Prescriptions
-                  </span>
-                </motion.div>
+                </div>
 
-                {/* Node 4: Patient (Mid Left) */}
-                <motion.div
-                  animate={{ y: [4, -4, 4] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                  whileHover={{ scale: 1.08 }}
-                  className="absolute top-[34%] left-[1%] z-10 flex flex-col items-start cursor-pointer"
-                >
-                  <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950 flex items-center justify-center text-[#0F766E] dark:text-teal-400">
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[11px] font-extrabold text-slate-800 dark:text-white">PATIENT</span>
-                  </div>
-                  <span className="mt-1 text-[8px] sm:text-[9px] font-bold text-[#0F766E] dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800/80">
-                    Care Records
-                  </span>
-                </motion.div>
-
-                {/* Node 5: Suppliers (Mid Right) */}
-                <motion.div
-                  animate={{ y: [-4, 4, -4] }}
-                  transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut", delay: 0.7 }}
-                  whileHover={{ scale: 1.08 }}
-                  className="absolute top-[34%] right-[1%] z-10 flex flex-col items-end cursor-pointer"
-                >
-                  <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950 flex items-center justify-center text-[#0F766E] dark:text-teal-400">
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[11px] font-extrabold text-slate-800 dark:text-white">SUPPLIERS</span>
-                  </div>
-                  <span className="mt-1 text-[8px] sm:text-[9px] font-bold text-[#0F766E] dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800/80">
-                    B2B Orders
-                  </span>
-                </motion.div>
-
-              </motion.div>
+              </div>
             </div>
 
           </div>
