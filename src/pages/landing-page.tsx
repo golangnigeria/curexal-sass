@@ -64,8 +64,6 @@ export function LandingPage() {
       {/* Section 8: Help Us Build It */}
       <WaitlistResearchSection />
 
-    
-
       <MarketingFooter />
     </div>
   );

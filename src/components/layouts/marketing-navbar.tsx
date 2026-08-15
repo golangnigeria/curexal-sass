@@ -80,9 +80,6 @@ export function MarketingNavbar() {
               </span>
             </Link>
 
-            <span className="hidden xl:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-[#0F766E] bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80">
-              Public Platform
-            </span>
           </div>
 
           {/* Desktop Navigation Links */}

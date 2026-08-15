@@ -30,13 +30,6 @@ export function Hero() {
             {/* Left: Coordination Content */}
             <div className="lg:col-span-6 flex flex-col items-start text-left">
 
-              {/* Eyebrow */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 sm:mb-6 rounded-full border border-[#0F766E]/30 bg-[#F0FDFA] dark:bg-[#0F766E]/10 animate-fade-up">
-                <span className="w-2 h-2 rounded-full bg-[#0F766E] animate-ping" />
-                <span className="text-[11px] sm:text-xs font-bold text-[#0F766E] dark:text-teal-400 tracking-wider uppercase">
-                  THE CONNECTED HEALTHCARE OPERATING NETWORK FOR AFRICA
-                </span>
-              </div>
 
               {/* Main Headline */}
               <h1 className="text-3xl xs:text-4xl sm:text-[48px] lg:text-[54px] font-black leading-[1.08] tracking-tight text-slate-900 dark:text-white mb-4 sm:mb-6">

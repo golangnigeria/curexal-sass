@@ -66,10 +66,6 @@ export function SecurityCompliance() {
 
         {/* Compact Header */}
         <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full border border-teal-500/30 bg-teal-500/10 text-teal-300 text-xs font-semibold">
-            <Shield className="h-3.5 w-3.5 text-teal-400" />
-            <span>Enterprise Security Architecture</span>
-          </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Network-Grade Security. Data Sovereignty by Design.
           </h2>

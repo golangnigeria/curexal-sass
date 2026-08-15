@@ -12,10 +12,6 @@ export function ProvidersCta() {
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-[#0F766E]/20 bg-[#F0FDFA] dark:bg-[#0F766E]/10">
-              <Network className="h-3.5 w-3.5 text-[#0F766E]" />
-              <span className="text-xs font-semibold text-[#0F766E]">Network-Grade Infrastructure</span>
-            </div>
             <h2 className="text-section text-gray-900 dark:text-white mb-6">
               Built for Africa's Healthcare Reality.
             </h2>

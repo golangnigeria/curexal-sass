@@ -94,9 +94,6 @@ export function Features() {
     <section id="features" className="py-24 px-6 border-t border-border bg-muted/5">
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full border border-border bg-muted text-xs text-muted-foreground">
-            <FlaskConical className="h-3 w-3 text-primary" /> Integrated Diagnostics Workflow
-          </div>
           <h2 className="text-4xl font-black mb-4 text-foreground">
             Every workflow aligned with{" "}
             <span className="brand-gradient">clinical guidelines</span>

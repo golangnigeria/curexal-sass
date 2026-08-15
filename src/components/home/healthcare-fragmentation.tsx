@@ -60,11 +60,6 @@ export function HealthcareFragmentationSection() {
         
         {/* Editorial Header */}
         <div className="max-w-2xl mb-8 sm:mb-12">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-3">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>THE ROOT CAUSE OF FRAGMENTATION</span>
-          </div>
-          
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight mb-3">
             Healthcare is connected in real life. <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-amber-500 to-[#0F766E]">

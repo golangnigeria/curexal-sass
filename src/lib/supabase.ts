@@ -89,15 +89,19 @@ export async function saveWaitlistToSupabase(entry: WaitlistSubmission): Promise
   const normalizedEmail = entry.email.trim().toLowerCase();
   const normalizedName = entry.fullName.trim();
 
-  // 1. Pre-insert duplicate check
+  // 1. Pre-insert duplicate check (case-insensitive email search)
   try {
     const { data: existing, error: checkError } = await supabase
       .from("waitlist")
       .select("id")
-      .eq("email", normalizedEmail)
+      .ilike("email", normalizedEmail)
       .limit(1);
 
-    if (!checkError && existing && existing.length > 0) {
+    if (checkError) {
+      console.warn("Pre-insert duplicate check query warning:", checkError.message);
+    }
+
+    if (existing && existing.length > 0) {
       console.info("Duplicate waitlist registration detected for email:", normalizedEmail);
       return {
         status: "DUPLICATE",
@@ -223,27 +227,71 @@ export async function fetchWaitlistStats(): Promise<WaitlistAggregateStats> {
   try {
     const [totalRes, patientsRes, orgsRes, suppliersRes] = await Promise.all([
       supabase.from("waitlist").select("*", { count: "exact", head: true }),
-      supabase.from("waitlist").select("*", { count: "exact", head: true }).eq("persona", "Patient"),
+      supabase.from("waitlist").select("*", { count: "exact", head: true }).in("persona", ["Patient", "patient"]),
       supabase.from("waitlist").select("*", { count: "exact", head: true }).in("persona", [
         "Clinic",
+        "clinic",
         "Laboratory",
+        "laboratory",
         "Hospital",
+        "hospital",
         "Pharmacy",
+        "pharmacy",
         "Diagnostic Centre",
+        "diagnostic centre",
         "Organization",
+        "organization",
         "Doctor",
+        "doctor",
       ]),
       supabase.from("waitlist").select("*", { count: "exact", head: true }).in("persona", [
         "Medical Supplier",
+        "medical supplier",
         "Supplier",
+        "supplier",
       ]),
     ]);
 
+    if (totalRes.error) {
+      console.warn("Supabase waitlist total count query returned error:", totalRes.error);
+    }
+
+    const hasCounts = totalRes.count !== null && totalRes.count !== undefined;
+
+    if (hasCounts) {
+      return {
+        totalMembers: totalRes.count || 0,
+        patientsCount: patientsRes.count || 0,
+        organizationsCount: orgsRes.count || 0,
+        suppliersCount: suppliersRes.count || 0,
+        loading: false,
+        error: false,
+      };
+    }
+
+    // Try backend API fallback if Supabase returns null count
+    try {
+      const apiRes = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/waitlist/stats` : "/api/v1/waitlist/stats");
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        return {
+          totalMembers: data.totalMembers ?? data.total ?? 0,
+          patientsCount: data.patientsCount ?? data.patients ?? 0,
+          organizationsCount: data.organizationsCount ?? data.organizations ?? 0,
+          suppliersCount: data.suppliersCount ?? data.suppliers ?? 0,
+          loading: false,
+          error: false,
+        };
+      }
+    } catch (apiErr) {
+      console.warn("Backend API waitlist stats fallback error:", apiErr);
+    }
+
     return {
-      totalMembers: totalRes.count || 0,
-      patientsCount: patientsRes.count || 0,
-      organizationsCount: orgsRes.count || 0,
-      suppliersCount: suppliersRes.count || 0,
+      totalMembers: 0,
+      patientsCount: 0,
+      organizationsCount: 0,
+      suppliersCount: 0,
       loading: false,
       error: false,
     };

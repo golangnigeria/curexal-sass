@@ -19,9 +19,6 @@ export function CurexalWaySection() {
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full border border-teal-400/30 bg-teal-500/10 text-teal-300 text-xs font-bold uppercase tracking-wider">
-            The V2 Product Philosophy
-          </div>
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-4">
             One network. <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-300">

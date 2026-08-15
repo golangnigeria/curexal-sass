@@ -80,12 +80,6 @@ export function HowItWorks() {
 
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full border border-[#0F766E]/20 bg-[#F0FDFA] dark:bg-[#0F766E]/10">
-            <Zap className="h-3.5 w-3.5 text-[#0F766E]" />
-            <span className="text-xs font-semibold text-[#0F766E] tracking-wide">
-              Go Live in Days, Not Months
-            </span>
-          </div>
           <h2 className="text-section text-gray-900 dark:text-white mb-4">
             Four Steps to Join<br />the Healthcare Network.
           </h2>

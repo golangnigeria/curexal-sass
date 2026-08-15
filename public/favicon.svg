@@ -1,5 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#0F766E"/>
-  <path d="M16 6V26M6 16H26" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="16" cy="16" r="3" fill="#14B8A6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%" fill="none">
+  <!-- Light Mint / Cyan Connecting Network Struts -->
+  <g stroke="#56E3B8" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Top node to Bottom Right node -->
+    <line x1="250" y1="105" x2="375" y2="323" />
+    <!-- Bottom Right node to upper left strut -->
+    <line x1="375" y1="323" x2="142" y2="198" />
+    <!-- Bottom Left node to upper right strut -->
+    <line x1="125" y1="323" x2="352" y2="192" />
+    <!-- Lower branch towards bottom gap -->
+    <line x1="125" y1="323" x2="238" y2="368" />
+  </g>
+
+  <!-- Dark Hexagonal Perimeter Struts -->
+  <g stroke="#1E2538" stroke-width="28" stroke-linecap="butt">
+    <!-- Top-Left Strut -->
+    <line x1="222" y1="120" x2="148" y2="163" />
+    <!-- Top-Right Strut -->
+    <line x1="278" y1="120" x2="352" y2="163" />
+    <!-- Left Vertical Strut -->
+    <line x1="125" y1="205" x2="125" y2="295" />
+    <!-- Right Vertical Strut -->
+    <line x1="375" y1="205" x2="375" y2="295" />
+    <!-- Bottom-Left Strut -->
+    <line x1="148" y1="337" x2="222" y2="380" />
+    <!-- Bottom-Right Strut -->
+    <line x1="352" y1="337" x2="278" y2="380" />
+  </g>
+
+  <!-- Central Iris / Precision Core -->
+  <g>
+    <!-- Outer Cyan Ring -->
+    <circle cx="250" cy="250" r="70" stroke="#00DF9B" stroke-width="16" fill="#0F172A" />
+    <!-- Inner Royal Blue Disc -->
+    <circle cx="250" cy="250" r="42" fill="#2563EB" />
+    <!-- Center White Pupil -->
+    <circle cx="250" cy="250" r="17" fill="#FFFFFF" />
+  </g>
+
+  <!-- 3 Turquoise Spherical Nodes -->
+  <g fill="#00DF9B">
+    <!-- Top Node -->
+    <circle cx="250" cy="105" r="32" />
+    <!-- Bottom-Right Node -->
+    <circle cx="375" cy="323" r="32" />
+    <!-- Bottom-Left Node -->
+    <circle cx="125" cy="323" r="32" />
+  </g>
 </svg>

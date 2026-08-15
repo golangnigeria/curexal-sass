@@ -17,9 +17,6 @@ export function AboutPage() {
       <div className="pt-28 pb-16 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200/60 dark:border-slate-800">
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/40 text-[#0F766E] dark:text-teal-400 text-xs font-bold uppercase tracking-wider">
-              Product Philosophy & Mission
-            </div>
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mb-5">
               We believe healthcare is too fragmented.
             </h1>
@@ -34,10 +31,7 @@ export function AboutPage() {
 
         {/* Mission Statement Section */}
         <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-[#0F766E] to-[#115E59] text-white shadow-xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-teal-200 text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Our Mission</span>
-          </div>
+          <p className="text-xs font-bold text-teal-200 tracking-wider uppercase">Our Mission</p>
           <blockquote className="text-xl sm:text-3xl font-extrabold leading-tight tracking-tight text-white max-w-4xl">
             "To build the digital backbone of healthcare delivery in Africa by connecting providers, patients, and partners on a single operating network."
           </blockquote>

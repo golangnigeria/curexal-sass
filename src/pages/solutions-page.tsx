@@ -112,9 +112,11 @@ export function SolutionsPage() {
               className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start ${isReversed ? "lg:direction-rtl" : ""}`}
             >
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full bg-[#F0FDFA] dark:bg-[#0F766E]/10 border border-[#0F766E]/20">
-                  <Icon className="h-4 w-4 text-[#0F766E]" strokeWidth={1.75} />
-                  <span className="text-xs font-semibold text-[#0F766E]">{sol.label}</span>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200/80 dark:border-teal-800/80 flex items-center justify-center">
+                    <Icon className="h-4 w-4 text-[#0F766E] dark:text-teal-400" strokeWidth={2} />
+                  </div>
+                  <span className="text-xs font-bold text-[#0F766E] dark:text-teal-400 tracking-wide uppercase">{sol.label}</span>
                 </div>
                 <h2 className="text-section text-gray-900 dark:text-white mb-4">{sol.headline}</h2>
                 <p className="text-body text-gray-500 dark:text-gray-400 mb-8">{sol.desc}</p>

@@ -22,6 +22,23 @@ export function WaitlistStats() {
 
   useEffect(() => {
     loadStats();
+
+    const handleWaitlistUpdated = () => {
+      loadStats();
+    };
+
+    window.addEventListener("waitlist-updated", handleWaitlistUpdated);
+    window.addEventListener("focus", handleWaitlistUpdated);
+
+    const interval = setInterval(() => {
+      loadStats();
+    }, 30000);
+
+    return () => {
+      window.removeEventListener("waitlist-updated", handleWaitlistUpdated);
+      window.removeEventListener("focus", handleWaitlistUpdated);
+      clearInterval(interval);
+    };
   }, []);
 
   const total = stats.totalMembers || 1;
@@ -49,8 +66,8 @@ export function WaitlistStats() {
         {/* Compact Header Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-extrabold uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>LIVE TELEMETRY</span>
             </div>
             <h3 className="text-xs sm:text-sm font-extrabold text-white tracking-tight">

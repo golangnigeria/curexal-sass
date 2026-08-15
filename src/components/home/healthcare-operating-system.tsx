@@ -8,11 +8,6 @@ export function HealthcareOperatingSystemSection() {
         
         {/* Editorial Section Header */}
         <div className="max-w-2xl mx-auto text-center mb-8 sm:mb-12">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/80 border border-teal-200 dark:border-teal-800 text-[#0F766E] dark:text-teal-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-3">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>ENTERPRISE NETWORK ARCHITECTURE</span>
-          </div>
-
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-3">
             Curexal is not just another HMS. <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#14B8A6]">

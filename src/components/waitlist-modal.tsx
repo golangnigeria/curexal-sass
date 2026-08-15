@@ -98,12 +98,6 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
 
     const result = await saveWaitlistToSupabase(payload);
 
-    fetch(getApiUrl("/waitlist"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => null);
-
     setLoading(false);
 
     if (result.status === "SUCCESS") {
@@ -111,11 +105,13 @@ export function WaitlistModal({ open, onOpenChange }: WaitlistModalProps) {
       setIsDuplicate(false);
       setModalFeedback(result.message);
       toast.success(result.message);
+      window.dispatchEvent(new CustomEvent("waitlist-updated"));
     } else if (result.status === "DUPLICATE") {
       setSubmitted(true);
       setIsDuplicate(true);
       setModalFeedback("You're already on the Curexal early access list. We'll keep you updated on progress.");
       toast.info("You're already registered on our priority waitlist!");
+      window.dispatchEvent(new CustomEvent("waitlist-updated"));
     } else if (result.status === "VALIDATION_ERROR") {
       toast.error(result.message);
     } else {

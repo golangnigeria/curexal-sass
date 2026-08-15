@@ -23,10 +23,6 @@ export const PublicLandingPage: React.FC = () => {
 
       {/* Hero Section */}
       <main className="max-w-4xl mx-auto text-center space-y-8 my-16">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold uppercase tracking-wider">
-          <Zap className="w-4 h-4" />
-          Enterprise Healthcare SaaS Platform
-        </div>
         <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-tight">
           Next-Generation Diagnostic & Clinical Management Architecture
         </h1>

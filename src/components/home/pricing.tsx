@@ -85,10 +85,6 @@ export function Pricing() {
     <section id="pricing" className="py-24 px-6 border-t border-border bg-muted/5 relative">
       <div className="max-w-[1280px] mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-full border border-teal-500/20 bg-teal-500/10 text-teal-600 dark:text-teal-400 text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            Transparent Enterprise Subscriptions
-          </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
             Predictable Healthcare Operating Tier Plans
           </h2>

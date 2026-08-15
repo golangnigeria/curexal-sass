@@ -17,9 +17,6 @@ export function ProblemSection() {
         
         {/* Section Title */}
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full border border-rose-500/20 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider">
-            Healthcare Fragmentation
-          </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
             Healthcare doesn't happen inside one building.
           </h2>

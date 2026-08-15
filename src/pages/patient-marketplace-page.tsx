@@ -103,10 +103,6 @@ export function PatientMarketplacePage() {
         {/* Header Hero */}
         <section className="max-w-[1280px] mx-auto px-6 mb-10">
           <div className="text-center max-w-3xl mx-auto mb-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#0F766E] bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/80 mb-4">
-              <Building2 className="w-3.5 h-3.5" />
-              Verified Healthcare Network
-            </span>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
               Healthcare & Medical Marketplace
             </h1>

@@ -105,11 +105,6 @@ export function VisionHero() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 space-y-12">
         {/* Top Hero Heading & Grand Vision Banner */}
         <div className="text-center max-w-4xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            The Unified Infrastructure for Pathology Labs, Hospitals & Patients
-          </div>
-
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.08]">
             Connecting Diagnostic Labs, <br />
             Clinicians & Patients <br />

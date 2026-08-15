@@ -138,12 +138,6 @@ export function WaitlistPage() {
 
     const result = await saveWaitlistToSupabase(payload);
 
-    fetch(getApiUrl("/waitlist"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => null);
-
     setLoading(false);
 
     if (result.status === "SUCCESS") {
@@ -151,11 +145,13 @@ export function WaitlistPage() {
       setIsDuplicateUser(false);
       setFeedbackMessage(result.message);
       toast.success(result.message);
+      window.dispatchEvent(new CustomEvent("waitlist-updated"));
     } else if (result.status === "DUPLICATE") {
       setSubmitted(true);
       setIsDuplicateUser(true);
       setFeedbackMessage("You're already on the Curexal early access list. We'll keep you updated on progress.");
       toast.info("You're already registered on our priority waitlist!");
+      window.dispatchEvent(new CustomEvent("waitlist-updated"));
     } else if (result.status === "VALIDATION_ERROR") {
       toast.error(result.message);
     } else {
@@ -179,11 +175,6 @@ export function WaitlistPage() {
         
         {/* Premium Page Header & Co-Design Positioning */}
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/60 text-[#0F766E] dark:text-teal-300 text-xs font-extrabold uppercase tracking-wider shadow-xs">
-            <Sparkles className="w-4 h-4 text-[#0F766E] dark:text-teal-400" />
-            <span>EARLY ACCESS RESEARCH &amp; CO-DESIGN</span>
-          </div>
-
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
             Help Us Build The Healthcare Operating Network.
           </h1>
@@ -497,15 +488,15 @@ export function WaitlistPage() {
 
                 {/* ── STEP 3: DEEP COORDINATION DISCOVERY QUESTIONS ── */}
                 {step === 3 && (
-                  <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="space-y-5 animate-in fade-in duration-200">
                     {personaCategory === "Patient" && (
-                      <div className="space-y-3">
-                        <div className="space-y-0.5">
-                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                             Patient Care Friction Discovery
                           </h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Help us identify where your care journey breaks down.
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Help us identify where your care journey breaks down between doctors and labs.
                           </p>
                         </div>
 
@@ -567,13 +558,13 @@ export function WaitlistPage() {
                     )}
 
                     {personaCategory === "Organization" && (
-                      <div className="space-y-3">
-                        <div className="space-y-0.5">
-                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                             Healthcare Provider Operations Discovery
                           </h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Help us identify where referrals or partner communications break down.
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Help us identify where external referrals, result dispatches, or partner communications break down.
                           </p>
                         </div>
 
@@ -666,12 +657,12 @@ export function WaitlistPage() {
                     )}
 
                     {personaCategory === "Supplier" && (
-                      <div className="space-y-3">
-                        <div className="space-y-0.5">
-                          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                             Supplier Order &amp; Settlement Coordination
                           </h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             Help us simplify B2B supply procurement and buyer fulfillment.
                           </p>
                         </div>
@@ -736,12 +727,12 @@ export function WaitlistPage() {
 
                 {/* ── STEP 4: LAUNCH TIMELINE & URGENCY ── */}
                 {step === 4 && (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-0.5">
-                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                         How soon do you need Curexal?
                       </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         Help us prioritize onboarding slots based on operational urgency.
                       </p>
                     </div>
@@ -754,7 +745,7 @@ export function WaitlistPage() {
                             key={t}
                             type="button"
                             onClick={() => setTimeline(t)}
-                            className={`p-3 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${
+                            className={`p-4 rounded-2xl border text-xs font-extrabold text-center transition-all cursor-pointer ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
                                 : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
@@ -790,12 +781,12 @@ export function WaitlistPage() {
 
                 {/* ── STEP 5: CO-DESIGN PARTICIPATION PREFERENCE & FINAL SUBMIT ── */}
                 {step === 5 && (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-0.5">
-                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                  <div className="space-y-5 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                         How would you like to participate with our product team?
                       </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         Choose your co-design involvement preference.
                       </p>
                     </div>
@@ -814,7 +805,7 @@ export function WaitlistPage() {
                             key={opt.id}
                             type="button"
                             onClick={() => setShapingPreference(opt.id)}
-                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
+                            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                               active
                                 ? "bg-teal-50 dark:bg-teal-950 text-[#0F766E] dark:text-teal-300 border-[#0F766E] shadow-sm"
                                 : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
@@ -837,7 +828,7 @@ export function WaitlistPage() {
                         type="button"
                         variant="outline"
                         onClick={() => setStep(4)}
-                        className="px-4 h-10 text-xs font-bold rounded-lg flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="px-5 h-12 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border-slate-200 dark:border-slate-800 cursor-pointer"
                       >
                         <ArrowLeft className="w-4 h-4" />
                         <span>Back</span>
@@ -845,7 +836,7 @@ export function WaitlistPage() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-10 text-xs rounded-lg shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
+                        className="flex-1 bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold h-12 text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
                       >
                         <Sparkles className="w-4 h-4" />
                         <span>{loading ? "Submitting Co-Design Input..." : "Complete Co-Design Registration"}</span>
