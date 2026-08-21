@@ -97,11 +97,19 @@ export default function OrganizationBranchesPage() {
     }
   };
 
-  const filteredBranches = (branches || []).filter((b) =>
-    b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.facilityType.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBranches = (branches || []).filter((b: any) => {
+    const branchName = (b.name || "").toLowerCase();
+    const branchCode = (b.code || "").toLowerCase();
+    const branchFacilityType = (b.facilityType || b.facility_type || "").toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+
+    if (!query) return true;
+    return (
+      branchName.includes(query) ||
+      branchCode.includes(query) ||
+      branchFacilityType.includes(query)
+    );
+  });
 
   return (
     <div className="space-y-8 animate-fade-in">

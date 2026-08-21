@@ -62,11 +62,16 @@ export default function OrganizationCatalogsPage() {
     }
   };
 
-  const filteredItems = catalogItems.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredItems = catalogItems.filter((item: any) => {
+    const itemName = (item.name || "").toLowerCase();
+    const itemCode = (item.code || "").toLowerCase();
+    const itemCategory = (item.category || "").toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+
+    const matchesSearch = !query ||
+      itemName.includes(query) ||
+      itemCode.includes(query) ||
+      itemCategory.includes(query);
     const matchesCategory = selectedCategory === "ALL" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });

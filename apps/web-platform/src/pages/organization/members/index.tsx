@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap } from "@/api/hooks/use-bootstrap";
 import { useOrgMembers, useInviteMember, useOrgBranches, useOrgRoles } from "@/api/hooks/use-organization";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,17 +16,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { TableSkeleton } from "@/components/loading";
 import { toast } from "sonner";
 import {
   Users,
   UserPlus,
   Search,
-  Mail,
   Building2,
-  Shield,
-  CheckCircle2,
   Sparkles,
-  MoreHorizontal,
 } from "lucide-react";
 
 export default function OrganizationMembersPage() {
@@ -79,11 +76,15 @@ export default function OrganizationMembersPage() {
     }
   };
 
-  const filteredMembers = (members || []).filter((m) =>
-    m.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = (members || []).filter((m: any) => {
+    const name = (m.fullName || m.full_name || m.name || "").toLowerCase();
+    const memberEmail = (m.email || "").toLowerCase();
+    const memberRole = (m.roleTitle || m.role_title || m.role || "").toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+
+    if (!query) return true;
+    return name.includes(query) || memberEmail.includes(query) || memberRole.includes(query);
+  });
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -165,6 +166,9 @@ export default function OrganizationMembersPage() {
                     <option value="pharmacist">Pharmacist</option>
                     <option value="nurse">Nurse / Triage Officer</option>
                     <option value="cashier">Billing / Cashier Officer</option>
+                    {roles?.map((r) => (
+                      <option key={r.id} value={r.code}>{r.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -241,8 +245,8 @@ export default function OrganizationMembersPage() {
       <Card className="border-border shadow-sm overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="py-16 text-center text-xs text-muted-foreground animate-pulse">
-              Loading staff roster...
+            <div className="p-6">
+              <TableSkeleton rows={5} columns={5} showHeader={false} />
             </div>
           ) : filteredMembers.length > 0 ? (
             <div className="overflow-x-auto">
@@ -257,41 +261,55 @@ export default function OrganizationMembersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredMembers.map((m) => (
-                    <tr key={m.id} className="hover:bg-secondary/20 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
-                            {m.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  {filteredMembers.map((m: any) => {
+                    const memberName = m.fullName || m.full_name || m.name || m.email || "Staff Member";
+                    const memberInitials = memberName
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n: string) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase() || "ST";
+                    const roleDisplay = (m.roleTitle || m.role_title || m.role || "Member").replace(/_/g, " ");
+                    const branchDisplay = m.tenantName || m.tenant_name || "Global HQ (All Branches)";
+                    const joinedDate = m.joinedAt || m.joined_at || m.createdAt || m.created_at;
+
+                    return (
+                      <tr key={m.id || m.userId || m.email} className="hover:bg-secondary/20 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
+                              {memberInitials}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{memberName}</p>
+                              <p className="text-[11px] text-muted-foreground font-mono">{m.email || ""}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{m.fullName}</p>
-                            <p className="text-[11px] text-muted-foreground font-mono">{m.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge variant="outline" className="text-[10px] font-medium border-border capitalize">
-                          {m.roleTitle || m.role.replace("_", " ")}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Building2 className="w-3.5 h-3.5" />
-                          {m.tenantName || "Global HQ (All Branches)"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Active
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
-                        {new Date(m.joinedAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant="outline" className="text-[10px] font-medium border-border capitalize">
+                            {roleDisplay}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Building2 className="w-3.5 h-3.5" />
+                            {branchDisplay}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {m.isActive !== false ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                          {joinedDate ? new Date(joinedDate).toLocaleDateString() : "Active"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

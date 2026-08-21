@@ -31,11 +31,16 @@ export default function OrganizationAuditPage() {
 
   const logs = (auditLogs && auditLogs.length > 0) ? auditLogs : defaultLogs;
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.actorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (log.tenantName && log.tenantName.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredLogs = logs.filter((log: any) => {
+    const action = (log.action || "").toLowerCase();
+    const actorName = (log.actorName || log.actor_name || "").toLowerCase();
+    const tenantName = (log.tenantName || log.tenant_name || "").toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+
+    const matchesSearch = !query ||
+      action.includes(query) ||
+      actorName.includes(query) ||
+      tenantName.includes(query);
     const matchesAction = selectedAction === "ALL" || log.action === selectedAction;
     return matchesSearch && matchesAction;
   });
