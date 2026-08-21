@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/auth/switch-context"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "context": "workspace",
+      "tenantId": "{{tenant_id}}"
+    }
+order: 4000

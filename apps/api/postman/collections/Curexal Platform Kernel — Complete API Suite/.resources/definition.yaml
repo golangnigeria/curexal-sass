@@ -1,0 +1,31 @@
+$kind: collection
+description: Postman Collection v2.1 covering all registered Echo routes across the Curexal Platform Kernel without omission. Grouped into 16 functional domains with automated test scripts and variable chaining.
+variables:
+  base_url: http://localhost:8080
+  auth_token: ""
+  csrf_token: ""
+  patient_token: ""
+  org_id: ""
+  tenant_id: ""
+  branch_id: ""
+  member_id: ""
+  user_id: ""
+  patient_id: ""
+  visit_id: ""
+  order_id: ""
+  invitation_id: ""
+  invitation_token: ""
+  catalog_id: ""
+  api_key_id: ""
+  api_key_secret: ""
+  webhook_id: ""
+  notification_id: ""
+  document_id: ""
+  demo_request_id: ""
+  facility_type_id: ""
+  provider: paystack
+  capability: clinical.basic
+  platform_admin_email: superadmin@curexal.internal
+  platform_admin_password: SuperAdminPassword123!
+  setup_token: ""
+  owner_email: ""

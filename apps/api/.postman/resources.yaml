@@ -1,0 +1,17 @@
+workspace:
+  id: 2651d7e9-fc07-49ed-8f75-b0619c31e7ad
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/Boilerplate REST API - Documentation: 3900ca7f-e363-4bd3-b580-493d56469de2
+    ../postman/collections/Curexal Backend API - Comprehensive Suite: b9699eae-47d4-40c4-bb7e-69922bfbb2e6
+    ../postman/collections/Curexal Platform Kernel — Complete API Suite: bda6cd7e-7683-4c42-bd32-21e1828c40fb
+
+localResources:
+  specs:
+    - ../C:/Users/HomePC/Desktop/program/fullstack_Curexal/backend/static/openapi.json
+resourceNameMappings:
+  specs:
+    - ../static/openapi.json: openapi.json

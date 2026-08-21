@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/authorization/enforce"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "subject": "usr_7767f554",
+      "domain": "tenant_everight-ikeja",
+      "object": "lims:results",
+      "action": "authorize"
+    }
+order: 8000

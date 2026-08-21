@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/auth/verify-email-change"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "code": "8N3PWY"
+    }
+order: 13000

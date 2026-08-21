@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/demo-requests"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "laboratoryName": "Everight Diagnostics",
+      "contactName": "Dr. Adewale Olumide",
+      "email": "info@everight.com",
+      "phone": "+2348012345678",
+      "dailyVolume": "100-200"
+    }
+order: 4000

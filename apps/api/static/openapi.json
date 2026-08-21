@@ -1,0 +1,2203 @@
+{
+  "openapi": "3.0.2",
+  "paths": {
+    "/status": {
+      "get": {
+        "description": "Get health status",
+        "summary": "Get health",
+        "tags": [
+          "Health"
+        ],
+        "parameters": [],
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "unhealthy"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string"
+                            },
+                            "response_time": {
+                              "type": "string"
+                            },
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "response_time"
+                          ]
+                        },
+                        "redis": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string"
+                            },
+                            "response_time": {
+                              "type": "string"
+                            },
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "response_time"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "database"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "environment",
+                    "checks"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/active": {
+      "get": {
+        "summary": "Get currently active organization details",
+        "tags": [
+          "Tenant"
+        ],
+        "parameters": [],
+        "operationId": "getActiveTenant",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "slug": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "logoUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "branding": {
+                      "type": "object",
+                      "properties": {
+                        "primaryColor": {
+                          "type": "string"
+                        },
+                        "secondaryColor": {
+                          "type": "string"
+                        },
+                        "fontFamily": {
+                          "type": "string"
+                        },
+                        "orgType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "primaryColor",
+                        "secondaryColor",
+                        "fontFamily"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "branding"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/{id}": {
+      "get": {
+        "summary": "Get organization details by ID",
+        "tags": [
+          "Tenant"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "operationId": "getTenant",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "slug": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "logoUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "branding": {
+                      "type": "object",
+                      "properties": {
+                        "primaryColor": {
+                          "type": "string"
+                        },
+                        "secondaryColor": {
+                          "type": "string"
+                        },
+                        "fontFamily": {
+                          "type": "string"
+                        },
+                        "orgType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "primaryColor",
+                        "secondaryColor",
+                        "fontFamily"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "branding"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant": {
+      "post": {
+        "summary": "Create a new organization workspace",
+        "tags": [
+          "Tenant"
+        ],
+        "parameters": [],
+        "operationId": "createTenant",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "logoUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true
+                  },
+                  "themeBranding": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "slug": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "logoUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "branding": {
+                      "type": "object",
+                      "properties": {
+                        "primaryColor": {
+                          "type": "string"
+                        },
+                        "secondaryColor": {
+                          "type": "string"
+                        },
+                        "fontFamily": {
+                          "type": "string"
+                        },
+                        "orgType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "primaryColor",
+                        "secondaryColor",
+                        "fontFamily"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "branding"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/organization": {
+      "put": {
+        "summary": "Update organization name settings",
+        "tags": [
+          "Tenant"
+        ],
+        "parameters": [],
+        "operationId": "updateOrganization",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/capabilities": {
+      "get": {
+        "summary": "Get organization plan limits and usages",
+        "tags": [
+          "Tenant"
+        ],
+        "parameters": [],
+        "operationId": "getCapabilities",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "plan": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "features": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      }
+                    },
+                    "limits": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "usage": {
+                      "type": "object",
+                      "properties": {
+                        "members": {
+                          "type": "number"
+                        },
+                        "patients": {
+                          "type": "number"
+                        },
+                        "storage_mb": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "members",
+                        "patients",
+                        "storage_mb"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "plan",
+                    "status",
+                    "features",
+                    "limits",
+                    "usage"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Get currently authenticated user details, active role and permissions",
+        "tags": [
+          "User"
+        ],
+        "parameters": [],
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "middleName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "emailVerified": {
+                      "type": "boolean"
+                    },
+                    "image": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "isPlatformAdmin": {
+                      "type": "boolean"
+                    },
+                    "activeTenantId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tenantName": {
+                      "type": "string"
+                    },
+                    "tenantSlug": {
+                      "type": "string"
+                    },
+                    "membershipId": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "availableTenants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "emailVerified",
+                    "isPlatformAdmin",
+                    "role",
+                    "permissions"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/profile": {
+      "get": {
+        "summary": "Get currently authenticated user detailed profile",
+        "tags": [
+          "User"
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile details"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update currently authenticated user detailed profile",
+        "tags": [
+          "User"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "middleName": { "type": "string" },
+                  "phoneNumber": { "type": "string" },
+                  "bio": { "type": "string" },
+                  "avatarUrl": { "type": "string" },
+                  "gender": { "type": "string" },
+                  "dateOfBirth": { "type": "string" },
+                  "nationality": { "type": "string" },
+                  "timezone": { "type": "string" },
+                  "languageCode": { "type": "string" },
+                  "emergencyContact": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user profile details"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "Get all users in the tenant workspace",
+        "tags": [
+          "User"
+        ],
+        "parameters": [],
+        "operationId": "getUsers",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "tenantId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "tenantName": {
+                        "type": "string"
+                      },
+                      "membershipId": {
+                        "type": "string"
+                      },
+                      "membershipRole": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "email",
+                      "role"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/sign-in": {
+      "post": {
+        "summary": "Sign in with email and password",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "signIn",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "firstName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "lastName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "middleName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "emailVerified": {
+                          "type": "boolean"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isPlatformAdmin": {
+                          "type": "boolean"
+                        },
+                        "activeTenantId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tenantName": {
+                          "type": "string"
+                        },
+                        "tenantSlug": {
+                          "type": "string"
+                        },
+                        "membershipId": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "availableTenants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "slug": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "slug"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "emailVerified",
+                        "isPlatformAdmin",
+                        "role",
+                        "permissions"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "requiresOTP": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        }
+                      },
+                      "required": [
+                        "requiresOTP",
+                        "email"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "summary": "Verify login OTP and establish session",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "verifyOtp",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6
+                  }
+                },
+                "required": [
+                  "email",
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "emailVerified": {
+                      "type": "boolean"
+                    },
+                    "image": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "isPlatformAdmin": {
+                      "type": "boolean"
+                    },
+                    "activeTenantId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tenantName": {
+                      "type": "string"
+                    },
+                    "tenantSlug": {
+                      "type": "string"
+                    },
+                    "membershipId": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "availableTenants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "emailVerified",
+                    "isPlatformAdmin",
+                    "role",
+                    "permissions"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "signUp",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "orgName": {
+                    "type": "string"
+                  },
+                  "orgType": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/sign-out": {
+      "post": {
+        "summary": "Sign out current user and clear session",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "signOut",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "readOnly": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "summary": "Verify user email using token",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "verifyEmail",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/request-password": {
+      "post": {
+        "summary": "Request password delivered directly to verified email",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "requestPassword",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "summary": "Send a password request to verified email",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "summary": "Reset user password",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "resetPassword",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "token",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/csrf": {
+      "get": {
+        "summary": "Fetch CSRF token in memory",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "csrfToken",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "csrfToken"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/config": {
+      "get": {
+        "summary": "Get platform general configuration settings",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "getPlatformConfig",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Platform general configuration settings retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update platform general configuration settings",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "updatePlatformConfigPut",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "platformName": { "type": "string" },
+                  "platformLogoUrl": { "type": "string" },
+                  "platformFaviconUrl": { "type": "string" },
+                  "platformDescription": { "type": "string" },
+                  "supportEmail": { "type": "string" },
+                  "supportPhone": { "type": "string" },
+                  "supportWebsite": { "type": "string" },
+                  "defaultCountry": { "type": "string" },
+                  "defaultCurrency": { "type": "string" },
+                  "supportedCountries": { "type": "array", "items": { "type": "string" } },
+                  "supportedCurrencies": { "type": "array", "items": { "type": "string" } },
+                  "defaultTimezone": { "type": "string" },
+                  "defaultLocale": { "type": "string" },
+                  "dateFormat": { "type": "string" },
+                  "timeFormat": { "type": "string" },
+                  "numberFormat": { "type": "string" },
+                  "measurementUnits": { "type": "string" },
+                  "maintenanceMode": { "type": "boolean" },
+                  "announcementBanner": { "type": "string" },
+                  "status": { "type": "string" },
+                  "version": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Platform general configuration updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          },
+          "409": {
+            "description": "Optimistic Concurrency Conflict"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Partially update platform general configuration settings",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "updatePlatformConfigPatch",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "platformName": { "type": "string" },
+                  "platformLogoUrl": { "type": "string" },
+                  "platformFaviconUrl": { "type": "string" },
+                  "platformDescription": { "type": "string" },
+                  "supportEmail": { "type": "string" },
+                  "supportPhone": { "type": "string" },
+                  "supportWebsite": { "type": "string" },
+                  "defaultCountry": { "type": "string" },
+                  "defaultCurrency": { "type": "string" },
+                  "supportedCountries": { "type": "array", "items": { "type": "string" } },
+                  "supportedCurrencies": { "type": "array", "items": { "type": "string" } },
+                  "defaultTimezone": { "type": "string" },
+                  "defaultLocale": { "type": "string" },
+                  "dateFormat": { "type": "string" },
+                  "timeFormat": { "type": "string" },
+                  "numberFormat": { "type": "string" },
+                  "measurementUnits": { "type": "string" },
+                  "maintenanceMode": { "type": "boolean" },
+                  "announcementBanner": { "type": "string" },
+                  "status": { "type": "string" },
+                  "version": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Platform general configuration partially updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          },
+          "409": {
+            "description": "Optimistic Concurrency Conflict"
+          }
+        }
+      }
+    },
+    "/platform/security-policy": {
+      "get": {
+        "summary": "Get platform identity security policy",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "getPlatformSecurityPolicy",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Security policy retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update platform identity security policy",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "updatePlatformSecurityPolicyPut",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "minPasswordLength": { "type": "integer" },
+                  "passwordRequireUppercase": { "type": "boolean" },
+                  "passwordRequireNumber": { "type": "boolean" },
+                  "passwordRequireSymbol": { "type": "boolean" },
+                  "passwordExpirationDays": { "type": "integer" },
+                  "emailVerificationRequired": { "type": "boolean" },
+                  "mfaPolicy": { "type": "string" },
+                  "maxFailedLoginAttempts": { "type": "integer" },
+                  "accountLockoutDurationMinutes": { "type": "integer" },
+                  "sessionMaxDurationHours": { "type": "integer" },
+                  "refreshTokenDurationDays": { "type": "integer" },
+                  "maxActiveSessions": { "type": "integer" },
+                  "version": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Security policy updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          },
+          "409": {
+            "description": "Optimistic Concurrency Conflict"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Partially update platform identity security policy",
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "updatePlatformSecurityPolicyPatch",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "minPasswordLength": { "type": "integer" },
+                  "passwordRequireUppercase": { "type": "boolean" },
+                  "passwordRequireNumber": { "type": "boolean" },
+                  "passwordRequireSymbol": { "type": "boolean" },
+                  "passwordExpirationDays": { "type": "integer" },
+                  "emailVerificationRequired": { "type": "boolean" },
+                  "mfaPolicy": { "type": "string" },
+                  "maxFailedLoginAttempts": { "type": "integer" },
+                  "accountLockoutDurationMinutes": { "type": "integer" },
+                  "sessionMaxDurationHours": { "type": "integer" },
+                  "refreshTokenDurationDays": { "type": "integer" },
+                  "maxActiveSessions": { "type": "integer" },
+                  "version": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Security policy partially updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform Admin required"
+          },
+          "409": {
+            "description": "Optimistic Concurrency Conflict"
+          }
+        }
+      }
+    },
+    "/auth/set-password": {
+      "post": {
+        "summary": "Set initial password for invited owners and staff",
+        "description": "Completes initial password setup for invited organization owners and staff via a 6-character verification code or token. No authentication required.",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "operationId": "setPassword",
+        "requestBody": {
+          "description": "Setup credentials with verification code or token",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "6-character uppercase alphanumeric verification code"
+                  },
+                  "token": {
+                    "type": "string",
+                    "description": "Single-use cryptographic setup token (fallback)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "New password (minimum 8 characters)"
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password set successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired token, or password too short"
+          }
+        }
+      }
+    },
+    "/organizations": {
+      "post": {
+        "summary": "Create a new healthcare organization (ACID transaction)",
+        "description": "Creates an organization with full profile, subscription, owner identity, workspace, and membership in a single ACID transaction. A cryptographic setup token is generated and an invitation is dispatched to the owner.",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "createOrganization",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Organization details with optional owner",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "plan": {
+                    "type": "string",
+                    "enum": ["smart", "optimize", "pro", "enterprise"]
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "lga": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "registrationNumber": {
+                    "type": "string"
+                  },
+                  "licenseNumber": {
+                    "type": "string"
+                  },
+                  "taxId": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100
+                      }
+                    },
+                    "required": ["email"]
+                  },
+                  "ownerEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Alternative to owner.email (flat field)"
+                  },
+                  "ownerName": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Alternative to owner.name (flat field)"
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "organization": {
+                      "type": "object",
+                      "description": "Full organization record"
+                    },
+                    "invitation": {
+                      "type": "object",
+                      "properties": {
+                        "sent": {
+                          "type": "boolean"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or duplicate slug"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/organizations/{id}": {
+      "get": {
+        "summary": "Get organization details",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "getOrganization",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update organization details",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "updateOrganization",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "plan": {
+                    "type": "string",
+                    "enum": ["smart", "optimize", "pro", "enterprise"]
+                  },
+                  "customDomain": {
+                    "type": "string"
+                  },
+                  "settings": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/organizations/{id}/transfer-ownership": {
+      "post": {
+        "summary": "Transfer organization ownership to a new identity",
+        "description": "Transfers ownership to a new user. If the new owner does not exist, their identity is provisioned and a setup token is generated. The previous owner is demoted to admin.",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "transferOrganizationOwnership",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newOwnerEmail": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "newOwnerName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "newOwnerEmail",
+                  "newOwnerName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ownership transferred successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/organizations/{id}/settings": {
+      "get": {
+        "summary": "Get organization settings",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "getOrganizationSettings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization settings"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update organization settings",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "updateOrganizationSettings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "logoUrl": {
+                    "type": "string"
+                  },
+                  "themeBranding": {
+                    "type": "string",
+                    "description": "JSON string of branding config"
+                  },
+                  "customDomain": {
+                    "type": "string"
+                  },
+                  "supportEmail": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "supportPhone": {
+                    "type": "string"
+                  },
+                  "cacNumber": {
+                    "type": "string"
+                  },
+                  "tinNumber": {
+                    "type": "string"
+                  },
+                  "taxNumber": {
+                    "type": "string"
+                  },
+                  "businessType": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "summary": "Resend 6-character verification code",
+        "description": "Generates a fresh 6-character verification code and dispatches it to the user's email.",
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "resendVerification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": ["email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification code dispatched successfully"
+          },
+          "400": {
+            "description": "Email is required"
+          }
+        }
+      }
+    },
+    "/organizations/{id}/resend-invite": {
+      "post": {
+        "summary": "Resend organization owner invitation verification code",
+        "description": "Platform admin trigger to resend the 6-character setup verification code to the active organization owner.",
+        "tags": [
+          "Organizations"
+        ],
+        "operationId": "resendOwnerInvite",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner invitation verification code resent"
+          },
+          "404": {
+            "description": "Organization or owner not found"
+          }
+        }
+      }
+    }
+  },
+  "info": {
+    "version": "1.0.0",
+    "title": "Boilerplate REST API - Documentation",
+    "description": "Boilerplate REST API - Documentation"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api",
+      "description": "Local Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "x-service-token": {
+        "type": "apiKey",
+        "name": "x-service-token",
+        "in": "header"
+      },
+      "X-Tenant-ID": {
+        "type": "apiKey",
+        "name": "X-Tenant-ID",
+        "in": "header",
+        "description": "Server-injected Tenant ID (used for internal downstream service routing)"
+      }
+    }
+  }
+}

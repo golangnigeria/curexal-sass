@@ -1,0 +1,5 @@
+$kind: http-request
+description: Aliased health probe under /api/v1.
+url: "{{base_url}}/api/v1/status"
+method: GET
+order: 2000

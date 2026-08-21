@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/demo-requests/{{demo_request_id}}"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "status": "scheduled",
+      "notes": "Demo scheduled for Monday 10am"
+    }
+order: 6000

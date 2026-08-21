@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/users/me/profile"
+method: PATCH
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "firstName": "Prince",
+      "lastName": "Dimkpa",
+      "middleName": "Kinikanwo",
+      "phoneNumber": "+2348030001122",
+      "emergencyContactName": "Blessing Dimkpa",
+      "emergencyContactPhone": "+2348030003344"
+    }
+order: 3000

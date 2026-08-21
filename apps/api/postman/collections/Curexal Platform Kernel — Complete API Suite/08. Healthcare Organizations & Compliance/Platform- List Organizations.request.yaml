@@ -1,0 +1,7 @@
+$kind: http-request
+name: "Platform: List Organizations"
+url: "{{base_url}}/api/v1/platform/organizations"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+order: 14000

@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/auth/sign-up"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Chinedu Eze",
+      "email": "chinedu.eze@example.com",
+      "password": "PatientSecurePassword123!",
+      "phone": "+2348012345678"
+    }
+order: 2000

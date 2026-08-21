@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/notifications/configs"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "channel": "EMAIL",
+      "provider": "SMTP",
+      "senderEmail": "noreply@everight.com",
+      "senderName": "Everight Diagnostics",
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "noreply@everight.com",
+      "password": "app-password-here",
+      "isActive": true
+    }
+order: 4000

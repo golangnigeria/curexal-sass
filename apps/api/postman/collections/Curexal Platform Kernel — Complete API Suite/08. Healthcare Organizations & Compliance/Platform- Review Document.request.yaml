@@ -1,0 +1,15 @@
+$kind: http-request
+name: "Platform: Review Document"
+url: "{{base_url}}/api/v1/platform/documents/{{document_id}}/review"
+method: PATCH
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "status": "approved"
+    }
+order: 16000

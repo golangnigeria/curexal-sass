@@ -1,0 +1,49 @@
+# Environment secrets
+.env
+.env.local
+.env.*.local
+*.local
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts & binaries
+dist/
+dist-ssr/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+build/
+
+# Go test / coverage binaries
+*.test
+*.out
+*.prof
+
+# Local storage (only ignore local uploaded docs, keep .gitkeep)
+storage/documents/*
+!storage/documents/.gitkeep
+apps/api/storage/documents/*
+!apps/api/storage/documents/.gitkeep
+
+# IDE & OS files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/settings/branch/reset"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  X-Tenant-ID: "{{tenant_id}}"
+order: 11000

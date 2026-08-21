@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/catalogs/laboratory/search?q=blood"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+queryParams:
+  q: blood
+order: 3000

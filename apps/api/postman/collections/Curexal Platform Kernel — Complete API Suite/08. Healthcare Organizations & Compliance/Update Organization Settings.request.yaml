@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organizations/{{org_id}}/settings"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "supportEmail": "support@everight.com",
+      "timezone": "Africa/Lagos",
+      "currency": "NGN"
+    }
+order: 6000

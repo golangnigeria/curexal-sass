@@ -1,0 +1,887 @@
+openapi: 3.1.0
+info:
+  title: Curexal Enterprise Healthcare Operating System API
+  description: |
+    Curexal is a cloud-native, multi-tenant Enterprise Healthcare Operating System for diagnostic laboratories, imaging centers, clinics, and healthcare networks.
+
+    ### Authentication & Context
+    * Most endpoints require JWT Bearer Token authentication passed via `Authorization: Bearer <access_token>` or HTTP-only cookies.
+    * Tenant-scoped endpoints require tenant resolution via custom domains, subdomains, or the `X-Tenant-Slug` header.
+
+    ### Error Handling
+    All errors follow the **RFC 7807 Problem Details** specification (`application/problem+json`).
+  version: 0.4.0
+  contact:
+    name: Curexal Engineering Team
+    email: api@curexal.com
+    url: https://curexal.com
+  license:
+    name: Proprietary Enterprise License
+    url: https://curexal.com/license
+
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+  - url: https://api.staging.curexal.com
+    description: Staging Environment
+  - url: https://api.curexal.com
+    description: Production Environment
+
+tags:
+  - name: Authentication
+    description: User registration, login, token rotation, password reset, and email verification.
+  - name: Workspaces
+    description: Multi-tenant workspace registration, dynamic database provisioning, and setup wizard.
+  - name: Context
+    description: Dynamic tenant workspace context, branding profiles, and active user permissions.
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register Patient / User Account
+      description: Registers a new user or patient account on the platform directory.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created successfully. Email verification link sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '409':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '500':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate User
+      description: Validates email and password, creates a database session, and sets access and refresh tokens as HTTP-only cookies. Does not return tokens in the JSON response payload.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Access and refresh tokens set as HTTP-only cookies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '403':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh Access Token
+      description: Rotates the refresh token and issues a new 15-minute JWT access token. Prevents token replay attacks.
+      operationId: refreshToken
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token pair rotated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout User Session
+      description: Revokes the active refresh token and invalidates the active database session.
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Session revoked successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Logged out successfully.
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify Account Email
+      description: Validates email verification token and marks user account as verified.
+      operationId: verifyEmail
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Email verified successfully.
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/password-reset/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request Password Reset
+      description: Dispatches a password reset link to the specified email address if the account exists.
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: sarah.jenkins@everight.com
+      responses:
+        '200':
+          description: Password reset request accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset link sent if account exists.
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/password-reset/confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm Password Reset
+      description: Resets the account password using a valid reset token.
+      operationId: confirmPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '200':
+          description: Password reset completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password updated successfully.
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get Authenticated User Profile
+      description: Returns the user profile details, active session information, and permissions.
+      operationId: getAuthenticatedUser
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Current user profile details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/workspaces:
+    post:
+      tags:
+        - Workspaces
+      summary: Create Organization Workspace
+      description: Registers a new organization, creates the primary owner account, and triggers asynchronous schema provisioning.
+      operationId: createWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
+      responses:
+        '202':
+          description: Workspace registration accepted. Provisioning started in background.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '409':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/workspaces/{id}/status:
+    get:
+      tags:
+        - Workspaces
+      summary: Get Workspace Provisioning Status
+      description: Retrieves the real-time, step-by-step database schema provisioning status for an organization.
+      operationId: getWorkspaceStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Organization UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Provisioning step status list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceStatusResponse'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/workspaces/setup:
+    post:
+      tags:
+        - Workspaces
+      summary: Finalize Workspace Setup Wizard
+      description: Submits choices from the onboarding setup wizard (facility type, head office details, active modules, initial staff invitations) and marks workspace as Ready.
+      operationId: setupWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupWorkspaceRequest'
+      responses:
+        '200':
+          description: Setup wizard completed. Workspace status marked as Ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Workspace setup completed. Workspace status marked as Ready.
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/workspace/bootstrap:
+    get:
+      tags:
+        - Context
+      summary: Get Full Workspace Bootstrap Context
+      description: Returns complete runtime application bootstrap payload including user, organization, branding, navigation, permissions, and feature flags in a single request.
+      operationId: getWorkspaceBootstrap
+      security:
+        - BearerAuth: []
+        - TenantHeader: []
+      responses:
+        '200':
+          description: Full workspace bootstrap payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceBootstrapResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /api/v1/workspace/navigation:
+    get:
+      tags:
+        - Context
+      summary: Fetch Dynamic Workspace Navigation
+      description: Returns sidebar menu groups, items, routes, and permission requirements directly from backend configuration.
+      operationId: getWorkspaceNavigation
+      security:
+        - BearerAuth: []
+        - TenantHeader: []
+      responses:
+        '200':
+          description: Dynamic menu structure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNavigationResponse'
+
+  /api/v1/workspace/context:
+    get:
+      tags:
+        - Context
+      summary: Fetch Tenant Workspace Context
+      description: Returns organization details, branding configuration, licensed modules, active branch, and granted permissions for the resolved tenant context.
+      operationId: getWorkspaceContext
+      security:
+        - BearerAuth: []
+        - TenantHeader: []
+      responses:
+        '200':
+          description: Current workspace context and configuration payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantContextResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '403':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Standard JWT Access Token passed in the Authorization header (`Bearer <token>`).
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Access token set automatically via HTTP-only cookie.
+    TenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Slug
+      description: Explicit tenant workspace slug parameter (e.g., `everight`).
+
+  responses:
+    ProblemDetailsResponse:
+      description: RFC 7807 Standard Error Response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+        - code
+      properties:
+        type:
+          type: string
+          example: https://curexal.com/errors/slug-taken
+        title:
+          type: string
+          example: Workspace Subdomain Taken
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: The selected workspace subdomain/slug is already in use.
+        instance:
+          type: string
+          example: /api/v1/workspaces
+        code:
+          type: string
+          example: slug_taken
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          example: Dr. Sarah Jenkins
+        email:
+          type: string
+          format: email
+          example: sarah.jenkins@everight.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecurePass123!
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+    RegisterResponse:
+      type: object
+      required:
+        - user_id
+        - email
+        - name
+        - requires_email_verification
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: 00000000-0000-0000-0000-000000000001
+        email:
+          type: string
+          format: email
+          example: owner@curexal.com
+        name:
+          type: string
+          example: Dr. Prince Dimkpa
+        requires_email_verification:
+          type: boolean
+          example: true
+
+    AuthResponse:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - is_verified
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 00000000-0000-0000-0000-000000000001
+        email:
+          type: string
+          format: email
+          example: sarah.jenkins@everight.com
+        name:
+          type: string
+          example: Dr. Sarah Jenkins
+        is_verified:
+          type: boolean
+          example: true
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    UserProfileResponse:
+      type: object
+      required:
+        - user
+        - permissions
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["lims:sample:collect", "lims:result:validate", "billing:invoice:create"]
+
+    PasswordResetConfirmRequest:
+      type: object
+      required:
+        - email
+        - token
+        - new_password
+      properties:
+        email:
+          type: string
+          format: email
+          example: sarah.jenkins@everight.com
+        token:
+          type: string
+          example: reset_token_abc123
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+          example: NewSuperPassword123!
+
+    CreateWorkspaceRequest:
+      type: object
+      required:
+        - org_name
+        - slug
+        - owner_name
+        - owner_email
+        - owner_password
+      properties:
+        org_name:
+          type: string
+          example: Everight Diagnostics
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+          example: everight
+        owner_name:
+          type: string
+          example: Dr. Sarah Jenkins
+        owner_email:
+          type: string
+          format: email
+          example: sarah.jenkins@everight.com
+        owner_password:
+          type: string
+          format: password
+          minLength: 8
+          example: OwnerPassword123!
+
+    WorkspaceResponse:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 419741b5-fb6d-4df0-9475-c28f54788fed
+        name:
+          type: string
+          example: Everight Diagnostics
+        slug:
+          type: string
+          example: everight
+        status:
+          type: string
+          example: Provisioning
+        created_at:
+          type: string
+          format: date-time
+
+    WorkspaceStatusResponse:
+      type: object
+      required:
+        - workspace_id
+        - steps
+        - current_step
+        - overall_status
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+        overall_status:
+          type: string
+          example: Provisioning
+        current_step:
+          type: integer
+          example: 3
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProvisioningStep'
+
+    ProvisioningStep:
+      type: object
+      required:
+        - index
+        - name
+        - status
+      properties:
+        index:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Creating Organization
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+          example: completed
+
+    SetupWorkspaceRequest:
+      type: object
+      required:
+        - workspace_id
+        - facility_type
+        - branch_name
+        - address
+        - working_hours
+        - timezone
+        - country
+        - modules
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+          example: 419741b5-fb6d-4df0-9475-c28f54788fed
+        facility_type:
+          type: string
+          example: laboratory
+        branch_name:
+          type: string
+          example: Main Diagnostic Hub
+        address:
+          type: string
+          example: 14 Victoria Island Road, Lagos
+        phone:
+          type: string
+          example: "+2348012345678"
+        working_hours:
+          type: string
+          example: "08:00 - 18:00"
+        timezone:
+          type: string
+          example: Africa/Lagos
+        country:
+          type: string
+          example: Nigeria
+        modules:
+          type: array
+          items:
+            type: string
+          example: ["laboratory", "billing", "crm"]
+        staff_invitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffInviteRequest'
+
+    StaffInviteRequest:
+      type: object
+      required:
+        - email
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: lab.tech@everight.com
+        role:
+          type: string
+          example: lab_manager
+
+    TenantContextResponse:
+      type: object
+      required:
+        - organization
+        - licensed_modules
+        - permissions
+      properties:
+        organization:
+          $ref: '#/components/schemas/WorkspaceResponse'
+        branding:
+          $ref: '#/components/schemas/OrganizationBranding'
+        licensed_modules:
+          type: array
+          items:
+            type: string
+          example: ["lis", "billing", "crm"]
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["lims:sample:collect", "lims:result:validate"]
+        current_branch:
+          $ref: '#/components/schemas/BranchInfo'
+
+    OrganizationBranding:
+      type: object
+      properties:
+        primary_color:
+          type: string
+          example: "#2563EB"
+        secondary_color:
+          type: string
+          example: "#10B981"
+        theme:
+          type: string
+          example: light
+        logo_url:
+          type: string
+          example: https://cdn.curexal.com/logos/everight.png
+
+    BranchInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Main Diagnostic Hub
+
+    WorkspaceNavigationResponse:
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/NavigationGroup'
+
+    NavigationGroup:
+      type: object
+      required:
+        - id
+        - title
+        - items
+      properties:
+        id:
+          type: string
+          example: core
+        title:
+          type: string
+          example: Operations
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NavigationItem'
+
+    NavigationItem:
+      type: object
+      required:
+        - id
+        - label
+        - icon
+        - route
+      properties:
+        id:
+          type: string
+          example: dashboard
+        label:
+          type: string
+          example: Dashboard
+        icon:
+          type: string
+          example: LayoutDashboard
+        route:
+          type: string
+          example: /dashboard
+        permission:
+          type: string
+          nullable: true
+          example: lims:sample:collect
+
+    WorkspaceBootstrapResponse:
+      type: object
+      required:
+        - user
+        - organization
+        - branding
+        - navigation
+        - licensed_modules
+        - permissions
+        - api_version
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        organization:
+          $ref: '#/components/schemas/WorkspaceResponse'
+        branding:
+          $ref: '#/components/schemas/OrganizationBranding'
+        navigation:
+          $ref: '#/components/schemas/WorkspaceNavigationResponse'
+        licensed_modules:
+          type: array
+          items:
+            type: string
+          example: ["laboratory", "billing", "crm"]
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["lims:sample:collect", "lims:result:validate"]
+        feature_flags:
+          type: object
+          additionalProperties:
+            type: boolean
+          example:
+            patient_self_registration: true
+        api_version:
+          type: string
+          example: 0.4.0

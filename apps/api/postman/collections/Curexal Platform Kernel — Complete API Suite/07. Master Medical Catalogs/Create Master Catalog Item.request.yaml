@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/catalogs/laboratory"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "code": "FBC-001",
+      "name": "Full Blood Count (FBC)",
+      "loincNum": "58410-2",
+      "category": "Hematology",
+      "specimenType": "Whole Blood (EDTA)",
+      "tatHours": 2,
+      "basePrice": 4500.00
+    }
+order: 4000

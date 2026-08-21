@@ -1,0 +1,17 @@
+$kind: http-request
+description: Transfers organization ownership to a new identity. If the new owner does not exist, their identity is provisioned and a setup token is generated. The previous owner is demoted to admin.
+url: "{{base_url}}/api/v1/organizations/{{org_id}}/transfer-ownership"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "newOwnerEmail": "new.owner@everight.com",
+      "newOwnerName": "Dr. Amaka Nwosu",
+      "notes": "Ownership transferred as part of acquisition"
+    }
+order: 19000

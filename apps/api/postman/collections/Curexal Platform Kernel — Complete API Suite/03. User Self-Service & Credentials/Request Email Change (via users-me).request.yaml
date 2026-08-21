@@ -1,0 +1,15 @@
+$kind: http-request
+name: Request Email Change (via users/me)
+url: "{{base_url}}/api/v1/users/me/request-email-change"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "newEmail": "doctor.new@everight.com"
+    }
+order: 11000

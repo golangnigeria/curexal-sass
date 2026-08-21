@@ -1,0 +1,91 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  CUREXAL_DB_DSN: '{{.CUREXAL_DB_DSN | default ""}}'
+
+tasks:
+  help:
+    desc: print this help message
+    cmds:
+    - task --list-all
+    silent: true
+
+  confirm:
+    desc: confirmation prompt
+    cmds:
+      - cmd: |
+          echo -n 'Are you sure? [y/N] ' && read ans && [ ${ans:-N} = y ]
+        platforms: [linux, darwin]
+      - cmd: powershell -Command "\$ans = Read-Host 'Are you sure? [y/N]'; if (\$ans -ne 'y') { exit 1 }"
+        platforms: [windows]
+    silent: true
+    internal: true
+
+  run:
+    desc: run the cmd/CUREXAL application
+    cmds:
+    - go run ./cmd/CUREXAL
+
+  migrations:new:
+    desc: create a new database migration
+    vars:
+      NAME: '{{.name | default ""}}'
+    cmds:
+    - |
+      if [ -z "{{.NAME}}" ]; then
+        echo "Error: name parameter is required"
+        echo "Usage: task migrations:new name=migration_name"
+        exit 1
+      fi
+    - echo 'Creating migration file for {{.NAME}}...'
+    - go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./database/platform/migrations create {{.NAME}} sql
+
+  migrations:up:
+    desc: apply all up database migrations
+    deps: [ confirm ]
+    cmds:
+    - echo 'Running up migrations...'
+    - go run ./cmd/migrate
+
+  migrations:up:force:
+    desc: apply all up database migrations without confirmation
+    cmds:
+    - echo 'Running up migrations (force)...'
+    - go run ./cmd/migrate
+
+  db:reset:
+    desc: reset the database (drop and re-apply all migrations)
+    deps: [ confirm ]
+    cmds:
+    - echo 'Resetting database...'
+    - go run ./cmd/clean_db
+    - go run ./cmd/seed_admin
+
+  db:reset:force:
+    desc: reset the database without confirmation
+    cmds:
+    - echo 'Resetting database (force)...'
+    - go run ./cmd/clean_db
+    - go run ./cmd/seed_admin
+
+  tidy:
+    desc: format all .go files, and tidy and vendor module dependencies
+    cmds:
+    - echo 'Formatting .go files...'
+    - go fmt ./...
+    - echo 'Tidying module dependencies...'
+    - go mod tidy
+    - echo 'Verifying dependencies...'
+    - go mod verify
+
+  infra:up:
+    desc: spin up postgres and redis containers
+    cmds:
+      - docker compose -f ../../docker-compose.yml up -d
+
+  infra:down:
+    desc: shut down postgres and redis containers
+    cmds:
+      - docker compose -f ../../docker-compose.yml down

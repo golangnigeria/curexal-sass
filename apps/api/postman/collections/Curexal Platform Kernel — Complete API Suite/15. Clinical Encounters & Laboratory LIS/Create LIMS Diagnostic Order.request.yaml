@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/lims/orders"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  X-Tenant-ID: "{{tenant_id}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "patientId": "{{patient_id}}",
+      "tests": ["FBC", "MP"]
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var json = pm.response.json();
+      if (json.data && json.data.id) { pm.environment.set('order_id', json.data.id); }
+    language: text/javascript
+order: 2000

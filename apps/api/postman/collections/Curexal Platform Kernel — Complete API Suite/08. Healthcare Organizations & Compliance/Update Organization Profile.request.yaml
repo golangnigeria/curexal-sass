@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/profile"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Everight Diagnostics",
+      "registrationNumber": "RC-987654",
+      "email": "info@everight.com",
+      "phone": "+2348012345678",
+      "address": "15 Allen Avenue",
+      "city": "Ikeja",
+      "state": "Lagos",
+      "country": "Nigeria",
+      "version": 1
+    }
+order: 12000

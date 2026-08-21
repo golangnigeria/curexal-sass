@@ -1,0 +1,106 @@
+version: v1.0.0
+
+dsn: memory
+
+serve:
+  public:
+    base_url: http://127.0.0.1:4433/
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+        - http://localhost:5001
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Cookie
+        - Content-Type
+      allow_credentials: true
+  admin:
+    base_url: http://127.0.0.1:4434/
+
+selfservice:
+  default_browser_return_url: http://localhost:3000/
+  allowed_return_urls:
+    - http://localhost:3000/
+    - http://localhost:5001/
+
+  methods:
+    password:
+      enabled: true
+      config:
+        haveibeenpwned_host: api.pwnedpasswords.com
+        max_breached_passwords: 0
+
+  flows:
+    error:
+      ui_url: http://localhost:3000/error
+
+    settings:
+      ui_url: http://localhost:3000/settings
+      privileged_session_max_age: 15m
+
+    recovery:
+      enabled: true
+      ui_url: http://localhost:3000/recovery
+      use: code
+
+    verification:
+      enabled: true
+      ui_url: http://localhost:3000/verification
+      use: code
+      after:
+        default_browser_return_url: http://localhost:3000/
+
+    logout:
+      after:
+        default_browser_return_url: http://localhost:3000/login
+
+    login:
+      ui_url: http://localhost:3000/login
+      lifespan: 10m
+
+    registration:
+      ui_url: http://localhost:3000/registration
+      lifespan: 10m
+      after:
+        password:
+          hooks:
+            - hook: session
+            - hook: webhooks
+              config:
+                url: http://127.0.0.1:8080/api/v1/auth/kratos-webhook
+                method: POST
+                body: base64://e30=
+
+log:
+  level: info
+  format: json
+  leak_sensitive_values: false
+
+secrets:
+  cookie:
+    - PLEASE-CHANGE-ME-I-AM-A-SECRET-COOKIE-KEY-12345
+  cipher:
+    - PLEASE-CHANGE-ME-I-AM-A-SECRET-CIPHER-KEY-12345
+
+ciphers:
+  algorithm: xchacha20-poly1305
+
+hashers:
+  argon2:
+    parallelism: 1
+    memory: 64MB
+    iterations: 3
+    salt_length: 16
+    key_length: 32
+
+identity:
+  schemas:
+    - id: curexal_user
+      url: file:///etc/config/kratos/curexal_user.schema.json

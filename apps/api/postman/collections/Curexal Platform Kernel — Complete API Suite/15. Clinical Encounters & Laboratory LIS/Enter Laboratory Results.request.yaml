@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/lims/results"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  X-Tenant-ID: "{{tenant_id}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "orderId": "{{order_id}}",
+      "testCode": "FBC",
+      "parameters": [
+        { "name": "Hemoglobin", "value": "14.2", "unit": "g/dL", "flag": "NORMAL", "referenceRange": "13.0 - 17.0" },
+        { "name": "White Blood Cell Count", "value": "12.8", "unit": "x10^9/L", "flag": "HIGH", "referenceRange": "4.0 - 11.0" },
+        { "name": "Platelets", "value": "240", "unit": "x10^9/L", "flag": "NORMAL", "referenceRange": "150 - 450" }
+      ],
+      "technicianNotes": "Sample processed on Sysmex XN-550. No clots detected."
+    }
+order: 4000

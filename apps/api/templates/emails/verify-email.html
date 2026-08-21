@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>Verify Your Email</title>
+  </head>
+  <body
+    style='background-color:rgb(243,244,246);font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"'>
+    
+    <table
+      align="center"
+      width="100%"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      style="background-color:rgb(255,255,255);padding:2rem;border-radius:0.5rem;box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 1px 2px 0 rgb(0,0,0,0.05);margin-top:2.5rem;margin-bottom:2.5rem;margin-left:auto;margin-right:auto;max-width:600px">
+      <tbody>
+        <tr style="width:100%">
+          <td>
+            
+            <!-- Logo Header -->
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-bottom:1.5rem;text-align:center">
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="{{if .AppURL}}{{.AppURL}}{{else}}https://curexal.space{{end}}" target="_blank" style="text-decoration:none;border:none;display:inline-block;">
+                      <img
+                        alt="Curexal"
+                        height="64"
+                        src="{{if .LogoURL}}{{.LogoURL}}{{else}}https://cdn.curexal.space/email/full_logo.png{{end}}"
+                        style="margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none;max-height:64px;width:auto;" />
+                    </a>
+                    <h1
+                      style="font-size:1.5rem;line-height:2rem;font-weight:700;color:rgb(31,41,55);margin-top:1rem">
+                      ✉️ Verify Your Email Address
+                    </h1>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Greeting -->
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-bottom:1.5rem">
+              <tbody>
+                <tr>
+                  <td>
+                    <p
+                      style="font-size:1.125rem;line-height:1.75rem;font-weight:600;color:rgb(31,41,55);margin-bottom:1rem;margin-top:16px">
+                      Hi {{.UserFirstName}},
+                    </p>
+                    <p
+                      style="color:rgb(55,65,81);font-size:1rem;line-height:1.5rem;margin-bottom:16px;margin-top:16px">
+                      Thank you for creating an account on Curexal. Please verify your email address to complete registration and log in.
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Organization Dynamic Branding Card -->
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="background-color:{{.Theme.BgClass}};border-left-width:4px;border-style:solid;border-color:{{.Theme.BorderColor}};padding:1rem;margin-bottom:1.5rem">
+              <tbody>
+                <tr>
+                  <td>
+                    <p
+                      style="color:{{.Theme.TitleColor}};font-size:1rem;line-height:1.5rem;font-weight:600;margin-bottom:0.5rem;margin-top:0;">
+                      {{.Theme.LabelText}}
+                    </p>
+                    <p
+                      style="color:rgb(55,65,81);font-size:0.875rem;line-height:1.25rem;margin-bottom:0;margin-top:0;">
+                      Registered Organization: <strong>{{if .OrgName}}{{.OrgName}}{{else}}Curexal Workspace{{end}}</strong>
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Verification Code Box -->
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-top:2rem;margin-bottom:2rem;text-align:center">
+              <tbody>
+                <tr>
+                  <td>
+                    <div style="background-color:rgb(240,253,244);border:2px dashed rgb(15,118,110);color:rgb(15,118,110);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:2rem;font-weight:700;letter-spacing:0.375rem;text-align:center;padding:1rem 1.5rem;border-radius:0.75rem;display:inline-block;margin:0 auto">
+                      {{if .VerificationCode}}{{.VerificationCode}}{{else if .Code}}{{.Code}}{{else}}123456{{end}}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Security Warning -->
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-top:1.5rem;margin-bottom:1.5rem">
+              <tbody>
+                <tr>
+                  <td>
+                    <p
+                      style="color:rgb(107,114,128);font-size:0.875rem;line-height:1.25rem;margin-bottom:16px;margin-top:16px">
+                      <strong>Security Note:</strong> This verification code is valid for 24 hours. Enter this code on the verification page to activate your account. If you did not initiate this request, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Divider & Footer -->
+            <hr
+              style="border-color:rgb(229,231,235);margin-top:1.5rem;margin-bottom:1.5rem;width:100%;border:none;border-top:1px solid #eaeaea" />
+            
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-top:2rem;text-align:center">
+              <tbody>
+                <tr>
+                  <td>
+                    <p
+                      style="color:rgb(107,114,128);font-size:0.75rem;line-height:1rem;margin-bottom:16px;margin-top:16px">
+                      © 2026 Curexal. All rights reserved.
+                    </p>
+                    <p
+                      style="color:rgb(107,114,128);font-size:0.75rem;line-height:1rem;margin-bottom:16px;margin-top:16px">
+                      Designed by Dimkpa Prince Kinikanwo
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+  </body>
+</html>

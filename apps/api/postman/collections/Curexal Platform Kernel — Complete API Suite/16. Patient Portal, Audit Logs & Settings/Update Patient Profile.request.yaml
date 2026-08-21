@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/patient/profile"
+method: PUT
+headers:
+  Authorization: Bearer {{patient_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "phone": "+2348012345678",
+      "bloodGroup": "O+",
+      "genotype": "AA",
+      "allergies": ["Penicillin", "Sulfa Drugs"]
+    }
+order: 2000

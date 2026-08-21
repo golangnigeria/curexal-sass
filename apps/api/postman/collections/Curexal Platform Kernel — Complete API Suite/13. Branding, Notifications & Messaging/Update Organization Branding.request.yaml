@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/branding"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "primaryColor": "#0284c7",
+      "secondaryColor": "#0f172a",
+      "logoUrl": "https://cdn.curexal.space/email/full_logo.png",
+      "version": 1
+    }
+order: 2000

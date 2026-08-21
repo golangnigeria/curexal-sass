@@ -1,0 +1,112 @@
+asyncapi: '2.6.0'
+info:
+  title: Curexal V2 Event Broker API
+  version: '1.0.0'
+  description: Asynchronous NATS JetStream event definitions for cross-tenant referral dispatching, LIMS result verification, and financial clearing.
+
+servers:
+  dev:
+    url: nats://localhost:4222
+    protocol: nats
+    description: Local NATS JetStream server
+
+channels:
+  curexal.events.referral.dispatched:
+    publish:
+      summary: Dispatched when a clinic creates a new diagnostic referral.
+      message:
+        $ref: '#/components/messages/ReferralDispatchedMessage'
+
+  curexal.events.results.released:
+    publish:
+      summary: Dispatched when a consultant pathologist authorizes and releases final diagnostic reports.
+      message:
+        $ref: '#/components/messages/ResultsReleasedMessage'
+
+components:
+  messages:
+    ReferralDispatchedMessage:
+      name: ReferralDispatched
+      title: Referral Dispatched Event
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - event_id
+          - event_type
+          - producer_tenant
+          - timestamp
+          - data
+        properties:
+          event_id:
+            type: string
+            format: uuid
+          event_type:
+            type: string
+            example: referral.dispatched
+          producer_tenant:
+            type: string
+            example: everight-clinic
+          timestamp:
+            type: string
+            format: date-time
+          data:
+            type: object
+            required:
+              - referral_id
+              - referring_organization_id
+              - target_organization_id
+              - patient_id
+              - test_codes
+            properties:
+              referral_id:
+                type: string
+              referring_organization_id:
+                type: string
+              target_organization_id:
+                type: string
+              patient_id:
+                type: string
+              test_codes:
+                type: array
+                items:
+                  type: string
+
+    ResultsReleasedMessage:
+      name: ResultsReleased
+      title: Diagnostic Results Released Event
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - event_id
+          - event_type
+          - producer_tenant
+          - timestamp
+          - data
+        properties:
+          event_id:
+            type: string
+            format: uuid
+          event_type:
+            type: string
+            example: results.released
+          producer_tenant:
+            type: string
+            example: synlab-main
+          timestamp:
+            type: string
+            format: date-time
+          data:
+            type: object
+            required:
+              - diagnostic_report_id
+              - referral_id
+              - pdf_document_s3_key
+            properties:
+              diagnostic_report_id:
+                type: string
+              referral_id:
+                type: string
+              pdf_document_s3_key:
+                type: string

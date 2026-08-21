@@ -1,0 +1,14 @@
+$kind: http-request
+name: Switch Tenant (User Group context/switch)
+url: "{{base_url}}/api/v1/context/switch"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "tenantId": "{{tenant_id}}"
+    }
+order: 14000

@@ -1,0 +1,117 @@
+openapi: 3.0.3
+info:
+  title: Curexal V2 Universal Identity API
+  description: OpenAPI 3.0 specification for Universal Single Sign-On (SSO) and User Registration.
+  version: 1.0.0
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register Universal SSO User Account
+      description: Establishes a global user identity in public.users and profile details in public.user_profiles.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: blessing.okoro@curexal.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: SecureP@ssword2026!
+                first_name:
+                  type: string
+                  minLength: 2
+                  example: Blessing
+                last_name:
+                  type: string
+                  minLength: 2
+                  example: Okoro
+                phone:
+                  type: string
+                  example: "+2348012345678"
+      responses:
+        '201':
+          description: User Account Created Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 018e4aef881000000000000000000000
+                      email:
+                        type: string
+                        example: blessing.okoro@curexal.com
+                      status:
+                        type: string
+                        example: Active
+                      is_email_verified:
+                        type: boolean
+                        example: false
+                      profile:
+                        type: object
+                        properties:
+                          first_name:
+                            type: string
+                            example: Blessing
+                          last_name:
+                            type: string
+                            example: Okoro
+                          phone:
+                            type: string
+                            example: "+2348012345678"
+        '400':
+          description: Bad Request / DTO Validation Failure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate Email Address Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          example: https://curexal.com/errors/bad-request
+        title:
+          type: string
+          example: Bad Request
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "field 'email' failed on rule 'email'"
+        instance:
+          type: string
+          example: /api/v1/auth/register

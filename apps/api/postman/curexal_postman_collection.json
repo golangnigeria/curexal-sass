@@ -1,0 +1,1641 @@
+{
+	"info": {
+		"_postman_id": "curexal-platform-kernel-collection-v2-1",
+		"name": "Curexal Platform Kernel — Complete API Suite",
+		"description": "Postman Collection v2.1 covering all registered Echo routes across the Curexal Platform Kernel without omission. Grouped into 16 functional domains with automated test scripts and variable chaining.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01. System Health Probes",
+			"item": [
+				{
+					"name": "Public Root Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{base_url}}/status", "host": ["{{base_url}}"], "path": ["status"] },
+						"description": "Public health probe. No authentication required."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"], "type": "text/javascript" }
+						}
+					]
+				},
+				{
+					"name": "API Gateway Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{base_url}}/api/v1/status", "host": ["{{base_url}}"], "path": ["api", "v1", "status"] },
+						"description": "Aliased health probe under /api/v1."
+					}
+				}
+			]
+		},
+		{
+			"name": "02. Authentication & Identity",
+			"item": [
+				{
+					"name": "Sign In",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"{{platform_admin_email}}\",\n  \"password\": \"{{platform_admin_password}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/sign-in", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "sign-in"] },
+						"description": "Authenticates user and returns JWT."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Sign In successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.token) {",
+									"        pm.environment.set('auth_token', json.data.token);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Sign Up (Patient Registration)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Chinedu Eze\",\n  \"email\": \"chinedu.eze@example.com\",\n  \"password\": \"PatientSecurePassword123!\",\n  \"phone\": \"+2348012345678\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/sign-up", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "sign-up"] }
+					}
+				},
+				{
+					"name": "Sign Out",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/auth/sign-out", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "sign-out"] }
+					}
+				},
+				{
+					"name": "Switch Context (Auth Group)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"context\": \"workspace\",\n  \"tenantId\": \"{{tenant_id}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/switch-context", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "switch-context"] }
+					}
+				},
+				{
+					"name": "Verify Email (GET Link)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{base_url}}/api/v1/auth/verify-email?token=token_here", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "verify-email"], "query": [{ "key": "token", "value": "token_here" }] }
+					}
+				},
+				{
+					"name": "Verify Email (POST OTP Code)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"code\": \"7K9P2X\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/verify-email", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "verify-email"] }
+					}
+				},
+				{
+					"name": "Get CSRF Token (GET)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/auth/csrf", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "csrf"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('CSRF token retrieved', function () {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.csrfToken) {",
+									"        pm.environment.set('csrf_token', json.data.csrfToken);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get CSRF Token (POST)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/auth/csrf", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "csrf"] }
+					}
+				},
+				{
+					"name": "Impersonate Tenant",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"organizationId\": \"{{org_id}}\",\n  \"reason\": \"Support investigation\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/impersonate", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "impersonate"] }
+					}
+				},
+				{
+					"name": "Accept Staff Invitation",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"token\": \"{{invitation_token}}\",\n  \"name\": \"Dr. Florence Nwosu\",\n  \"password\": \"StaffSecurePassword123!\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/accept-invite", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "accept-invite"] }
+					}
+				},
+				{
+					"name": "Request Email Change (Auth Group)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"newEmail\": \"doctor.new@everight.com\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/request-email-change", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "request-email-change"] }
+					}
+				},
+				{
+					"name": "Verify Email Change (GET Link)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{base_url}}/api/v1/auth/verify-email-change?token=token_here", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "verify-email-change"], "query": [{ "key": "token", "value": "token_here" }] }
+					}
+				},
+				{
+					"name": "Verify Email Change (POST OTP)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"code\": \"8N3PWY\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/verify-email-change", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "verify-email-change"] }
+					}
+				},
+				{
+					"name": "Switch Tenant (User Group context/switch)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenant_id}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/context/switch", "host": ["{{base_url}}"], "path": ["api", "v1", "context", "switch"] }
+					}
+				},
+				{
+					"name": "Request Password Reset",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"owner@everight.com\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/request-password", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "request-password"] },
+						"description": "Sends a password reset token to the user's verified email address."
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"owner@everight.com\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/forgot-password", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "forgot-password"] },
+						"description": "Alias for request-password. Sends a password reset link/token to the user's email."
+					}
+				},
+				{
+					"name": "Set Password (Owner/Staff Setup)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"{{owner_email}}\",\n  \"code\": \"{{verification_code}}\",\n  \"password\": \"OwnerSecurePassword123!\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/set-password", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "set-password"] },
+						"description": "Completes initial password setup for invited organization owners and staff via 6-character verification code or token. No authentication required."
+					}
+				},
+				{
+					"name": "Resend Verification Code",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"{{owner_email}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/auth/resend-verification", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "resend-verification"] },
+						"description": "Generates a fresh 6-character uppercase verification code and dispatches it to the user's email address."
+					}
+				}
+			]
+		},
+		{
+			"name": "03. User Self-Service & Credentials",
+			"item": [
+				{
+					"name": "Get Current Principal (users/me)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users/me", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me"] }
+					}
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users/me/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "profile"] }
+					}
+				},
+				{
+					"name": "Update User Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Prince\",\n  \"lastName\": \"Dimkpa\",\n  \"middleName\": \"Kinikanwo\",\n  \"phoneNumber\": \"+2348030001122\",\n  \"emergencyContactName\": \"Blessing Dimkpa\",\n  \"emergencyContactPhone\": \"+2348030003344\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "profile"] }
+					}
+				},
+				{
+					"name": "Get Tenant Employment",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users/me/employment", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "employment"] }
+					}
+				},
+				{
+					"name": "Update Tenant Employment",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"department\": \"Chemical Pathology\",\n  \"jobTitle\": \"Consultant Pathologist\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/employment", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "employment"] }
+					}
+				},
+				{
+					"name": "Change Password (with history check)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"OldPassword123!\",\n  \"newPassword\": \"BrandNewSecurePassword456!\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/password", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "password"] }
+					}
+				},
+				{
+					"name": "Get Professional Profiles",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users/me/professional", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "professional"] }
+					}
+				},
+				{
+					"name": "Create Professional Profile",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"licensingBody\": \"Medical and Dental Council of Nigeria (MDCN)\",\n  \"licenseNumber\": \"MDCN/2018/48291\",\n  \"specialty\": \"Chemical Pathology\",\n  \"expiryDate\": \"2028-12-31\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/professional", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "professional"] }
+					}
+				},
+				{
+					"name": "Get Digital Signatures",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users/me/signatures", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "signatures"] }
+					}
+				},
+				{
+					"name": "Create Digital Signature",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"signatureData\": \"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMzAiPjxwYXRoIGQ9Ik0xMCAxNSBDMjAgNSAzMCAyNSA0MCAxNSIgc3Ryb2tlPSIjMDAwIiBmaWxsPSJub25lIi8+PC9zdmc+\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/signatures", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "signatures"] }
+					}
+				},
+				{
+					"name": "Request Email Change (via users/me)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"newEmail\": \"doctor.new@everight.com\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/users/me/request-email-change", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "me", "request-email-change"] }
+					}
+				},
+				{
+					"name": "List Directory Users",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/users", "host": ["{{base_url}}"], "path": ["api", "v1", "users"] }
+					}
+				},
+				{
+					"name": "List System Roles",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/roles", "host": ["{{base_url}}"], "path": ["api", "v1", "roles"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "04. Platform Control Plane & Launch Gate",
+			"item": [
+				{
+					"name": "Get Enterprise Bootstrap (SSOT)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/bootstrap", "host": ["{{base_url}}"], "path": ["api", "v1", "bootstrap"] }
+					}
+				},
+				{
+					"name": "Get Platform Diagnostics",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/diagnostics", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "diagnostics"] }
+					}
+				},
+				{
+					"name": "Get Platform Config",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/config", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "config"] }
+					}
+				},
+				{
+					"name": "Update Platform Config",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"platformName\": \"Curexal Health OS\",\n  \"supportEmail\": \"support@curexal.com\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/config", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "config"] }
+					}
+				},
+				{
+					"name": "Get Security Policy",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/security-policy", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "security-policy"] }
+					}
+				},
+				{
+					"name": "Update Security Policy",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"minPasswordLength\": 10,\n  \"requireUppercase\": true,\n  \"requireSpecialChar\": true,\n  \"maxFailedLoginAttempts\": 5,\n  \"lockoutDurationMinutes\": 15,\n  \"sessionInactivityTimeoutMinutes\": 60\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/security-policy", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "security-policy"] }
+					}
+				},
+				{
+					"name": "Get Launch Gate Status",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/launch-gate/status", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "launch-gate", "status"] }
+					}
+				},
+				{
+					"name": "Verify Production Readiness (Launch Gate)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/launch-gate/verify", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "launch-gate", "verify"] }
+					}
+				},
+				{
+					"name": "List Platform Health Metrics",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/health/metrics", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "health", "metrics"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "05. Facility Blueprints & Types",
+			"item": [
+				{
+					"name": "List Active Facility Types",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types"] }
+					}
+				},
+				{
+					"name": "Create Facility Blueprint",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"code\": \"diagnostic_center\",\n  \"name\": \"Comprehensive Diagnostic Center\",\n  \"description\": \"Full-service pathology and imaging facility\",\n  \"icon\": \"Microscope\",\n  \"isSystem\": true\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('facility_type_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Facility Blueprint",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Comprehensive Diagnostic Center (Updated)\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types", "{{facility_type_id}}"] }
+					}
+				},
+				{
+					"name": "Get Blueprint Dynamic Registration Form",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}/form", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types", "{{facility_type_id}}", "form"] }
+					}
+				},
+				{
+					"name": "Get Blueprint Navigation Menu",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}/navigation", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types", "{{facility_type_id}}", "navigation"] }
+					}
+				},
+				{
+					"name": "Get Blueprint Setup Steps",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}/setup-steps", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types", "{{facility_type_id}}", "setup-steps"] }
+					}
+				},
+				{
+					"name": "Get Blueprint Dashboard Layout",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}/dashboard", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "facility-types", "{{facility_type_id}}", "dashboard"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "06. Subscriptions, Marketplace & Gateways",
+			"item": [
+				{
+					"name": "Get Effective Capabilities",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/capabilities", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "capabilities"] }
+					}
+				},
+				{
+					"name": "Get Capability Entitlement Trace",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/capabilities/trace", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "capabilities", "trace"] }
+					}
+				},
+				{
+					"name": "Get Organization Entitlements",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/entitlements", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "entitlements"] }
+					}
+				},
+				{
+					"name": "Get Org Marketplace Catalog",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/marketplace/catalog", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "marketplace", "catalog"] }
+					}
+				},
+				{
+					"name": "Get Marketplace Capabilities (Global)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/marketplace/capabilities", "host": ["{{base_url}}"], "path": ["api", "v1", "marketplace", "capabilities"] }
+					}
+				},
+				{
+					"name": "Purchase Capability Add-On",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"capability\": \"laboratory.basic\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/marketplace/subscribe", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "marketplace", "subscribe"] }
+					}
+				},
+				{
+					"name": "Create Commercial Order",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"capabilityCode\": \"radiology.pacs\",\n  \"billingPeriod\": \"annual\",\n  \"gatewayProvider\": \"paystack\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/marketplace/orders", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "marketplace", "orders"] }
+					}
+				},
+				{
+					"name": "Platform: Grant Capability Add-On",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"capability\": \"radiology.pacs\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/capabilities", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "capabilities"] }
+					}
+				},
+				{
+					"name": "Platform: Revoke Capability Add-On",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/capabilities/{{capability}}", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "capabilities", "{{capability}}"] }
+					}
+				},
+				{
+					"name": "Platform: Start Trial Capability",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/capabilities/{{capability}}/trial", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "capabilities", "{{capability}}", "trial"] }
+					}
+				},
+				{
+					"name": "List Platform Pricing Rules",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/pricing", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "pricing"] }
+					}
+				},
+				{
+					"name": "Update Platform Pricing Rule",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"capability\": \"clinical.basic\",\n  \"monthlyPrice\": 25000.00,\n  \"currency\": \"NGN\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/pricing", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "pricing"] }
+					}
+				},
+				{
+					"name": "List Payment Gateways",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/payment-gateways", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "payment-gateways"] }
+					}
+				},
+				{
+					"name": "Get Payment Gateway Config",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/payment-gateways/{{provider}}", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "payment-gateways", "{{provider}}"] }
+					}
+				},
+				{
+					"name": "Update Payment Gateway Vault",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"secretKey\": \"sk_live_paystack_mock_key\",\n  \"publicKey\": \"pk_live_paystack_mock_key\",\n  \"isActive\": true\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/payment-gateways/{{provider}}", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "payment-gateways", "{{provider}}"] }
+					}
+				},
+				{
+					"name": "Payment Webhook (Unauthenticated HMAC)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Paystack-Signature", "value": "valid_hmac_signature_here" }],
+						"body": { "mode": "raw", "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"ord_8899aabbccddeeff\",\n    \"amount\": 25000000,\n    \"currency\": \"NGN\"\n  }\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/billing/webhooks/{{provider}}", "host": ["{{base_url}}"], "path": ["api", "v1", "billing", "webhooks", "{{provider}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "07. Master Medical Catalogs",
+			"item": [
+				{
+					"name": "Search ICD-10 Diagnosis Codes",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/catalogs/icd10?q=malaria", "host": ["{{base_url}}"], "path": ["api", "v1", "catalogs", "icd10"], "query": [{ "key": "q", "value": "malaria" }] }
+					}
+				},
+				{
+					"name": "List Catalog Items by Domain",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/catalogs/laboratory", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "catalogs", "laboratory"] }
+					}
+				},
+				{
+					"name": "Search Catalog Items by Domain",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/catalogs/laboratory/search?q=blood", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "catalogs", "laboratory", "search"], "query": [{ "key": "q", "value": "blood" }] }
+					}
+				},
+				{
+					"name": "Create Master Catalog Item",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"code\": \"FBC-001\",\n  \"name\": \"Full Blood Count (FBC)\",\n  \"loincNum\": \"58410-2\",\n  \"category\": \"Hematology\",\n  \"specimenType\": \"Whole Blood (EDTA)\",\n  \"tatHours\": 2,\n  \"basePrice\": 4500.00\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/catalogs/laboratory", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "catalogs", "laboratory"] }
+					}
+				},
+				{
+					"name": "Update Master Catalog Item",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Full Blood Count (Updated)\",\n  \"basePrice\": 5000.00\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/catalogs/laboratory/{{catalog_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "catalogs", "laboratory", "{{catalog_id}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "08. Healthcare Organizations & Compliance",
+			"item": [
+				{
+					"name": "List Organizations",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations"] }
+					}
+				},
+				{
+					"name": "Create Organization (ACID Transaction)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Everight Diagnostics & Clinical Laboratories\",\n  \"slug\": \"everight\",\n  \"plan\": \"smart\",\n  \"address\": \"15 Allen Avenue, Ikeja\",\n  \"city\": \"Lagos\",\n  \"state\": \"Lagos\",\n  \"lga\": \"Ikeja\",\n  \"country\": \"Nigeria\",\n  \"phone\": \"+2348012345678\",\n  \"email\": \"info@everight.com\",\n  \"registrationNumber\": \"RC-987654\",\n  \"licenseNumber\": \"LAB/2024/001\",\n  \"taxId\": \"TIN-00112233\",\n  \"owner\": {\n    \"email\": \"admin@everight.com\",\n    \"name\": \"Dr. Chinedu Okafor\"\n  }\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations"] },
+						"description": "Creates an organization with full profile, subscription, owner identity, workspace, and membership in a single ACID transaction. A cryptographic setup token is generated and an invitation email is dispatched to the owner."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Organization created', function () {",
+									"    pm.response.to.have.status(201);",
+									"    var json = pm.response.json();",
+									"    if (json.organization && json.organization.id) {",
+									"        pm.environment.set('org_id', json.organization.id);",
+									"    }",
+									"    if (json.invitation && json.invitation.email) {",
+									"        pm.environment.set('owner_email', json.invitation.email);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Organization Details",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}"] }
+					}
+				},
+				{
+					"name": "Update Organization Details",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Everight Diagnostics Healthcare Group\",\n  \"phone\": \"+2348099887766\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}"] }
+					}
+				},
+				{
+					"name": "Get Organization Settings",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/settings", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "settings"] }
+					}
+				},
+				{
+					"name": "Update Organization Settings",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"supportEmail\": \"support@everight.com\",\n  \"timezone\": \"Africa/Lagos\",\n  \"currency\": \"NGN\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/settings", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "settings"] }
+					}
+				},
+				{
+					"name": "Get Organization Members",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/members", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "members"] }
+					}
+				},
+				{
+					"name": "Create Workspace Member",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"scientist@everight.com\",\n  \"role\": \"staff\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/members", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "members"] }
+					}
+				},
+				{
+					"name": "Upload Regulatory Document (CAC)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"body": { "mode": "formdata", "formdata": [{ "key": "documentType", "type": "text", "value": "CAC_CERTIFICATE" }, { "key": "file", "type": "file", "src": "" }] },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/documents", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "documents"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('document_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "List Regulatory Documents",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/documents", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "documents"] }
+					}
+				},
+				{
+					"name": "Get Organization Profile",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "profile"] }
+					}
+				},
+				{
+					"name": "Update Organization Profile",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Everight Diagnostics\",\n  \"registrationNumber\": \"RC-987654\",\n  \"email\": \"info@everight.com\",\n  \"phone\": \"+2348012345678\",\n  \"address\": \"15 Allen Avenue\",\n  \"city\": \"Ikeja\",\n  \"state\": \"Lagos\",\n  \"country\": \"Nigeria\",\n  \"version\": 1\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "profile"] }
+					}
+				},
+				{
+					"name": "Submit Setup for Review",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/setup/submit-review", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "setup", "submit-review"] }
+					}
+				},
+				{
+					"name": "Platform: List Organizations",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations"] }
+					}
+				},
+				{
+					"name": "Platform: Verify Organization",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/verify", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "verify"] }
+					}
+				},
+				{
+					"name": "Platform: Review Document",
+					"request": {
+						"method": "PATCH",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"status\": \"approved\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/documents/{{document_id}}/review", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "documents", "{{document_id}}", "review"] }
+					}
+				},
+				{
+					"name": "Platform: Approve Organization",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/approve", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "approve"] }
+					}
+				},
+				{
+					"name": "Platform: Reject Organization",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"reason\": \"Incomplete CAC documentation.\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/platform/organizations/{{org_id}}/reject", "host": ["{{base_url}}"], "path": ["api", "v1", "platform", "organizations", "{{org_id}}", "reject"] }
+					}
+				},
+				{
+					"name": "Transfer Organization Ownership",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"newOwnerEmail\": \"new.owner@everight.com\",\n  \"newOwnerName\": \"Dr. Amaka Nwosu\",\n  \"notes\": \"Ownership transferred as part of acquisition\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/transfer-ownership", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "transfer-ownership"] },
+						"description": "Transfers organization ownership to a new identity. If the new owner does not exist, their identity is provisioned and a setup token is generated. The previous owner is demoted to admin."
+					}
+				},
+				{
+					"name": "Platform: Resend Owner Invitation",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organizations/{{org_id}}/resend-invite", "host": ["{{base_url}}"], "path": ["api", "v1", "organizations", "{{org_id}}", "resend-invite"] },
+						"description": "Regenerates and resends a 6-character verification setup code to the active owner of the target organization."
+					}
+				}
+			]
+		},
+		{
+			"name": "09. Tenants & Prospective Leads",
+			"item": [
+				{
+					"name": "Get Active Tenant",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/tenant/active", "host": ["{{base_url}}"], "path": ["api", "v1", "tenant", "active"] }
+					}
+				},
+				{
+					"name": "List Tenants",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/tenants", "host": ["{{base_url}}"], "path": ["api", "v1", "tenants"] }
+					}
+				},
+				{
+					"name": "Create Tenant",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Lekki Branch\",\n  \"slug\": \"lekki-branch\",\n  \"organizationId\": \"{{org_id}}\",\n  \"location\": \"Lekki Phase 1, Lagos\",\n  \"currency\": \"NGN\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/tenants", "host": ["{{base_url}}"], "path": ["api", "v1", "tenants"] }
+					}
+				},
+				{
+					"name": "Create Demo Request",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"laboratoryName\": \"Everight Diagnostics\",\n  \"contactName\": \"Dr. Adewale Olumide\",\n  \"email\": \"info@everight.com\",\n  \"phone\": \"+2348012345678\",\n  \"dailyVolume\": \"100-200\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/demo-requests", "host": ["{{base_url}}"], "path": ["api", "v1", "demo-requests"] }
+					}
+				},
+				{
+					"name": "List Demo Requests",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/demo-requests", "host": ["{{base_url}}"], "path": ["api", "v1", "demo-requests"] }
+					}
+				},
+				{
+					"name": "Update Demo Request",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"status\": \"scheduled\",\n  \"notes\": \"Demo scheduled for Monday 10am\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/demo-requests/{{demo_request_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "demo-requests", "{{demo_request_id}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "10. Facility Branches & Workspaces",
+			"item": [
+				{
+					"name": "List Facility Branches",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/branches", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branches"] }
+					}
+				},
+				{
+					"name": "Create Facility Branch",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"facilityTypeId\": \"{{facility_type_id}}\",\n  \"code\": \"branch-ikeja\",\n  \"name\": \"Ikeja Diagnostic Center\",\n  \"isHeadquarters\": true,\n  \"email\": \"ikeja@everight.com\",\n  \"phone\": \"+2348012345678\",\n  \"address\": \"15 Allen Avenue, Ikeja\",\n  \"city\": \"Lagos\",\n  \"state\": \"Lagos\",\n  \"country\": \"Nigeria\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/branches", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branches"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('branch_id', json.data.id); pm.environment.set('tenant_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Facility Branch",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/branches/{{branch_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branches", "{{branch_id}}"] }
+					}
+				},
+				{
+					"name": "Update Facility Branch",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Ikeja Diagnostic Center (Renamed)\",\n  \"phone\": \"+2349087654321\",\n  \"version\": 1\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/branches/{{branch_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branches", "{{branch_id}}"] }
+					}
+				},
+				{
+					"name": "Deactivate Facility Branch",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/branches/{{branch_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branches", "{{branch_id}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "11. Staff Memberships & RBAC Authorization",
+			"item": [
+				{
+					"name": "List Organization Members",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/members", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "members"] }
+					}
+				},
+				{
+					"name": "Create Staff Invitation",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"dr.nwosu@everight.com\",\n  \"role\": \"clinician\",\n  \"roleTitle\": \"Consultant Pathologist\",\n  \"facilityBranchId\": \"{{branch_id}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/invitations", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "invitations"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('invitation_id', json.data.id); }",
+									"if (json.data && json.data.token) { pm.environment.set('invitation_token', json.data.token); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "List Staff Invitations",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/invitations", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "invitations"] }
+					}
+				},
+				{
+					"name": "Revoke Staff Invitation",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/invitations/{{invitation_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "invitations", "{{invitation_id}}"] }
+					}
+				},
+				{
+					"name": "Assign Member to Branch",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"facilityBranchId\": \"{{branch_id}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/members/{{member_id}}/branches", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "members", "{{member_id}}", "branches"] }
+					}
+				},
+				{
+					"name": "Assign Member to Department",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"department\": \"Chemical Pathology\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/members/{{member_id}}/departments", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "members", "{{member_id}}", "departments"] }
+					}
+				},
+				{
+					"name": "Update Member Role",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"role\": \"clinician\",\n  \"roleTitle\": \"Senior Consultant Pathologist\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/members/{{member_id}}/role", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "members", "{{member_id}}", "role"] }
+					}
+				},
+				{
+					"name": "Evaluate Permission (Casbin Enforce)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"subject\": \"usr_7767f554\",\n  \"domain\": \"tenant_everight-ikeja\",\n  \"object\": \"lims:results\",\n  \"action\": \"authorize\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/authorization/enforce", "host": ["{{base_url}}"], "path": ["api", "v1", "authorization", "enforce"] }
+					}
+				},
+				{
+					"name": "Get User Permissions",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/authorization/permissions", "host": ["{{base_url}}"], "path": ["api", "v1", "authorization", "permissions"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "12. Organization Catalogs & Custom Pricing",
+			"item": [
+				{
+					"name": "List Catalog Items",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/catalogs", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "catalogs"] }
+					}
+				},
+				{
+					"name": "Create Catalog Item",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"domainType\": \"LABORATORY\",\n  \"code\": \"FBC\",\n  \"name\": \"Full Blood Count with Differential\",\n  \"basePrice\": 5000.00,\n  \"currency\": \"NGN\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/catalogs", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "catalogs"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('catalog_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Catalog Item",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/catalogs/{{catalog_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "catalogs", "{{catalog_id}}"] }
+					}
+				},
+				{
+					"name": "Update Catalog Item",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Full Blood Count (Updated)\",\n  \"basePrice\": 5500.00,\n  \"version\": 1\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/catalogs/{{catalog_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "catalogs", "{{catalog_id}}"] }
+					}
+				},
+				{
+					"name": "Set Branch Price Override",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"facilityBranchId\": \"{{branch_id}}\",\n  \"overridePrice\": 4500.00\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/catalogs/{{catalog_id}}/branch-prices", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "catalogs", "{{catalog_id}}", "branch-prices"] }
+					}
+				},
+				{
+					"name": "List Insurance Providers",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/insurance-providers", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "insurance-providers"] }
+					}
+				},
+				{
+					"name": "Create Insurance Provider",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"AXA Mansard HMO\",\n  \"code\": \"AXA-HMO-01\",\n  \"coveragePercentage\": 85.0\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/insurance-providers", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "insurance-providers"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "13. Branding, Notifications & Messaging",
+			"item": [
+				{
+					"name": "Get Organization Branding",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/branding", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branding"] }
+					}
+				},
+				{
+					"name": "Update Organization Branding",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"primaryColor\": \"#0284c7\",\n  \"secondaryColor\": \"#0f172a\",\n  \"logoUrl\": \"https://cdn.curexal.space/email/full_logo.png\",\n  \"version\": 1\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/branding", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "branding"] }
+					}
+				},
+				{
+					"name": "List Notification Configs",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/configs", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "configs"] }
+					}
+				},
+				{
+					"name": "Save Notification Config",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"channel\": \"EMAIL\",\n  \"provider\": \"SMTP\",\n  \"senderEmail\": \"noreply@everight.com\",\n  \"senderName\": \"Everight Diagnostics\",\n  \"host\": \"smtp.gmail.com\",\n  \"port\": 587,\n  \"username\": \"noreply@everight.com\",\n  \"password\": \"app-password-here\",\n  \"isActive\": true\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/configs", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "configs"] }
+					}
+				},
+				{
+					"name": "List Notification Templates",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/templates", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "templates"] }
+					}
+				},
+				{
+					"name": "Save Notification Template",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"channel\": \"EMAIL\",\n  \"subject\": \"Your Diagnostic Report Is Ready\",\n  \"bodyTemplate\": \"<p>Dear {{patientName}}, your report for {{testName}} is ready.</p>\",\n  \"allowedVariables\": [\"patientName\", \"testName\", \"resultUrl\"]\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/templates/result_ready", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "templates", "result_ready"] }
+					}
+				},
+				{
+					"name": "List User Notifications (Org Context)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications"] }
+					}
+				},
+				{
+					"name": "Mark Notification Read (Org Context)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/{{notification_id}}/read", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "{{notification_id}}", "read"] }
+					}
+				},
+				{
+					"name": "Mark All Notifications Read (Org Context)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/read-all", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "read-all"] }
+					}
+				},
+				{
+					"name": "List Notification Deliveries",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/notifications/deliveries", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "notifications", "deliveries"] }
+					}
+				},
+				{
+					"name": "Get User Notifications (Standalone)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/notifications", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications"] }
+					}
+				},
+				{
+					"name": "Create Notification",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"type\": \"RESULT_READY\",\n  \"title\": \"Diagnostic Results Available\",\n  \"body\": \"Your Full Blood Count report is authorized.\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/notifications", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications"] }
+					}
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/notifications/{{notification_id}}/read", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications", "{{notification_id}}", "read"] }
+					}
+				},
+				{
+					"name": "Mark All Notifications Read",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/notifications/read-all", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications", "read-all"] }
+					}
+				},
+				{
+					"name": "Get Unread Notification Count",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/notifications/unread-count", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications", "unread-count"] }
+					}
+				},
+				{
+					"name": "Get Notification Preferences",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/notifications/preferences", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications", "preferences"] }
+					}
+				},
+				{
+					"name": "Update Notification Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"emailEnabled\": true,\n  \"smsEnabled\": false,\n  \"inAppEnabled\": true\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/notifications/preferences", "host": ["{{base_url}}"], "path": ["api", "v1", "notifications", "preferences"] }
+					}
+				},
+				{
+					"name": "Get Direct Messages",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/messages", "host": ["{{base_url}}"], "path": ["api", "v1", "messages"] }
+					}
+				},
+				{
+					"name": "Send Direct Message",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"recipientId\": \"{{user_id}}\",\n  \"subject\": \"Urgent: Sample Rerun Required\",\n  \"body\": \"Please rerun specimen #BC-89210-EDTA for FBC differential.\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/messages", "host": ["{{base_url}}"], "path": ["api", "v1", "messages"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "14. Developer Integrations & Webhooks",
+			"item": [
+				{
+					"name": "List Developer API Keys",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/api-keys", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "api-keys"] }
+					}
+				},
+				{
+					"name": "Create Developer API Key",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Roche Cobas 6000 Analyzer Integration\",\n  \"expiresAt\": \"2027-12-31T23:59:59Z\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/api-keys", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "api-keys"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('api_key_id', json.data.id); }",
+									"if (json.data && json.data.apiKey) { pm.environment.set('api_key_secret', json.data.apiKey); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Revoke Developer API Key",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/api-keys/{{api_key_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "api-keys", "{{api_key_id}}"] }
+					}
+				},
+				{
+					"name": "List Webhook Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/webhooks", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "webhooks"] }
+					}
+				},
+				{
+					"name": "Create Webhook Subscription",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Hospital EHR Event Listener\",\n  \"targetUrl\": \"https://api.hospital-ehr.org/webhooks/curexal\",\n  \"eventTypes\": [\"patient.created\", \"lab_order.authorized\", \"invoice.paid\"]\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/organization/webhooks", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "webhooks"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('webhook_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Webhook Subscription",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/webhooks/{{webhook_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "webhooks", "{{webhook_id}}"] }
+					}
+				},
+				{
+					"name": "List Webhook Deliveries",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/organization/webhooks/deliveries", "host": ["{{base_url}}"], "path": ["api", "v1", "organization", "webhooks", "deliveries"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "15. Clinical Encounters & Laboratory LIS",
+			"item": [
+				{
+					"name": "Register Patient Visit (Clinical Check-in)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"visitType\": \"outpatient\",\n  \"chiefComplaint\": \"High fever, rigors and fatigue for 3 days\",\n  \"vitals\": {\n    \"temperature\": 38.8,\n    \"bloodPressure\": \"120/80\",\n    \"pulseRate\": 82,\n    \"weightKg\": 72.5\n  }\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/clinical/patient-visits", "host": ["{{base_url}}"], "path": ["api", "v1", "clinical", "patient-visits"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('visit_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create LIMS Diagnostic Order",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"tests\": [\"FBC\", \"MP\"]\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/lims/orders", "host": ["{{base_url}}"], "path": ["api", "v1", "lims", "orders"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.data && json.data.id) { pm.environment.set('order_id', json.data.id); }"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Accession Specimen Tube",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"specimenType\": \"Whole Blood (EDTA)\",\n  \"barcode\": \"BC-89210-EDTA\",\n  \"temperature\": \"ROOM_TEMP\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/lims/specimens/accession", "host": ["{{base_url}}"], "path": ["api", "v1", "lims", "specimens", "accession"] }
+					}
+				},
+				{
+					"name": "Enter Laboratory Results",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"testCode\": \"FBC\",\n  \"parameters\": [\n    { \"name\": \"Hemoglobin\", \"value\": \"14.2\", \"unit\": \"g/dL\", \"flag\": \"NORMAL\", \"referenceRange\": \"13.0 - 17.0\" },\n    { \"name\": \"White Blood Cell Count\", \"value\": \"12.8\", \"unit\": \"x10^9/L\", \"flag\": \"HIGH\", \"referenceRange\": \"4.0 - 11.0\" },\n    { \"name\": \"Platelets\", \"value\": \"240\", \"unit\": \"x10^9/L\", \"flag\": \"NORMAL\", \"referenceRange\": \"150 - 450\" }\n  ],\n  \"technicianNotes\": \"Sample processed on Sysmex XN-550. No clots detected.\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/lims/results", "host": ["{{base_url}}"], "path": ["api", "v1", "lims", "results"] }
+					}
+				},
+				{
+					"name": "Authorize Diagnostic Report",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"authorizerNotes\": \"Results reviewed and authorized for clinical correlation.\"\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/lims/authorizations", "host": ["{{base_url}}"], "path": ["api", "v1", "lims", "authorizations"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "16. Patient Portal, Audit Logs & Settings",
+			"item": [
+				{
+					"name": "Get Patient Profile",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/patient/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "patient", "profile"] }
+					}
+				},
+				{
+					"name": "Update Patient Profile",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"phone\": \"+2348012345678\",\n  \"bloodGroup\": \"O+\",\n  \"genotype\": \"AA\",\n  \"allergies\": [\"Penicillin\", \"Sulfa Drugs\"]\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/patient/profile", "host": ["{{base_url}}"], "path": ["api", "v1", "patient", "profile"] }
+					}
+				},
+				{
+					"name": "Get Patient Diagnostic Results",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/patient/results", "host": ["{{base_url}}"], "path": ["api", "v1", "patient", "results"] }
+					}
+				},
+				{
+					"name": "Get Patient Diagnostic Orders",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/patient/orders", "host": ["{{base_url}}"], "path": ["api", "v1", "patient", "orders"] }
+					}
+				},
+				{
+					"name": "Get Patient Appointments",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/patient/appointments", "host": ["{{base_url}}"], "path": ["api", "v1", "patient", "appointments"] }
+					}
+				},
+				{
+					"name": "List Platform Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/audit-logs/platform", "host": ["{{base_url}}"], "path": ["api", "v1", "audit-logs", "platform"] }
+					}
+				},
+				{
+					"name": "List Tenant Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/audit-logs/tenant", "host": ["{{base_url}}"], "path": ["api", "v1", "audit-logs", "tenant"] }
+					}
+				},
+				{
+					"name": "Get Audit Admin Stats",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/audit-logs/stats", "host": ["{{base_url}}"], "path": ["api", "v1", "audit-logs", "stats"] }
+					}
+				},
+				{
+					"name": "Get Branch Operating Settings",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/settings/branch", "host": ["{{base_url}}"], "path": ["api", "v1", "settings", "branch"] }
+					}
+				},
+				{
+					"name": "Update Branch Operating Hours",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }, { "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"operatingHours\": {\n    \"monday\": { \"open\": \"08:00\", \"close\": \"18:00\" },\n    \"tuesday\": { \"open\": \"08:00\", \"close\": \"18:00\" }\n  }\n}" },
+						"url": { "raw": "{{base_url}}/api/v1/settings/branch/operating-hours", "host": ["{{base_url}}"], "path": ["api", "v1", "settings", "branch", "operating-hours"] }
+					}
+				},
+				{
+					"name": "Reset Branch Settings",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/settings/branch/reset", "host": ["{{base_url}}"], "path": ["api", "v1", "settings", "branch", "reset"] }
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080" },
+		{ "key": "auth_token", "value": "" },
+		{ "key": "csrf_token", "value": "" },
+		{ "key": "patient_token", "value": "" },
+		{ "key": "org_id", "value": "" },
+		{ "key": "tenant_id", "value": "" },
+		{ "key": "branch_id", "value": "" },
+		{ "key": "member_id", "value": "" },
+		{ "key": "user_id", "value": "" },
+		{ "key": "patient_id", "value": "" },
+		{ "key": "visit_id", "value": "" },
+		{ "key": "order_id", "value": "" },
+		{ "key": "invitation_id", "value": "" },
+		{ "key": "invitation_token", "value": "" },
+		{ "key": "catalog_id", "value": "" },
+		{ "key": "api_key_id", "value": "" },
+		{ "key": "api_key_secret", "value": "" },
+		{ "key": "webhook_id", "value": "" },
+		{ "key": "notification_id", "value": "" },
+		{ "key": "document_id", "value": "" },
+		{ "key": "demo_request_id", "value": "" },
+		{ "key": "facility_type_id", "value": "" },
+		{ "key": "provider", "value": "paystack" },
+		{ "key": "capability", "value": "clinical.basic" },
+		{ "key": "platform_admin_email", "value": "superadmin@curexal.internal" },
+		{ "key": "platform_admin_password", "value": "SuperAdminPassword123!" },
+		{ "key": "setup_token", "value": "" },
+		{ "key": "verification_code", "value": "7K9P2X" },
+		{ "key": "owner_email", "value": "" }
+	]
+}

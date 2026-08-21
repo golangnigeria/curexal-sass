@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/auth/verify-email?token=token_here"
+method: GET
+queryParams:
+  token: token_here
+order: 5000

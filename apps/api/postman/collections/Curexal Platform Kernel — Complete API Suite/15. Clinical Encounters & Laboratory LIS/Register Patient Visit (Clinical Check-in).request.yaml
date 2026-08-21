@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/clinical/patient-visits"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  X-Tenant-ID: "{{tenant_id}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "patientId": "{{patient_id}}",
+      "visitType": "outpatient",
+      "chiefComplaint": "High fever, rigors and fatigue for 3 days",
+      "vitals": {
+        "temperature": 38.8,
+        "bloodPressure": "120/80",
+        "pulseRate": 82,
+        "weightKg": 72.5
+      }
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var json = pm.response.json();
+      if (json.data && json.data.id) { pm.environment.set('visit_id', json.data.id); }
+    language: text/javascript
+order: 1000

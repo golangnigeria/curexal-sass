@@ -1,0 +1,45 @@
+$kind: http-request
+description: Creates an organization with full profile, subscription, owner identity, workspace, and membership in a single ACID transaction. A cryptographic setup token is generated and an invitation email is dispatched to the owner.
+url: "{{base_url}}/api/v1/organizations"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Everight Diagnostics & Clinical Laboratories",
+      "slug": "everight",
+      "plan": "smart",
+      "address": "15 Allen Avenue, Ikeja",
+      "city": "Lagos",
+      "state": "Lagos",
+      "lga": "Ikeja",
+      "country": "Nigeria",
+      "phone": "+2348012345678",
+      "email": "info@everight.com",
+      "registrationNumber": "RC-987654",
+      "licenseNumber": "LAB/2024/001",
+      "taxId": "TIN-00112233",
+      "owner": {
+        "email": "admin@everight.com",
+        "name": "Dr. Chinedu Okafor"
+      }
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Organization created', function () {
+          pm.response.to.have.status(201);
+          var json = pm.response.json();
+          if (json.organization && json.organization.id) {
+              pm.environment.set('org_id', json.organization.id);
+          }
+          if (json.invitation && json.invitation.email) {
+              pm.environment.set('owner_email', json.invitation.email);
+          }
+      });
+    language: text/javascript
+order: 2000

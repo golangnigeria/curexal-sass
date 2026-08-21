@@ -1,0 +1,15 @@
+$kind: http-request
+name: "Platform: Reject Organization"
+url: "{{base_url}}/api/v1/platform/organizations/{{org_id}}/reject"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "reason": "Incomplete CAC documentation."
+    }
+order: 18000

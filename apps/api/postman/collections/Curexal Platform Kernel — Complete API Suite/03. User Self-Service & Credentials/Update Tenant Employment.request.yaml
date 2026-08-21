@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/users/me/employment"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "department": "Chemical Pathology",
+      "jobTitle": "Consultant Pathologist"
+    }
+order: 5000

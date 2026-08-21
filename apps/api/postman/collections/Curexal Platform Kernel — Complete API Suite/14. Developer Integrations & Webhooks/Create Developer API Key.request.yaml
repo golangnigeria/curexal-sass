@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/api-keys"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Roche Cobas 6000 Analyzer Integration",
+      "expiresAt": "2027-12-31T23:59:59Z"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var json = pm.response.json();
+      if (json.data && json.data.id) { pm.environment.set('api_key_id', json.data.id); }
+      if (json.data && json.data.apiKey) { pm.environment.set('api_key_secret', json.data.apiKey); }
+    language: text/javascript
+order: 2000

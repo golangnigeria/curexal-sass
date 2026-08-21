@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/facility-types/{{facility_type_id}}"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Comprehensive Diagnostic Center (Updated)"
+    }
+order: 3000

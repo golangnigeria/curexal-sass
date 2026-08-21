@@ -1,0 +1,187 @@
+{
+  "id": "curexal-dev-environment",
+  "name": "Curexal Local Dev Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "csrf_token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "patient_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "doctor_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "org_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "tenant_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "branch_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "member_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "patient_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "visit_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "invitation_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "invitation_token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "catalog_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "api_key_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "api_key_secret",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "webhook_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "notification_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "document_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "demo_request_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "facility_type_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "provider",
+      "value": "paystack",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "capability",
+      "value": "clinical.basic",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "platform_admin_email",
+      "value": "superadmin@curexal.internal",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "platform_admin_password",
+      "value": "SuperAdminPassword123!",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "setup_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "owner_email",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

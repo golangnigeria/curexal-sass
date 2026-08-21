@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/catalogs/laboratory/{{catalog_id}}"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Full Blood Count (Updated)",
+      "basePrice": 5000.00
+    }
+order: 5000

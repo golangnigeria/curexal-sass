@@ -1,0 +1,15 @@
+$kind: http-request
+name: "Platform: Grant Capability Add-On"
+url: "{{base_url}}/api/v1/platform/organizations/{{org_id}}/capabilities"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "capability": "radiology.pacs"
+    }
+order: 8000

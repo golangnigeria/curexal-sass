@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get Current Principal (users/me)
+url: "{{base_url}}/api/v1/users/me"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+order: 1000

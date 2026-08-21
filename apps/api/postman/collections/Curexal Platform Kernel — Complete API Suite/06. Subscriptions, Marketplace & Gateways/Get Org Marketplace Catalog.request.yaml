@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organizations/{{org_id}}/marketplace/catalog"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+order: 4000

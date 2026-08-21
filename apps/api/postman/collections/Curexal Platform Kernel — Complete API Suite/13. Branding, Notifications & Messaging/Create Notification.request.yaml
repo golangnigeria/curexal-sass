@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/notifications"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "userId": "{{user_id}}",
+      "type": "RESULT_READY",
+      "title": "Diagnostic Results Available",
+      "body": "Your Full Blood Count report is authorized."
+    }
+order: 12000

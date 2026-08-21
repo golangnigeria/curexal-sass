@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/tenants"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Lekki Branch",
+      "slug": "lekki-branch",
+      "organizationId": "{{org_id}}",
+      "location": "Lekki Phase 1, Lagos",
+      "currency": "NGN"
+    }
+order: 3000

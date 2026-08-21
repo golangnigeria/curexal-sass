@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/payment-gateways/{{provider}}"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+order: 14000

@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Platform: Approve Organization"
+url: "{{base_url}}/api/v1/platform/organizations/{{org_id}}/approve"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+order: 17000

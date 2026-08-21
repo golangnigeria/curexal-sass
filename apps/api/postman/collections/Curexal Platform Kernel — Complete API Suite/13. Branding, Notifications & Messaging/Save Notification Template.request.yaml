@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/notifications/templates/result_ready"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "channel": "EMAIL",
+      "subject": "Your Diagnostic Report Is Ready",
+      "bodyTemplate": "<p>Dear {{patientName}}, your report for {{testName}} is ready.</p>",
+      "allowedVariables": ["patientName", "testName", "resultUrl"]
+    }
+order: 6000

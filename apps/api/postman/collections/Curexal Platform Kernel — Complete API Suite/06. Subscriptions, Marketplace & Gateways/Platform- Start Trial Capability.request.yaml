@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Platform: Start Trial Capability"
+url: "{{base_url}}/api/v1/platform/organizations/{{org_id}}/capabilities/{{capability}}/trial"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+order: 10000

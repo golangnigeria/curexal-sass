@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/notifications/read-all"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+order: 9000

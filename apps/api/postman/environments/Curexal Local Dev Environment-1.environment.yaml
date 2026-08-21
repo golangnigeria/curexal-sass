@@ -1,0 +1,62 @@
+name: Curexal Local Dev Environment
+values:
+  - key: base_url
+    value: 'http://localhost:8080'
+  - key: auth_token
+    value: ''
+  - key: refresh_token
+    value: ''
+  - key: csrf_token
+    value: ''
+  - key: patient_token
+    value: ''
+  - key: doctor_token
+    value: ''
+  - key: org_id
+    value: ''
+  - key: tenant_id
+    value: ''
+  - key: branch_id
+    value: ''
+  - key: member_id
+    value: ''
+  - key: user_id
+    value: ''
+  - key: patient_id
+    value: ''
+  - key: visit_id
+    value: ''
+  - key: order_id
+    value: ''
+  - key: invitation_id
+    value: ''
+  - key: invitation_token
+    value: ''
+  - key: catalog_id
+    value: ''
+  - key: api_key_id
+    value: ''
+  - key: api_key_secret
+    value: ''
+  - key: webhook_id
+    value: ''
+  - key: notification_id
+    value: ''
+  - key: document_id
+    value: ''
+  - key: demo_request_id
+    value: ''
+  - key: facility_type_id
+    value: ''
+  - key: provider
+    value: paystack
+  - key: capability
+    value: clinical.basic
+  - key: platform_admin_email
+    value: superadmin@curexal.internal
+  - key: platform_admin_password
+    value: SuperAdminPassword123!
+  - key: chinedu_patient_email
+    value: ''
+  - key: chinedu_patient_password
+    value: ''

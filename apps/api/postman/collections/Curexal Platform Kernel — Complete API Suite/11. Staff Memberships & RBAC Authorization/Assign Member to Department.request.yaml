@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organization/members/{{member_id}}/departments"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "department": "Chemical Pathology"
+    }
+order: 6000

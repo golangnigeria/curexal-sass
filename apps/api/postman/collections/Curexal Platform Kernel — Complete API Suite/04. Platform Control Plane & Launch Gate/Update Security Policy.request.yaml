@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/security-policy"
+method: PUT
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "minPasswordLength": 10,
+      "requireUppercase": true,
+      "requireSpecialChar": true,
+      "maxFailedLoginAttempts": 5,
+      "lockoutDurationMinutes": 15,
+      "sessionInactivityTimeoutMinutes": 60
+    }
+order: 6000

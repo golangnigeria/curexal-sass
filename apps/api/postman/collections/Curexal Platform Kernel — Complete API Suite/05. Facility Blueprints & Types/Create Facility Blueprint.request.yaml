@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/platform/facility-types"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "code": "diagnostic_center",
+      "name": "Comprehensive Diagnostic Center",
+      "description": "Full-service pathology and imaging facility",
+      "icon": "Microscope",
+      "isSystem": true
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var json = pm.response.json();
+      if (json.data && json.data.id) { pm.environment.set('facility_type_id', json.data.id); }
+    language: text/javascript
+order: 2000

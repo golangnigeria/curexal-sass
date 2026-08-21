@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/audit-logs/tenant"
+method: GET
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-Tenant-ID: "{{tenant_id}}"
+order: 7000

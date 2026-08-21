@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/users/me/professional"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "licensingBody": "Medical and Dental Council of Nigeria (MDCN)",
+      "licenseNumber": "MDCN/2018/48291",
+      "specialty": "Chemical Pathology",
+      "expiryDate": "2028-12-31"
+    }
+order: 8000

@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/organizations/{{org_id}}/documents"
+method: POST
+headers:
+  Authorization: Bearer {{auth_token}}
+  X-CSRF-Token: "{{csrf_token}}"
+body:
+  type: formdata
+  content:
+    - type: text
+      key: documentType
+      value: CAC_CERTIFICATE
+    - type: file
+      key: file
+      src:
+        - ""
+scripts:
+  - type: afterResponse
+    code: |-
+      var json = pm.response.json();
+      if (json.data && json.data.id) { pm.environment.set('document_id', json.data.id); }
+    language: text/javascript
+order: 9000
