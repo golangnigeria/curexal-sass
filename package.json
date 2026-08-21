@@ -1,0 +1,11 @@
+{
+  "name": "curexal-sass",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Curexal Health Operating System",
+  "scripts": {
+    "build": "bun run build:all || npm run build:all",
+    "build:all": "cd apps/api && go build -ldflags=\"-w -s\" -o bin/curexal-backend ./cmd/CUREXAL",
+    "start": "node server.js"
+  }
+}
