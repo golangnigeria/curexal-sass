@@ -1,6 +1,6 @@
 module github.com/golangnigeria/curexal
 
-go 1.25.7
+go 1.23
 
 require (
 	github.com/go-playground/validator/v10 v10.27.0

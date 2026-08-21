@@ -1,7 +1,10 @@
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
+
+ENV GOTOOLCHAIN=auto
+ENV CGO_ENABLED=0
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
@@ -14,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL
+RUN GOOS=linux go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL
 
 # Final runtime stage
 FROM alpine:3.20
