@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS organization.api_keys (
     organization_id UUID NOT NULL REFERENCES organization.organizations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     key_prefix VARCHAR(20) NOT NULL,
-    key_hash VARCHAR(64) NOT NULL UNIQUE,
+    key_hash VARCHAR(64) NOT NULL,
     scopes JSONB DEFAULT '[]'::jsonb,
     ip_whitelist JSONB DEFAULT '[]'::jsonb,
     rate_limit_rpm INT NOT NULL DEFAULT 60,
