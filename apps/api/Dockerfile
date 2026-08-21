@@ -4,7 +4,7 @@ FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-exe --no-cache git ca-certificates tzdata
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Copy dependency manifests
 COPY go.mod go.sum ./
@@ -14,17 +14,17 @@ RUN go mod download
 COPY . .
 
 # Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o curexal-backend ./cmd/CUREXAL
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL
 
 # Final runtime stage
-FROM alpine:3.19
+FROM alpine:3.20
 
 WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata
 
-# Copy binary & templates
-COPY --from=builder /app/curexal-backend /app/curexal-backend
+# Copy binary & assets
+COPY --from=builder /app/bin/curexal-backend /app/curexal-backend
 COPY --from=builder /app/templates /app/templates
 COPY --from=builder /app/static /app/static
 COPY --from=builder /app/database /app/database
