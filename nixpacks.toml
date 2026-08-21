@@ -1,0 +1,23 @@
+[phases.setup]
+nixPkgs = ['go', 'bun']
+
+[phases.install]
+cmds = [
+    'cd apps/api && go mod download',
+    'cd apps/web-public && bun install',
+    'cd apps/web-platform && bun install'
+]
+
+[phases.build]
+cmds = [
+    'cd apps/api && go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL',
+    'cd apps/web-public && bun run build',
+    'cd apps/web-platform && bun run build'
+]
+
+[start]
+cmd = 'cd apps/api && ./bin/curexal-backend'
+
+[variables]
+GO111MODULE = 'on'
+CGO_ENABLED = '0'
