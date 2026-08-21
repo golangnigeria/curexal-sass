@@ -4,8 +4,10 @@ import path from "path";
 import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const envDir = path.resolve(__dirname, "../../");
+  const env = loadEnv(mode, envDir, "");
   return {
+    envDir,
     plugins: [react(), tailwindcss()],
     server: {
       port: env.PORT ? parseInt(env.PORT, 10) : 5001,
