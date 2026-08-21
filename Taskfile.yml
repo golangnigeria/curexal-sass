@@ -56,6 +56,12 @@ tasks:
       - dev:web-public
       - dev:web-platform
 
+  run:
+    desc: alias for task dev (runs all applications concurrently)
+    cmds:
+      - task: dev
+
+
   dev:api:
     desc: start native Go backend development server (Port 8080)
     dir: apps/api
