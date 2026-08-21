@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +28,58 @@ import {
 } from "lucide-react";
 import { CurexalLogoSymbol } from "@/components/brand/curexal-logo";
 
+function resolveAuthorizedDestination(sessionData: any, returnTo?: string | null): string {
+  const effectiveBootstrap = sessionData?.bootstrap;
+  const user = sessionData?.user;
+
+  const isPlatformStaff = Boolean(
+    effectiveBootstrap?.platform?.isStaff === true ||
+    user?.isPlatformAdmin === true ||
+    user?.platformRole === "super_admin" ||
+    user?.role === "super_admin"
+  );
+
+  const isOrgAuthorized = Boolean(
+    isPlatformStaff ||
+    Boolean(effectiveBootstrap?.organization?.id) ||
+    effectiveBootstrap?.contexts?.current === "organization" ||
+    user?.role === "owner" ||
+    user?.role === "org_admin" ||
+    user?.role === "org_regional_manager" ||
+    Boolean(user?.organizationId)
+  );
+
+  const isWorkspaceAuthorized = Boolean(
+    isOrgAuthorized ||
+    Boolean(effectiveBootstrap?.workspace?.id) ||
+    effectiveBootstrap?.contexts?.current === "workspace" ||
+    Boolean(user?.activeTenantId) ||
+    Boolean(user?.workspaceId)
+  );
+
+  // Validate returnTo if present (prevent open redirect & privilege escalation)
+  if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+    if (returnTo.startsWith("/platform/")) {
+      if (isPlatformStaff) return returnTo;
+    } else if (returnTo.startsWith("/organization/")) {
+      if (isOrgAuthorized) return returnTo;
+    } else if (returnTo.startsWith("/workspace/")) {
+      if (isWorkspaceAuthorized) return returnTo;
+    }
+  }
+
+  // Canonical destination resolution
+  if (isPlatformStaff) return "/platform/dashboard";
+  if (isOrgAuthorized) return "/organization/dashboard";
+  if (isWorkspaceAuthorized) return "/workspace/dashboard";
+
+  return "/organization/dashboard";
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || searchParams.get("redirect");
   const { data: session, isPending } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,12 +104,13 @@ export default function LoginPage() {
   const [setErrorMsg, setSetErrorMsg] = useState<string | null>(null);
   const [setSuccessMsg, setSetSuccessMsg] = useState<string | null>(null);
 
-  // If already logged in, redirect to dashboard
+  // If already logged in, redirect to authorized dashboard
   useEffect(() => {
     if (!isPending && session?.user) {
-      navigate("/platform/dashboard", { replace: true });
+      const destination = resolveAuthorizedDestination(session, returnTo);
+      navigate(destination, { replace: true });
     }
-  }, [session, isPending, navigate]);
+  }, [session, isPending, returnTo, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,8 +123,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await authClient.signIn({ email, password });
-      navigate("/platform/dashboard", { replace: true });
+      const updatedSession = await authClient.signIn({ email, password });
+      const destination = resolveAuthorizedDestination(updatedSession || session, returnTo);
+      navigate(destination, { replace: true });
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||

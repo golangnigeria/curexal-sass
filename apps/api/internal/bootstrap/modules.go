@@ -143,6 +143,7 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 	api.Use(middleware.Authenticate(s.Config))
 
 	plt := api.Group("/platform")
+	plt.Use(middleware.RequirePlatformStaff())
 	org := api.Group("/organization")
 	wsp := api.Group("/workspace")
 	wsp.Use(middleware.HostAndSessionTenantResolver())

@@ -231,6 +231,21 @@ func RequirePermission(perm string, resolvers ...platformAuth.PermissionResolver
 	}
 }
 
+func RequirePlatformStaff() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			p := GetPrincipal(c)
+			if p == nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+			}
+			if p.Platform.IsSuperAdmin || p.Platform.IsPlatformStaff || p.Platform.IsPlatformAdmin || IsPlatformStaff(c) {
+				return next(c)
+			}
+			return echo.NewHTTPError(http.StatusForbidden, "Platform staff privilege required")
+		}
+	}
+}
+
 type CapabilityChecker interface {
 	HasCapability(ctx context.Context, orgID uuid.UUID, capabilityCode string) (bool, error)
 }
