@@ -2,17 +2,9 @@ import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { useBootstrap } from "@/api/hooks/use-bootstrap";
+import { BootstrapLoader } from "@/components/loading/app-loader";
 
-export function RouteLoadingScreen({ message = "Verifying platform authorizations..." }: { message?: string }) {
-  return (
-    <div className="flex h-screen w-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-sm" />
-        <p className="text-sm font-medium text-muted-foreground animate-pulse">{message}</p>
-      </div>
-    </div>
-  );
-}
+export { BootstrapLoader as RouteLoadingScreen };
 
 interface PlatformGuardProps {
   children?: React.ReactNode;
@@ -25,7 +17,7 @@ export function PlatformGuard({ children }: PlatformGuardProps) {
 
   // 1. Wait for bootstrap and session resolution before making any routing decisions
   if (isSessionPending || (session?.user && isBootstrapPending && !bootstrap && !session.bootstrap)) {
-    return <RouteLoadingScreen message="Authorizing platform console session..." />;
+    return <BootstrapLoader message="Authorizing platform console session..." />;
   }
 
   // 2. Unauthenticated -> redirect to /login

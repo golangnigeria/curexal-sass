@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
+import { AppLoader } from "@/components/loading/app-loader";
 
 interface ProtectedRouteProps {
   requiredPermission?: string;
@@ -11,14 +12,7 @@ export function ProtectedRoute({ requiredPermission }: ProtectedRouteProps) {
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground animate-pulse">Initializing Platform Console...</p>
-        </div>
-      </div>
-    );
+    return <AppLoader message="Initializing Curexal Console..." />;
   }
 
   if (!session || !session.user) {
