@@ -136,6 +136,8 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 	}
 	s.Echo.GET("/status", statusHandler)
 	s.Echo.GET("/api/v1/status", statusHandler)
+	s.Echo.GET("/health", statusHandler)
+	s.Echo.GET("/api/v1/health", statusHandler)
 
 	api := s.Echo.Group("/api/v1")
 	api.Use(middleware.Authenticate(s.Config))
