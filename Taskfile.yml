@@ -49,6 +49,13 @@ tasks:
       - echo "==> Running Backend Kernel Tests..."
       - go test -v ./internal/kernel/...
 
+  dev:
+    desc: run all applications concurrently (Go API on 8080 + Public Web on 5001 + Platform Portal on 5002)
+    deps:
+      - dev:api
+      - dev:web-public
+      - dev:web-platform
+
   dev:api:
     desc: start native Go backend development server (Port 8080)
     dir: apps/api
