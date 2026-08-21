@@ -14,6 +14,21 @@ tasks:
       - task --list-all
     silent: true
 
+  db:up:
+    desc: start local PostgreSQL & Redis containers (Docker)
+    cmds:
+      - docker compose up -d
+
+  db:down:
+    desc: stop local PostgreSQL & Redis containers (Docker)
+    cmds:
+      - docker compose down
+
+  db:logs:
+    desc: view logs for local database containers
+    cmds:
+      - docker compose logs -f postgres
+
   build:
     desc: build all applications (native Go API + static Vite SPAs)
     cmds:
