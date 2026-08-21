@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	_ = godotenv.Load("../../.env", "../.env", ".env")
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -22,7 +22,8 @@ func main() {
 
 	ctx := context.Background()
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	fmt.Println("Running database migrations...")
+	dsn := cfg.Database.DSN()
+	fmt.Printf("Running database migrations on target: %s\n", dsn)
 	if err := database.Migrate(ctx, &logger, cfg); err != nil {
 		log.Fatalf("Failed to migrate database: %v\n", err)
 	}
