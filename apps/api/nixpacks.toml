@@ -6,12 +6,11 @@ cmds = ['go mod download']
 
 [phases.build]
 cmds = [
-    'go build -o CUREXAL ./cmd/CUREXAL',
-    'go build -o cron ./cmd/cron'
+    'go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL'
 ]
 
 [start]
-cmd = './CUREXAL'
+cmd = './bin/curexal-backend'
 
 [variables]
 GO111MODULE = 'on'
