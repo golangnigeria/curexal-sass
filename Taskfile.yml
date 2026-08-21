@@ -29,6 +29,20 @@ tasks:
     cmds:
       - docker compose logs -f postgres
 
+  db:seed:
+    desc: seed platform admin and staff accounts into the database
+    dir: apps/api
+    cmds:
+      - go run ./cmd/seed_admin
+
+  db:reset:
+    desc: clean database, run all migrations, and seed platform users
+    dir: apps/api
+    cmds:
+      - go run ./cmd/clean_db
+      - go run ./cmd/seed_admin
+
+
   build:
     desc: build all applications (native Go API + static Vite SPAs)
     cmds:

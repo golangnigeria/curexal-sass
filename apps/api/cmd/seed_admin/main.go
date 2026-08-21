@@ -15,11 +15,14 @@ import (
 
 func main() {
 	// Load .env configuration
-	_ = godotenv.Load()
+	_ = godotenv.Load("../../.env", "../.env", ".env")
 
 	dsn := os.Getenv("CUREXAL_DB_DSN")
 	if dsn == "" {
-		log.Fatal("CUREXAL_DB_DSN environment variable is not set in .env")
+		dsn = os.Getenv("DATABASE_URL")
+	}
+	if dsn == "" {
+		log.Fatal("CUREXAL_DB_DSN or DATABASE_URL environment variable is not set in .env")
 	}
 
 	ctx := context.Background()
