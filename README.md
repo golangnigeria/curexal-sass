@@ -13,12 +13,13 @@ curexal-sass/
 │   │   ├── cmd/CUREXAL/              # Main server entrypoint
 │   │   ├── database/migrations/      # PostgreSQL migrations & seeders
 │   │   ├── internal/                 # Hexagonal DDD modules (identity, org, clinical, etc.)
-│   │   └── storage/documents/        # Local filesystem storage fallback
+│   │   ├── storage/documents/        # Local filesystem storage fallback
+│   │   └── Taskfile.yml              # API-specific tasks (migrations, db, tidy)
 │   ├── web-public/                   # Static Vite + React marketing, demo & waitlist site
 │   └── web-platform/                 # Static Vite + React multi-tenant workspace dashboard
 ├── docs/                             # Architecture specs, PRDs & API manuals
 ├── .env.example                      # Complete environment configuration template
-├── Makefile                          # Unified build & testing commands
+├── Taskfile.yml                      # Unified Task runner commands
 └── README.md
 ```
 
@@ -34,31 +35,36 @@ curexal-sass/
 
 ---
 
-## 3. Quick Start & Build
+## 3. Quick Start & Task Commands
 
 ### Prerequisites
 - Go 1.23+
 - Bun (or Node.js 20+)
+- Task CLI (`task`)
 
-### Building Production Artifacts
+### Available Tasks
 ```bash
-# Build everything (Native Go binary + Static SPAs)
-make build
+# List all workspace tasks
+task
+
+# Build all production artifacts (Native Go binary + Static SPAs)
+task build
 
 # Or build individual applications:
-make api
-make web-public
-make web-platform
-```
+task build:api
+task build:web-public
+task build:web-platform
 
-### Running Locally
-```bash
-# Start backend API (Port 8080)
-make dev-api
+# Run backend test suites
+task test
 
-# Start Public Marketing site (Port 5001)
-make dev-public
+# Start applications in development:
+task dev:api          # Native Go API on port 8080
+task dev:web-public   # Public marketing site on port 5001
+task dev:web-platform # Platform portal dashboard on port 5002
 
-# Start Platform Portal (Port 5002)
-make dev-platform
+# Database & migration tasks (namespaced under api)
+task api:migrations:up
+task api:migrations:new name=add_feature_table
+task api:db:reset
 ```

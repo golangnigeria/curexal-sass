@@ -1,0 +1,84 @@
+version: '3'
+
+dotenv: ['.env', 'apps/api/.env']
+
+includes:
+  api:
+    taskfile: ./apps/api/Taskfile.yml
+    dir: ./apps/api
+
+tasks:
+  default:
+    desc: list all available workspace tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  build:
+    desc: build all applications (native Go API + static Vite SPAs)
+    cmds:
+      - task: build:api
+      - task: build:web-public
+      - task: build:web-platform
+
+  build:api:
+    desc: build native Go backend executable
+    dir: apps/api
+    cmds:
+      - echo "==> Building Curexal API (Native Go Binary)..."
+      - go build -ldflags="-w -s" -o bin/curexal-backend ./cmd/CUREXAL
+
+  build:web-public:
+    desc: build static marketing/demo SPA
+    dir: apps/web-public
+    cmds:
+      - echo "==> Building Curexal Public Web (Static Vite SPA)..."
+      - bun run build
+
+  build:web-platform:
+    desc: build static portal/workspace SPA
+    dir: apps/web-platform
+    cmds:
+      - echo "==> Building Curexal Platform Portal (Static Vite SPA)..."
+      - bun run build
+
+  test:
+    desc: run all backend unit and storage/cache tests
+    dir: apps/api
+    cmds:
+      - echo "==> Running Backend Kernel Tests..."
+      - go test -v ./internal/kernel/...
+
+  dev:api:
+    desc: start native Go backend development server (Port 8080)
+    dir: apps/api
+    cmds:
+      - go run ./cmd/CUREXAL
+
+  dev:web-public:
+    desc: start Public Web development server (Port 5001)
+    dir: apps/web-public
+    cmds:
+      - bun run dev
+
+  dev:web-platform:
+    desc: start Platform Portal development server (Port 5002)
+    dir: apps/web-platform
+    cmds:
+      - bun run dev
+
+  tidy:
+    desc: format and tidy Go module dependencies
+    dir: apps/api
+    cmds:
+      - go fmt ./...
+      - go mod tidy
+      - go mod verify
+
+  clean:
+    desc: clean all built binaries and dist bundles
+    cmds:
+      - cmd: powershell -Command "Remove-Item -Recurse -Force apps\api\bin, apps\web-public\dist, apps\web-platform\dist -ErrorAction SilentlyContinue"
+        platforms: [windows]
+      - cmd: rm -rf apps/api/bin apps/web-public/dist apps/web-platform/dist
+        platforms: [linux, darwin]
