@@ -3,6 +3,7 @@
 -- MIGRATION 000040: Align organization.demo_requests schema with platform model
 -- ==============================================================================
 
+-- +goose StatementBegin
 DO $$
 BEGIN
     IF EXISTS (
@@ -61,6 +62,7 @@ BEGIN
         ALTER TABLE organization.demo_requests RENAME COLUMN message TO notes;
     END IF;
 END $$;
+-- +goose StatementEnd
 
 ALTER TABLE organization.demo_requests ADD COLUMN IF NOT EXISTS laboratory_name VARCHAR(255);
 ALTER TABLE organization.demo_requests ADD COLUMN IF NOT EXISTS contact_name VARCHAR(255);
