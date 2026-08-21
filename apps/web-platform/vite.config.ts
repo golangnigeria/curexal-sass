@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     envDir,
     plugins: [react(), tailwindcss()],
     server: {
-      port: env.PORT ? parseInt(env.PORT, 10) : 5001,
+      port: env.VITE_PORTAL_PORT ? parseInt(env.VITE_PORTAL_PORT, 10) : 5002,
       host: env.VITE_HOST || "::",
       proxy: {
         "/api": {
