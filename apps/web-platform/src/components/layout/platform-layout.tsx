@@ -5,11 +5,16 @@ import { PlatformTopbar } from "./platform-topbar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { cn } from "@/lib/utils";
 
+import { TopLoadingBar } from "@/components/loading";
+
 function PlatformLayoutContent() {
   const { isCollapsed } = useSidebar();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
+      {/* Global Top Route Loading Bar */}
+      <TopLoadingBar />
+
       {/* Fixed Collapsible Sidebar */}
       <PlatformSidebar />
 
