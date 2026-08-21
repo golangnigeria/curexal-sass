@@ -24,7 +24,10 @@ type DatabaseConfig struct {
 
 func (d DatabaseConfig) DSN() string {
 	if dsn := os.Getenv("CUREXAL_DB_DSN"); dsn != "" {
-		return dsn
+		return strings.Trim(strings.TrimSpace(dsn), "\"'")
+	}
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		return strings.Trim(strings.TrimSpace(dsn), "\"'")
 	}
 	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		d.User, d.Password, d.Host, d.Port, d.Name, d.SSLMode)
