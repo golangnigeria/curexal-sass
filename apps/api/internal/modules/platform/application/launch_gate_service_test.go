@@ -102,6 +102,10 @@ func (m *MockAuditRepo) ListAll(ctx context.Context, tenantID *uuid.UUID, orgID 
 	return args.Get(0).([]auditDomain.AuditLog), args.Error(1)
 }
 
+func (m *MockAuditRepo) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]auditDomain.AuditLog, error) {
+	return nil, nil
+}
+
 func TestLaunchGateService_VerifyProductionReadiness_Evaluates10Checks_Success(t *testing.T) {
 	mockLaunchGateRepo := new(MockLaunchGateRepo)
 	mockAuditRepo := new(MockAuditRepo)

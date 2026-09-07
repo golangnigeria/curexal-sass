@@ -64,7 +64,7 @@ func (r *NavigationRepository) GetNavigationItemsByScope(
 		WHERE context_scope = $1
 		  AND is_active = true
 		  AND is_visible = true
-		  AND (module_code IS NULL OR module_code = ANY($2) OR $4 = TRUE)
+		  AND (module_code IS NULL OR module_code = ANY($2))
 		  AND (required_permission IS NULL OR required_permission = ANY($3) OR $4 = TRUE)
 		ORDER BY sort_order ASC
 	`

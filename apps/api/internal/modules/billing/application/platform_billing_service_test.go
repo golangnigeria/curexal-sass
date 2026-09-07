@@ -85,6 +85,9 @@ func (m *MockAuditRepo) GetStats(ctx context.Context, tenantID *uuid.UUID, orgID
 func (m *MockAuditRepo) ListAll(ctx context.Context, tenantID *uuid.UUID, orgID *uuid.UUID, limit int, offset int) ([]auditDomain.AuditLog, error) {
 	return nil, nil
 }
+func (m *MockAuditRepo) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]auditDomain.AuditLog, error) {
+	return nil, nil
+}
 
 func TestPaymentGatewayVaultService_UpdateGateway_EncryptsSecretAndRedacts(t *testing.T) {
 	mockRepo := new(MockBillingRepo)

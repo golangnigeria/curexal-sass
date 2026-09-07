@@ -26,32 +26,29 @@ func (v *PostgresTenantVerifier) VerifyMembership(ctx context.Context, userID, t
 		return false, "", nil
 	}
 
-	var roleTitle string
+	var role string
 	stmt := `
-		SELECT role_title
-		FROM organization.organization_memberships
-		WHERE user_id = $1::uuid AND (organization_id = $2::uuid OR id = $2::uuid) AND is_active = TRUE
+		SELECT COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member')
+		FROM organization.organization_memberships m
+		WHERE m.user_id = $1::uuid 
+		  AND (
+		      m.organization_id = $2::uuid 
+		      OR EXISTS (
+		          SELECT 1 FROM organization.facility_branches fb 
+		          WHERE fb.id = $2::uuid AND fb.organization_id = m.organization_id
+		      )
+		  ) 
+		  AND m.is_active = TRUE
 		LIMIT 1
 	`
 
-	err := v.pool.QueryRow(ctx, stmt, userID, tenantID).Scan(&roleTitle)
+	err := v.pool.QueryRow(ctx, stmt, userID, tenantID).Scan(&role)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			// Also check workspace memberships if organization lookup misses
-			stmtWorkspace := `
-				SELECT role_title
-				FROM workspace.workspace_memberships
-				WHERE user_id = $1::uuid AND workspace_id = $2::uuid AND is_active = TRUE
-				LIMIT 1
-			`
-			errWs := v.pool.QueryRow(ctx, stmtWorkspace, userID, tenantID).Scan(&roleTitle)
-			if errWs == nil {
-				return true, roleTitle, nil
-			}
 			return false, "", nil
 		}
 		return false, "", fmt.Errorf("membership verification database error: %w", err)
 	}
 
-	return true, roleTitle, nil
+	return true, role, nil
 }

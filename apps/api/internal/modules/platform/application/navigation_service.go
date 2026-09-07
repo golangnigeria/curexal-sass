@@ -180,15 +180,16 @@ func (s *NavigationService) GetNavigation(
 				orgIDFilter = principal.OrganizationID
 			}
 
-			// 2a. Query physical facility type name
+			// 2a. Query physical facility type code and name
+			var ftCode string
 			_ = s.dbPool.QueryRow(ctx, `
-				SELECT ft.name
+				SELECT COALESCE(ft.code, 'clinic'), ft.name
 				FROM organization.facility_branches b
 				JOIN platform.facility_types ft ON ft.id = b.facility_type_id
-				WHERE (b.slug = $1 OR b.code = $1 OR b.id::text = $1)
+				WHERE (b.slug = $1 OR b.code = $1 OR b.id::text = $1 OR (b.is_headquarters = TRUE AND ($2 != '' AND b.organization_id::text = $2)))
 				  AND ($2 = '' OR b.organization_id::text = $2)
 				LIMIT 1
-			`, activeBranch, orgIDFilter).Scan(&branchType)
+			`, activeBranch, orgIDFilter).Scan(&ftCode, &branchType)
 
 			// 2b. Query authoritative facility type capabilities from platform.facility_capabilities
 			fcRows, fcErr := s.dbPool.Query(ctx, `
@@ -196,7 +197,7 @@ func (s *NavigationService) GetNavigation(
 				FROM platform.facility_capabilities fc
 				JOIN subscription.capabilities c ON c.id = fc.capability_id
 				JOIN organization.facility_branches b ON b.facility_type_id = fc.facility_type_id
-				WHERE (b.slug = $1 OR b.code = $1 OR b.id::text = $1)
+				WHERE (b.slug = $1 OR b.code = $1 OR b.id::text = $1 OR (b.is_headquarters = TRUE AND ($2 != '' AND b.organization_id::text = $2)))
 				  AND ($2 = '' OR b.organization_id::text = $2)
 			`, activeBranch, orgIDFilter)
 			if fcErr == nil {
@@ -206,6 +207,35 @@ func (s *NavigationService) GetNavigation(
 					if errScan := fcRows.Scan(&capCode); errScan == nil {
 						branchCapabilities = append(branchCapabilities, capCode)
 					}
+				}
+			}
+
+			if len(branchCapabilities) == 0 && ftCode != "" {
+				branchCapabilities = resolveBranchCapabilitiesByCode(ftCode)
+			}
+		}
+
+		if len(branchCapabilities) == 0 {
+			norm := strings.ToLower(activeBranch)
+			if strings.Contains(norm, "clinic") || strings.Contains(norm, "outpatient") {
+				branchCapabilities = resolveBranchCapabilitiesByCode("clinic")
+				if branchType == "" {
+					branchType = "Outpatient Clinic"
+				}
+			} else if strings.Contains(norm, "lab") {
+				branchCapabilities = resolveBranchCapabilitiesByCode("laboratory")
+				if branchType == "" {
+					branchType = "Medical Laboratory"
+				}
+			} else if strings.Contains(norm, "radiology") {
+				branchCapabilities = resolveBranchCapabilitiesByCode("radiology")
+				if branchType == "" {
+					branchType = "Radiology Center"
+				}
+			} else if strings.Contains(norm, "pharmacy") {
+				branchCapabilities = resolveBranchCapabilitiesByCode("pharmacy")
+				if branchType == "" {
+					branchType = "Community Pharmacy"
 				}
 			}
 		}
@@ -304,9 +334,10 @@ func (s *NavigationService) GetNavigation(
 	var finalItems []domain.NavigationItem
 	for _, item := range rawItems {
 		// Filter out items requiring specific capability if facility branch or organization lacks entitlement
+		// This applies to ALL personas including owners/admins: an Outpatient Clinic never shows LIS or RIS.
 		if item.RequiredCapability != nil && *item.RequiredCapability != "" {
 			reqCap := *item.RequiredCapability
-			if len(branchCapabilities) > 0 && !branchCapSet[reqCap] {
+			if currentScope == "workspace" && len(branchCapSet) > 0 && !branchCapSet[reqCap] {
 				continue
 			}
 			if !isWorkspaceAdmin && len(capabilities) > 0 && !capabilitySet[reqCap] {
@@ -347,27 +378,43 @@ func (s *NavigationService) GetNavigation(
 	}, nil
 }
 
+func resolveBranchCapabilitiesByCode(code string) []string {
+	norm := strings.ToLower(code)
+	if strings.Contains(norm, "lab") || strings.Contains(norm, "pathology") {
+		return []string{"core.organization", "core.patient", "core.billing", "laboratory.basic"}
+	}
+	if strings.Contains(norm, "radiology") || strings.Contains(norm, "imaging") || strings.Contains(norm, "pacs") {
+		return []string{"core.organization", "core.patient", "core.billing", "radiology.basic"}
+	}
+	if strings.Contains(norm, "pharmacy") || strings.Contains(norm, "dispensary") {
+		return []string{"core.organization", "core.patient", "core.billing", "pharmacy.basic"}
+	}
+	if strings.Contains(norm, "hospital") || strings.Contains(norm, "inpatient") || strings.Contains(norm, "his") {
+		return []string{"core.organization", "core.patient", "core.billing", "clinical.basic", "laboratory.basic", "radiology.basic", "pharmacy.basic", "clinical.inpatient_wards"}
+	}
+	// Default to canonical outpatient clinic
+	return []string{"core.organization", "core.patient", "core.billing", "clinical.basic"}
+}
+
 func resolveBranchTypeModules(facilityType string) []string {
 	norm := strings.ToLower(facilityType)
 	if strings.Contains(norm, "lab") || strings.Contains(norm, "pathology") {
 		return []string{"dashboard", "reception", "laboratory", "billing"}
 	}
-	if strings.Contains(norm, "clinic") || strings.Contains(norm, "outpatient") || strings.Contains(norm, "emr") || strings.Contains(norm, "opd") {
-		return []string{"dashboard", "reception", "care_desk", "clinical", "pharmacy", "billing"}
+	if strings.Contains(norm, "radiology") || strings.Contains(norm, "imaging") || strings.Contains(norm, "pacs") {
+		return []string{"dashboard", "reception", "radiology", "billing"}
 	}
 	if strings.Contains(norm, "pharmacy") || strings.Contains(norm, "dispensary") {
 		return []string{"dashboard", "reception", "pharmacy", "billing"}
 	}
-	if strings.Contains(norm, "radiology") || strings.Contains(norm, "imaging") || strings.Contains(norm, "pacs") {
-		return []string{"dashboard", "reception", "radiology", "billing"}
-	}
 	if strings.Contains(norm, "hospital") || strings.Contains(norm, "inpatient") || strings.Contains(norm, "his") {
 		return []string{"dashboard", "reception", "care_desk", "clinical", "laboratory", "pharmacy", "radiology", "hospital", "billing"}
 	}
-	if strings.Contains(norm, "diagnostic") {
-		return []string{"dashboard", "reception", "care_desk", "laboratory", "radiology", "billing"}
+	// Canonical Outpatient Clinic: excludes LIS, RIS/PACS, and Inpatient Hospital
+	if strings.Contains(norm, "clinic") || strings.Contains(norm, "outpatient") || strings.Contains(norm, "emr") || strings.Contains(norm, "opd") || strings.Contains(norm, "specialty") {
+		return []string{"dashboard", "reception", "care_desk", "clinical", "billing"}
 	}
-	return []string{"dashboard", "reception", "care_desk", "clinical", "laboratory", "pharmacy", "radiology", "hospital", "billing"}
+	return []string{"dashboard", "reception", "care_desk", "clinical", "billing"}
 }
 
 func isPatientHost(host string) bool {

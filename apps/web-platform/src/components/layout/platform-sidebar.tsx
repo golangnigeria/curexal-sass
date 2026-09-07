@@ -173,14 +173,35 @@ export function PlatformSidebar() {
 
   // 100% Database-driven navigation items derived from backend Navigation API or Bootstrap contract
   const backendNavigation: NavigationItem[] = React.useMemo(() => {
+    let rawItems: NavigationItem[] = [];
+
     // 1. Primary: Use dedicated /api/v1/navigation response items
     if (navData?.items && navData.items.length > 0) {
-      return navData.items;
-    }
-
-    // 2. Secondary: Fallback to bootstrap contract navigation payload
-    if (bootstrap?.structuredNavigation?.primary?.length) {
-      return bootstrap.structuredNavigation.primary.map((item): NavigationItem => {
+      rawItems = navData.items;
+    } else if (bootstrap?.structuredNavigation?.primary?.length) {
+      // 2. Secondary: Fallback to bootstrap contract navigation payload
+      rawItems = bootstrap.structuredNavigation.primary.map((item): NavigationItem => {
+        let p = item.path;
+        if (isWorkspaceContext && p.includes("/:branch")) {
+          p = p.replace("/:branch", `/${activeBranchSlug}`);
+        }
+        return {
+          id: item.id,
+          key: item.id,
+          contextScope: isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace",
+          title: item.title,
+          icon: item.icon,
+          path: p,
+          order: item.order || 0,
+          status: "active",
+          isVisible: true,
+          isActive: true,
+          badgeCount: undefined,
+          children: item.children as any,
+        };
+      });
+    } else if (bootstrap?.navigation?.length) {
+      rawItems = bootstrap.navigation.map((item): NavigationItem => {
         let p = item.path;
         if (isWorkspaceContext && p.includes("/:branch")) {
           p = p.replace("/:branch", `/${activeBranchSlug}`);
@@ -202,31 +223,35 @@ export function PlatformSidebar() {
       });
     }
 
-    if (bootstrap?.navigation?.length) {
-      return bootstrap.navigation.map((item): NavigationItem => {
-        let p = item.path;
-        if (isWorkspaceContext && p.includes("/:branch")) {
-          p = p.replace("/:branch", `/${activeBranchSlug}`);
+    // Defensive facility-type pruning to prevent cross-facility leakage during initial loading/transition
+    if (isWorkspaceContext) {
+      const normFT = (facilityType || "").toLowerCase();
+      return rawItems.filter((item) => {
+        const p = item.path.toLowerCase();
+        // Outpatient Clinic: strictly prohibit LIS, RIS/PACS, and Inpatient HMS
+        if (normFT.includes("clinic") || normFT.includes("outpatient")) {
+          if (p.includes("/laboratory") || p.includes("/radiology") || p.includes("/hospital")) {
+            return false;
+          }
+        } else if (normFT.includes("lab") && !normFT.includes("hospital")) {
+          if (p.includes("/clinical") || p.includes("/radiology") || p.includes("/hospital") || p.includes("/pharmacy")) {
+            return false;
+          }
+        } else if (normFT.includes("pharmacy") && !normFT.includes("hospital")) {
+          if (p.includes("/clinical") || p.includes("/laboratory") || p.includes("/radiology") || p.includes("/hospital")) {
+            return false;
+          }
+        } else if (normFT.includes("radiology") && !normFT.includes("hospital")) {
+          if (p.includes("/clinical") || p.includes("/laboratory") || p.includes("/pharmacy") || p.includes("/hospital")) {
+            return false;
+          }
         }
-        return {
-          id: item.id,
-          key: item.id,
-          contextScope: isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace",
-          title: item.title,
-          icon: item.icon,
-          path: p,
-          order: item.order || 0,
-          status: "active",
-          isVisible: true,
-          isActive: true,
-          badgeCount: undefined,
-          children: item.children as any,
-        };
+        return true;
       });
     }
 
-    return [];
-  }, [navData, bootstrap, isPlatformContext, isOrgContext, isWorkspaceContext, activeBranchSlug]);
+    return rawItems;
+  }, [navData, bootstrap, isPlatformContext, isOrgContext, isWorkspaceContext, activeBranchSlug, facilityType]);
 
   return (
     <TooltipProvider delayDuration={150}>

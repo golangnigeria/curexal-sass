@@ -571,19 +571,8 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 		if activeBranch.FacilityType != "" {
 			facilityTypeVal = activeBranch.FacilityType
 		}
-		// Adjust enabled modules according to facility type blueprint
-		normFT := strings.ToLower(activeBranch.FacilityType)
-		if strings.Contains(normFT, "clinic") || strings.Contains(normFT, "outpatient") || strings.Contains(normFT, "emr") {
-			enabledModules = []string{"clinical", "customer_care", "billing", "pharmacy"}
-		} else if strings.Contains(normFT, "pharmacy") {
-			enabledModules = []string{"pharmacy", "inventory", "billing"}
-		} else if strings.Contains(normFT, "radiology") || strings.Contains(normFT, "imaging") {
-			enabledModules = []string{"radiology", "customer_care", "billing"}
-		} else if strings.Contains(normFT, "hospital") {
-			enabledModules = []string{"hospital", "clinical", "laboratory", "pharmacy", "radiology", "billing", "inventory", "customer_care", "qms"}
-		} else if strings.Contains(normFT, "lab") || strings.Contains(normFT, "diagnostic") {
-			enabledModules = []string{"laboratory", "customer_care", "billing", "qms"}
-		}
+		// Adjust enabled modules according to physical facility type blueprint
+		enabledModules = resolveBranchTypeModules(activeBranch.FacilityType)
 	} else if activeTenant != nil {
 		tenantID = activeTenant.ID.String()
 		tenantName = activeTenant.Name
@@ -717,6 +706,11 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 					}
 				}
 			}
+			if len(branchCapSet) == 0 && activeBranch.FacilityType != "" {
+				for _, c := range resolveBranchCapabilitiesByCode(activeBranch.FacilityType) {
+					branchCapSet[c] = true
+				}
+			}
 		}
 
 		rows, err := b.dbPool.Query(ctx, `
@@ -725,7 +719,7 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 			WHERE context_scope = $1
 			  AND is_active = true
 			  AND is_visible = true
-			  AND (module_code IS NULL OR module_code = ANY($2) OR $4 = TRUE)
+			  AND (module_code IS NULL OR module_code = ANY($2))
 			  AND (required_permission IS NULL OR required_permission = ANY($3) OR $4 = TRUE)
 			ORDER BY sort_order ASC
 		`, currentContext, enabledModules, effectivePermissions, isWorkspaceAdmin)

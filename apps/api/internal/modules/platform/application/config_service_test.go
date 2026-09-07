@@ -83,6 +83,9 @@ func (m *MockAuditRepository) GetStats(ctx context.Context, tenantID *uuid.UUID,
 func (m *MockAuditRepository) ListAll(ctx context.Context, tenantID *uuid.UUID, orgID *uuid.UUID, limit int, offset int) ([]auditDomain.AuditLog, error) {
 	return nil, nil
 }
+func (m *MockAuditRepository) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]auditDomain.AuditLog, error) {
+	return nil, nil
+}
 
 func TestPlatformConfigService_UpdateGeneralSettings_Success(t *testing.T) {
 	mockRepo := new(MockConfigRepository)

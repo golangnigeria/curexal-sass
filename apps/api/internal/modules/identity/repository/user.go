@@ -383,20 +383,20 @@ func (r *UserRepository) ListUsersByTenant(ctx context.Context, tenantID string,
 	args := pgx.NamedArgs{"tenantID": tenantID}
 	if allBranches {
 		stmt := `
-			SELECT m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(t.name, ''), m.role_title, m.role_title, m.is_active, m.joined_at, m.created_at
+			SELECT m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(t.name, ''), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), m.is_active, m.joined_at, m.created_at
 			FROM organization.organization_memberships m
 			JOIN identity.users u ON u.id = m.user_id
-			LEFT JOIN workspace.workspaces t ON t.organization_id = m.organization_id
+			LEFT JOIN organization.organizations t ON t.id = m.organization_id
 			WHERE m.organization_id = @tenantID
 			ORDER BY m.created_at DESC
 		`
 		rows, err = dbExec.Query(ctx, stmt, args)
 	} else {
 		stmt := `
-			SELECT m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(t.name, ''), m.role_title, m.role_title, m.is_active, m.joined_at, m.created_at
+			SELECT m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(t.name, ''), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), m.is_active, m.joined_at, m.created_at
 			FROM organization.organization_memberships m
 			JOIN identity.users u ON u.id = m.user_id
-			LEFT JOIN workspace.workspaces t ON t.organization_id = m.organization_id
+			LEFT JOIN organization.organizations t ON t.id = m.organization_id
 			WHERE m.organization_id = @tenantID
 			ORDER BY m.created_at DESC
 		`
@@ -432,7 +432,7 @@ func (r *UserRepository) ListUsersByTenant(ctx context.Context, tenantID string,
 func (r *UserRepository) ListUsersByOrganization(ctx context.Context, orgID string) ([]model.MembershipWithDetails, error) {
 	dbExec := r.server.DB.Conn(ctx)
 	stmt := `
-		SELECT DISTINCT ON (m.id) m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(o.name, ''), m.role_title, m.role_title, m.is_active, m.joined_at, m.created_at
+		SELECT DISTINCT ON (m.id) m.id, m.user_id, u.name, u.email, COALESCE(m.organization_id::text, ''), COALESCE(o.name, ''), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member'), m.is_active, m.joined_at, m.created_at
 		FROM organization.organization_memberships m
 		JOIN identity.users u ON u.id = m.user_id
 		LEFT JOIN organization.organizations o ON o.id = m.organization_id
@@ -477,8 +477,8 @@ func (r *UserRepository) ListAllUsers(ctx context.Context) ([]model.MembershipWi
 			u.email, 
 			COALESCE(m.organization_id::text, ''), 
 			COALESCE(o.name, 'Global Platform'), 
-			COALESCE(m.role_title, u.platform_role, CASE WHEN u.is_platform_admin THEN 'super_admin' ELSE 'member' END), 
-			COALESCE(m.role_title, u.platform_role, CASE WHEN u.is_platform_admin THEN 'super_admin' ELSE 'member' END), 
+			COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), u.platform_role, CASE WHEN u.is_platform_admin THEN 'super_admin' ELSE 'member' END), 
+			COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), u.platform_role, CASE WHEN u.is_platform_admin THEN 'super_admin' ELSE 'member' END), 
 			COALESCE(m.is_active, true), 
 			COALESCE(m.joined_at, u.created_at), 
 			u.created_at
@@ -598,7 +598,7 @@ func (r *UserRepository) ListAvailableTenants(ctx context.Context, userID string
 func (r *UserRepository) GetActiveMembership(ctx context.Context, userID, tenantID string) (membershipID string, roleName string, err error) {
 	dbExec := r.server.DB.Conn(ctx)
 	stmt := `
-		SELECT m.id, m.role_title
+		SELECT m.id, COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member')
 		FROM organization.organization_memberships m
 		WHERE m.user_id::text = @userID AND m.organization_id::text = @tenantID AND m.is_active = TRUE
 	`

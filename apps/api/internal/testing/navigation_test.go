@@ -645,6 +645,128 @@ func TestNavigationService_BranchAdmin_ClinicWorkspaceLevel(t *testing.T) {
 	assert.Equal(t, "/edl-01/billing", res.Items[4].Path)
 }
 
+func TestNavigationService_OutpatientClinic_NeverExposesLaboratoryRadiologyOrHospital(t *testing.T) {
+	ctx := context.Background()
+
+	dashboardItem := platformDomain.NavigationItem{
+		ID:           "nav_wsp_dashboard",
+		ContextScope: "workspace",
+		ModuleCode:   stringPtr("dashboard"),
+		Title:        "Workspace Overview",
+		Path:         "/:branch/dashboard",
+		Order:        1,
+		Status:       platformDomain.NavigationStatusActive,
+		IsVisible:    true,
+		IsActive:     true,
+	}
+	receptionItem := platformDomain.NavigationItem{
+		ID:                 "nav_wsp_reception",
+		ContextScope:       "workspace",
+		ModuleCode:         stringPtr("reception"),
+		Title:              "Patient Intake (MPI)",
+		Path:               "/:branch/reception",
+		Order:              2,
+		RequiredPermission: stringPtr("workspace:patient:read"),
+		RequiredCapability: stringPtr("core.patient"),
+		Status:             platformDomain.NavigationStatusActive,
+		IsVisible:          true,
+		IsActive:           true,
+	}
+	clinicalItem := platformDomain.NavigationItem{
+		ID:                 "nav_wsp_clinical",
+		ContextScope:       "workspace",
+		ModuleCode:         stringPtr("clinical"),
+		Title:              "Clinical & EMR",
+		Path:               "/:branch/clinical",
+		Order:              3,
+		RequiredPermission: stringPtr("workspace:clinical:read"),
+		RequiredCapability: stringPtr("clinical.basic"),
+		Status:             platformDomain.NavigationStatusActive,
+		IsVisible:          true,
+		IsActive:           true,
+	}
+	laboratoryItem := platformDomain.NavigationItem{
+		ID:                 "nav_wsp_laboratory",
+		ContextScope:       "workspace",
+		ModuleCode:         stringPtr("laboratory"),
+		Title:              "Laboratory (LIS)",
+		Path:               "/:branch/laboratory",
+		Order:              4,
+		RequiredPermission: stringPtr("workspace:sample:receive"),
+		RequiredCapability: stringPtr("laboratory.basic"),
+		Status:             platformDomain.NavigationStatusActive,
+		IsVisible:          true,
+		IsActive:           true,
+	}
+	radiologyItem := platformDomain.NavigationItem{
+		ID:                 "nav_wsp_radiology",
+		ContextScope:       "workspace",
+		ModuleCode:         stringPtr("radiology"),
+		Title:              "Radiology (RIS & PACS)",
+		Path:               "/:branch/radiology",
+		Order:              5,
+		RequiredPermission: stringPtr("workspace:radiology:view"),
+		RequiredCapability: stringPtr("radiology.basic"),
+		Status:             platformDomain.NavigationStatusActive,
+		IsVisible:          true,
+		IsActive:           true,
+	}
+	inpatientItem := platformDomain.NavigationItem{
+		ID:                 "nav_wsp_inpatient",
+		ContextScope:       "workspace",
+		ModuleCode:         stringPtr("hospital"),
+		Title:              "Inpatient Wards",
+		Path:               "/:branch/hospital",
+		Order:              6,
+		RequiredPermission: stringPtr("workspace:ward:read"),
+		RequiredCapability: stringPtr("clinical.inpatient_wards"),
+		Status:             platformDomain.NavigationStatusActive,
+		IsVisible:          true,
+		IsActive:           true,
+	}
+
+	mockNavRepo := new(MockNavigationRepository)
+	mockNavRepo.On(
+		"GetNavigationItemsByScope",
+		ctx,
+		"workspace",
+		mock.Anything,
+		mock.Anything,
+		true,
+	).Return([]platformDomain.NavigationItem{
+		dashboardItem, receptionItem, clinicalItem, laboratoryItem, radiologyItem, inpatientItem,
+	}, nil)
+
+	// Even for Organization Owner who has all permissions
+	ownerPrincipal := &auth.AuthenticatedPrincipal{
+		UserID:         "usr_org_owner_01",
+		TenantID:       "curexal-clinic",
+		OrganizationID: "org_curexal_01",
+		Role:           "owner",
+		Permissions: []string{
+			"*",
+		},
+	}
+
+	navService := application.NewNavigationService(mockNavRepo, nil, nil, nil)
+	res, err := navService.GetNavigation(ctx, ownerPrincipal, "curexal-clinic.localhost", "curexal-clinic", "workspace")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	// Outpatient clinic MUST exclude laboratory, radiology, and inpatient hospital items
+	for _, item := range res.Items {
+		assert.NotEqual(t, "Laboratory (LIS)", item.Title, "Outpatient Clinic must not contain Laboratory LIS")
+		assert.NotEqual(t, "Radiology (RIS & PACS)", item.Title, "Outpatient Clinic must not contain Radiology RIS")
+		assert.NotEqual(t, "Inpatient Wards", item.Title, "Outpatient Clinic must not contain Inpatient Wards")
+	}
+
+	assert.Len(t, res.Items, 3, "Only Dashboard, Reception, and Clinical must be returned for Outpatient Clinic")
+	assert.Equal(t, "/curexal-clinic/dashboard", res.Items[0].Path)
+	assert.Equal(t, "/curexal-clinic/reception", res.Items[1].Path)
+	assert.Equal(t, "/curexal-clinic/clinical", res.Items[2].Path)
+}
+
 func stringPtr(s string) *string {
 	return &s
 }

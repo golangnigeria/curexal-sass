@@ -133,10 +133,13 @@ func (e *CasbinEnforcer) Enforce(ctx context.Context, subject, tenant, resource,
 	var roleName string
 	if tenant != "" {
 		err = e.server.DB.Pool.QueryRow(ctx, `
-			SELECT COALESCE(m.role_title, 'member')
+			SELECT COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member')
 			FROM organization.organization_memberships m
-			LEFT JOIN workspace.workspaces t ON t.organization_id = m.organization_id
-			WHERE m.user_id = @subject AND (t.id = @tenant OR t.slug = @tenant OR m.organization_id = @tenant) AND m.is_active = TRUE
+			LEFT JOIN organization.organizations o ON o.id = m.organization_id
+			LEFT JOIN organization.facility_branches fb ON fb.organization_id = m.organization_id
+			WHERE m.user_id = @subject 
+			  AND (m.organization_id::text = @tenant OR o.slug = @tenant OR fb.id::text = @tenant OR fb.slug = @tenant) 
+			  AND m.is_active = TRUE
 			LIMIT 1
 		`, pgx.NamedArgs{"subject": subject, "tenant": tenant}).Scan(&roleName)
 	}
@@ -180,8 +183,12 @@ func (e *CasbinEnforcer) ListUserPermissions(ctx context.Context, subject, tenan
 		FROM "authorization".permissions p
 		JOIN "authorization".role_permissions rp ON rp.permission_id = p.id
 		JOIN "authorization".roles r ON r.id = rp.role_id
-		JOIN organization.organization_memberships m ON (m.role_title = r.code OR m.role = r.code OR m.role_title = r.name)
-		WHERE m.user_id = $1 AND (m.organization_id = $2 OR $2 = '' OR $2 IS NULL) AND m.is_active = TRUE
+		JOIN organization.organization_memberships m ON (m.role = r.code OR m.role_title = r.code OR m.role_title = r.name)
+		LEFT JOIN organization.organizations o ON o.id = m.organization_id
+		LEFT JOIN organization.facility_branches fb ON fb.organization_id = m.organization_id
+		WHERE m.user_id = $1 
+		  AND ($2 = '' OR $2 IS NULL OR m.organization_id::text = $2 OR o.slug = $2 OR fb.id::text = $2 OR fb.slug = $2) 
+		  AND m.is_active = TRUE
 	`, subject, tenant)
 	if err == nil {
 		defer rows.Close()
@@ -204,10 +211,13 @@ func (e *CasbinEnforcer) ListUserPermissions(ctx context.Context, subject, tenan
 	var roleName string
 	if tenant != "" {
 		_ = e.server.DB.Pool.QueryRow(ctx, `
-			SELECT COALESCE(m.role_title, 'member')
+			SELECT COALESCE(NULLIF(m.role, ''), NULLIF(m.role_title, ''), 'member')
 			FROM organization.organization_memberships m
-			LEFT JOIN workspace.workspaces t ON t.organization_id = m.organization_id
-			WHERE m.user_id = @subject AND (t.id = @tenant OR t.slug = @tenant OR m.organization_id = @tenant) AND m.is_active = TRUE
+			LEFT JOIN organization.organizations o ON o.id = m.organization_id
+			LEFT JOIN organization.facility_branches fb ON fb.organization_id = m.organization_id
+			WHERE m.user_id = @subject 
+			  AND (m.organization_id::text = @tenant OR o.slug = @tenant OR fb.id::text = @tenant OR fb.slug = @tenant) 
+			  AND m.is_active = TRUE
 			LIMIT 1
 		`, pgx.NamedArgs{"subject": subject, "tenant": tenant}).Scan(&roleName)
 	}
