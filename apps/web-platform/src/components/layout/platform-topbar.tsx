@@ -11,10 +11,17 @@ import {
   PanelLeftOpen,
   ChevronRight,
   Command,
+  Building2,
+  Stethoscope,
+  Microscope,
+  Pill,
+  ArrowLeft,
+  Sparkles,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useDiagnostics } from "@/api/hooks/use-diagnostics";
 import { useSidebar } from "@/components/layout/sidebar-context";
+import { useNavigation } from "@/api/hooks/use-navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,35 +35,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BranchSwitcher } from "@/components/design-system/branch-switcher";
+import { CommandPalette } from "@/features/search/command-palette";
 
-// Map paths to clean breadcrumb titles
-const routeTitleMap: Record<string, string> = {
-  // Platform Console routes
-  "/platform/dashboard": "Platform Dashboard",
-  "/platform/organizations": "Organizations Directory",
-  "/platform/users": "User Directory",
-  "/platform/marketplace": "Capability Marketplace",
-  "/platform/pricing": "Pricing & Gateways",
-  "/platform/facility-types": "Facility Types",
-  "/platform/catalogs": "Master Catalogs",
-  "/platform/audit": "Audit Trail & Telemetry",
-  "/platform/diagnostics": "Diagnostics & Launch Gate",
-  "/platform/demo-requests": "Inbound Demo Requests",
-  "/platform/settings": "Console Settings",
-
-  // Organization HQ routes
-  "/organization/dashboard": "Executive HQ Dashboard",
-  "/organization/branches": "Branch Facilities Network",
-  "/organization/members": "Staff Roster & Access Control",
-  "/organization/roles": "Roles & RBAC Permissions",
-  "/organization/catalogs": "Catalogs & Custom Pricing",
-  "/organization/billing": "Corporate Subscription & Billing",
-  "/organization/branding": "Branding & Customization",
-  "/organization/notifications": "Notification Settings",
-  "/organization/integrations": "Developer APIs & Webhooks",
-  "/organization/audit": "Corporate Audit Ledger",
-  "/organization/settings": "Organization Profile & Settings",
-};
+function getFacilityTypeIcon(typeStr?: string) {
+  const norm = (typeStr || "").toLowerCase();
+  if (norm.includes("lab")) return Microscope;
+  if (norm.includes("clinic")) return Stethoscope;
+  if (norm.includes("pharmacy")) return Pill;
+  if (norm.includes("hospital")) return Building2;
+  return Activity;
+}
 
 export function PlatformTopbar() {
   const location = useLocation();
@@ -65,9 +53,53 @@ export function PlatformTopbar() {
   const { isCollapsed, toggleCollapse } = useSidebar();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCmdOpen, setIsCmdOpen] = useState(false);
 
-  const isOrgContext = session?.bootstrap?.contexts?.current === "organization";
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCmdOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const isPlatformContext = location.pathname.startsWith("/platform");
+  const isOrgContext = !isPlatformContext && location.pathname.startsWith("/organization");
+  const isWorkspaceContext = !isPlatformContext && !location.pathname.startsWith("/organization") && location.pathname !== "/login";
+
   const user = session?.user;
+  const org = session?.bootstrap?.organization;
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const activeBranchSlug = pathParts[0] || session?.bootstrap?.branch?.slug || session?.bootstrap?.workspace?.slug || "main";
+
+  const activeScope = isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace";
+  const { data: navData } = useNavigation({
+    scope: activeScope,
+    branchSlug: isWorkspaceContext ? activeBranchSlug : undefined,
+  });
+
+  const activeBranch =
+    session?.bootstrap?.availableBranches?.find(
+      (b: any) => b.slug === activeBranchSlug || b.code?.toLowerCase() === activeBranchSlug.toLowerCase()
+    ) ||
+    session?.bootstrap?.branch ||
+    session?.bootstrap?.workspace;
+  const facilityType = activeBranch?.facilityType || "Facility";
+  const FacilityIcon = getFacilityTypeIcon(facilityType);
+
+  const isOrgAdminOrOwner =
+    session?.bootstrap?.platform?.isStaff === true ||
+    user?.isPlatformAdmin === true ||
+    session?.bootstrap?.organization?.role === "owner" ||
+    session?.bootstrap?.organization?.role === "org_admin" ||
+    session?.bootstrap?.organization?.role === "org_regional_manager" ||
+    user?.role === "owner" ||
+    user?.role === "org_admin" ||
+    user?.role === "org_regional_manager";
+
   const userInitials = user?.name
     ? user.name
         .split(" ")
@@ -77,155 +109,202 @@ export function PlatformTopbar() {
         .toUpperCase()
     : "CU";
 
-  const displayRole =
-    session?.bootstrap?.organization?.role === "owner" || user?.role === "owner"
-      ? "Organization Owner"
-      : session?.bootstrap?.organization?.role === "org_admin" || user?.role === "org_admin"
-      ? "Org Administrator"
-      : user?.platformRole || user?.role || (isOrgContext ? "Organization Member" : "Platform Staff");
+function formatRoleBadgeTitle(rawRole?: string | null): string {
+  if (!rawRole) return "Healthcare Specialist";
+  const r = rawRole.toLowerCase().trim();
+  switch (r) {
+    case "branch_admin":
+      return "Branch Administrator";
+    case "org_admin":
+      return "Organization Administrator";
+    case "owner":
+      return "Organization Owner";
+    case "doctor":
+    case "medical_doctor":
+      return "Medical Doctor";
+    case "nurse":
+    case "registered_nurse":
+      return "Registered Nurse";
+    case "lab_technician":
+    case "laboratory_scientist":
+    case "lab_scientist":
+      return "Laboratory Scientist";
+    case "pharmacist":
+      return "Pharmacist";
+    case "radiologist":
+      return "Radiologist";
+    case "receptionist":
+    case "front_desk":
+      return "Front Desk Specialist";
+    case "cashier":
+    case "billing":
+      return "Billing & Cashier Specialist";
+    case "org_regional_manager":
+      return "Regional Manager";
+    case "org_quality_manager":
+      return "Quality Assurance Manager";
+    case "org_finance_manager":
+      return "Finance Manager";
+    case "org_hr_manager":
+      return "HR Manager";
+    case "super_admin":
+      return "Super Admin";
+    case "platform_admin":
+      return "Platform Admin";
+    case "platform_staff":
+      return "Platform Staff";
+    default:
+      if (r === "user" || r === "member") return "Staff Member";
+      return r
+        .split(/[_\s]+/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+  }
+}
 
-  // Derive current page title
-  const currentTitle =
-    routeTitleMap[location.pathname] ||
-    (location.pathname.startsWith("/platform/organizations/")
-      ? "Organization Details"
+  const rawRoleCandidate =
+    (isPlatformContext
+      ? session?.bootstrap?.platform?.role || user?.platformRole
       : isOrgContext
-      ? "Organization Portal"
-      : "Platform Console");
+      ? session?.bootstrap?.organization?.role || user?.role
+      : (activeBranch as any)?.role || session?.bootstrap?.organization?.role || user?.role) ||
+    session?.bootstrap?.organization?.role ||
+    user?.role;
 
-  const homePath = isOrgContext ? "/organization/dashboard" : "/platform/dashboard";
-  const homeLabel = isOrgContext ? "Organization" : "Platform";
+  const displayRole = formatRoleBadgeTitle(rawRoleCandidate);
+
+  // Derive current page title & breadcrumbs directly from database navigation models
+  const matchingNavItem = navData?.items?.find(
+    (item) => item.path === location.pathname || (location.pathname.startsWith(item.path) && item.path !== "/" && !item.path.endsWith("/dashboard"))
+  );
+
+  let currentTitle = matchingNavItem?.title;
+  if (!currentTitle) {
+    if (isWorkspaceContext && pathParts.length >= 2) {
+      currentTitle = pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) + " Workspace";
+    } else if (location.pathname.startsWith("/platform/organizations/")) {
+      currentTitle = "Organization Details";
+    } else if (isOrgContext) {
+      currentTitle = "Organization Portal";
+    } else {
+      currentTitle = "Overview";
+    }
+  }
+
+  const homePath = isPlatformContext
+    ? "/platform/dashboard"
+    : isOrgContext
+    ? "/organization/dashboard"
+    : `/${pathParts[0] || "main"}/dashboard`;
+  const homeLabel = isPlatformContext
+    ? "Platform"
+    : isOrgContext
+    ? org?.name || "Organization"
+    : activeBranch?.name || "Facility";
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
     const q = searchQuery.toLowerCase().trim();
-    if (isOrgContext) {
-      if (q.includes("branch") || q.includes("facility")) {
-        navigate("/organization/branches");
-      } else if (q.includes("staff") || q.includes("member") || q.includes("user")) {
-        navigate("/organization/members");
-      } else if (q.includes("cat") || q.includes("price") || q.includes("test")) {
-        navigate("/organization/catalogs");
-      } else if (q.includes("bill") || q.includes("sub") || q.includes("plan")) {
-        navigate("/organization/billing");
-      } else if (q.includes("brand") || q.includes("logo") || q.includes("theme")) {
-        navigate("/organization/branding");
-      } else if (q.includes("api") || q.includes("key") || q.includes("hook")) {
-        navigate("/organization/integrations");
-      } else if (q.includes("audit") || q.includes("log")) {
-        navigate("/organization/audit");
-      } else {
-        navigate("/organization/dashboard");
-      }
-    } else {
-      if (q.includes("org") || q.includes("hospital") || q.includes("clinic") || q.includes("lab")) {
-        navigate(`/platform/organizations?q=${encodeURIComponent(q)}`);
-      } else if (q.includes("market") || q.includes("cap") || q.includes("addon")) {
-        navigate("/platform/marketplace");
-      } else if (q.includes("price") || q.includes("bill") || q.includes("pay") || q.includes("gate")) {
-        navigate("/platform/pricing");
-      } else if (q.includes("audit") || q.includes("log") || q.includes("event")) {
-        navigate("/platform/audit");
-      } else if (q.includes("diag") || q.includes("health") || q.includes("metric") || q.includes("gate")) {
-        navigate("/platform/diagnostics");
-      } else if (q.includes("cat") || q.includes("icd") || q.includes("test")) {
-        navigate("/platform/catalogs");
-      } else if (q.includes("demo") || q.includes("lead")) {
-        navigate("/platform/demo-requests");
-      } else if (q.includes("set") || q.includes("sec") || q.includes("policy")) {
-        navigate("/platform/settings");
-      } else {
-        navigate(`/platform/organizations?q=${encodeURIComponent(q)}`);
-      }
+    // Search within live backend navigation items
+    const matched = navData?.items?.find(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.key.toLowerCase().includes(q) ||
+        item.description?.toLowerCase().includes(q)
+    );
+
+    if (matched) {
+      navigate(matched.path);
+      setSearchQuery("");
+      return;
     }
+
+    if (isWorkspaceContext) {
+      const bSlug = pathParts[0] || "main";
+      navigate(`/${bSlug}/dashboard`);
+    }
+    setSearchQuery("");
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur-sm">
-      {/* Left: Sidebar Toggle & Page Breadcrumbs */}
+    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 sm:px-6">
+      {/* Left side: Breadcrumb & Context Navigation */}
       <div className="flex items-center gap-3">
         {isCollapsed && (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleCollapse}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              title="Expand Sidebar"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </Button>
-            <div className="h-4 w-[1px] bg-border hidden sm:block" />
-          </>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleCollapse}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            title="Expand Sidebar"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </Button>
         )}
 
-        <BranchSwitcher />
-
-        <div className="h-4 w-[1px] bg-border hidden sm:block" />
-
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link to={homePath} className="hover:text-foreground transition-colors font-medium">
-            {homeLabel}
+        <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-muted-foreground">
+          <Link
+            to={homePath}
+            className="flex items-center gap-1.5 font-medium hover:text-foreground transition-colors"
+          >
+            {isWorkspaceContext && <FacilityIcon className="w-3.5 h-3.5 text-primary" />}
+            <span>{homeLabel}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 opacity-60" />
-          <span className="font-semibold text-foreground truncate max-w-[200px] md:max-w-none">
-            {currentTitle}
-          </span>
-        </div>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="font-semibold text-foreground tracking-tight">{currentTitle}</span>
+        </nav>
       </div>
 
-      {/* Center: Global Search Bar */}
-      <div className="hidden md:flex flex-1 max-w-md mx-6">
-        <form onSubmit={handleSearchSubmit} className="relative w-full">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+      {/* Right side: Global Search, Branch Switcher & Controls */}
+      <div className="flex items-center gap-3">
+        {/* Branch / Facility Switcher strictly for Organization Context */}
+        {!isPlatformContext && <BranchSwitcher />}
+
+        {/* Global Quick Search */}
+        <form onSubmit={handleSearchSubmit} className="relative hidden md:block">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder={
-              isOrgContext
-                ? "Search branches, staff, catalogs, audit ledger..."
-                : "Search organizations, capabilities, catalogs, audit logs..."
-            }
+            placeholder="Search console (⌘K)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-12 text-xs h-8 bg-secondary/40 border-border/80 focus-visible:bg-secondary/80 transition-colors rounded-lg"
+            onClick={() => setIsCmdOpen(true)}
+            className="w-48 lg:w-64 pl-8 pr-12 h-8 text-xs bg-secondary/50 border-border focus:bg-background transition-all"
           />
-          <div className="absolute right-2.5 top-2 hidden lg:flex items-center gap-0.5 text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
-            <span>⌘</span>
-            <span>K</span>
-          </div>
+          <kbd className="absolute right-2 top-2 pointer-events-none hidden h-4 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground sm:flex">
+            ⌘K
+          </kbd>
         </form>
-      </div>
 
-      {/* Right: Telemetry Health, Notifications & Admin Menu */}
-      <div className="flex items-center gap-3">
-        {/* Discrete Live Cluster Dot */}
-        <Link
-          to={isOrgContext ? "/organization/audit" : "/platform/diagnostics"}
-          className="hidden sm:flex items-center gap-2 rounded-md border border-border/60 bg-secondary/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
-          title="Cluster Health & Status"
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="font-mono text-[11px]">Live Cluster</span>
-        </Link>
-
-        {/* Audit Log Quick Link */}
+        {/* Command Palette Trigger Button (Mobile) */}
         <Button
-          asChild
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 hidden sm:flex"
+          onClick={() => setIsCmdOpen(true)}
+          className="h-8 w-8 md:hidden text-muted-foreground hover:text-foreground"
+          title="Command Palette"
         >
-          <Link to={isOrgContext ? "/organization/audit" : "/platform/audit"} title="Audit Trail">
-            <Bell className="h-4 w-4" />
-          </Link>
+          <Command className="h-4 w-4" />
         </Button>
 
-        {/* User Profile Menu */}
+        {/* System Diagnostics Indicator (Platform Only) */}
+        {isPlatformContext && (
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30"
+          >
+            <Link to="/platform/diagnostics">
+              <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-500" style={{ animationDuration: "3s" }} />
+              <span className="font-semibold hidden sm:inline">Launch Gate Ready</span>
+            </Link>
+          </Button>
+        )}
+
+        {/* User Profile & Workspace Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -288,6 +367,9 @@ export function PlatformTopbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Global Command Center Modal */}
+      <CommandPalette isOpen={isCmdOpen} onClose={() => setIsCmdOpen(false)} />
     </header>
   );
 }

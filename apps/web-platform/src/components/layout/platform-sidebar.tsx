@@ -18,22 +18,32 @@ import {
   Palette,
   Bell,
   FileCheck,
+  Stethoscope,
+  Microscope,
+  Pill,
+  CalendarPlus,
   LucideIcon,
   ChevronRight,
   ChevronLeft,
   PanelLeftClose,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBootstrap } from "@/api/hooks/use-bootstrap";
+import { useNavigation } from "@/api/hooks/use-navigation";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { CurexalLogoSymbol } from "@/components/brand/curexal-logo";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ROLES, CONTEXT_SCOPES } from "@/api/contracts";
+import type { NavigationItem } from "@curexal/contracts";
+import { useBrandTheme } from "@/lib/theme/brand-theme-provider";
 
 // Map backend icon string names to Lucide icons
 const iconMap: Record<string, LucideIcon> = {
@@ -54,44 +64,56 @@ const iconMap: Record<string, LucideIcon> = {
   Palette,
   Bell,
   FileCheck,
+  Stethoscope,
+  Microscope,
+  Pill,
+  CalendarPlus,
 };
 
-// Default canonical platform console navigation
-const defaultPlatformNavigation = [
-  { id: "nav_plat_dashboard", title: "Platform Dashboard", icon: "LayoutDashboard", path: "/platform/dashboard", order: 1 },
-  { id: "nav_plat_orgs", title: "Organizations", icon: "Building2", path: "/platform/organizations", order: 2 },
-  { id: "nav_plat_users", title: "User Directory", icon: "Users", path: "/platform/users", order: 3 },
-  { id: "nav_plat_marketplace", title: "B2B Marketplace", icon: "Store", path: "/platform/marketplace", order: 4 },
-  { id: "nav_plat_pricing", title: "Pricing & Billing", icon: "CreditCard", path: "/platform/pricing", order: 5 },
-  { id: "nav_plat_facility_types", title: "Facility Types", icon: "Layers", path: "/platform/facility-types", order: 6 },
-  { id: "nav_plat_catalogs", title: "Master Catalogs", icon: "BookOpen", path: "/platform/catalogs", order: 7 },
-  { id: "nav_plat_audit", title: "Audit Trail", icon: "History", path: "/platform/audit", order: 8 },
-  { id: "nav_plat_diag", title: "Diagnostics & Gate", icon: "Cpu", path: "/platform/diagnostics", order: 9 },
-  { id: "nav_plat_demo", title: "Demo Requests", icon: "Inbox", path: "/platform/demo-requests", order: 10 },
-  { id: "nav_plat_settings", title: "Console Settings", icon: "Settings", path: "/platform/settings", order: 11 },
-];
-
-function getRolePresentationBadge(role?: string, context?: string): string {
-  if (!role && context === "organization") return "Executive HQ";
-  switch (role?.toLowerCase()) {
-    case "owner":
-      return "Organization Owner";
-    case "org_admin":
-      return "Org Administrator";
-    case "org_regional_manager":
-      return "Regional Manager";
-    case "super_admin":
-      return "Super Admin";
-    case "platform_admin":
-      return "Platform Admin";
-    case "platform_staff":
-      return "Platform Staff";
-    default:
-      return context === "organization" ? "Organization HQ" : "Console";
-  }
+function getFacilityTypeIcon(typeStr?: string) {
+  const norm = (typeStr || "").toLowerCase();
+  if (norm.includes("lab")) return Microscope;
+  if (norm.includes("clinic")) return Stethoscope;
+  if (norm.includes("pharmacy")) return Pill;
+  if (norm.includes("hospital")) return Building2;
+  return Activity;
 }
 
-import { useBrandTheme } from "@/lib/theme/brand-theme-provider";
+function getRolePresentationBadge(role?: string, context?: string): string {
+  if (!role) return context === CONTEXT_SCOPES.PLATFORM ? "Platform Staff" : "Staff Member";
+  switch (role.toLowerCase()) {
+    case ROLES.SUPER_ADMIN:
+      return "Super Admin";
+    case ROLES.PLATFORM_ADMIN:
+      return "Platform Admin";
+    case ROLES.PLATFORM_STAFF:
+      return "Platform Ops";
+    case ROLES.OWNER:
+      return "Organization Owner";
+    case ROLES.ORG_ADMIN:
+      return "HQ Administrator";
+    case ROLES.ORG_REGIONAL_MANAGER:
+      return "Regional Director";
+    case ROLES.ORG_QUALITY_MANAGER:
+      return "Quality Director";
+    case ROLES.ORG_FINANCE_MANAGER:
+      return "Finance Director";
+    case ROLES.ORG_HR_MANAGER:
+      return "HR Director";
+    case ROLES.BRANCH_ADMIN:
+      return "Branch Director";
+    case ROLES.CLINICIAN:
+      return "Lead Clinician";
+    case ROLES.TECHNICIAN:
+      return "Medical Lab Scientist";
+    case ROLES.CASHIER:
+      return "Billing Specialist";
+    case ROLES.CUSTOMER_CARE:
+      return "Care Coordinator";
+    default:
+      return context === CONTEXT_SCOPES.ORGANIZATION ? "Organization HQ" : "Console";
+  }
+}
 
 export function PlatformSidebar() {
   const location = useLocation();
@@ -99,33 +121,115 @@ export function PlatformSidebar() {
   const { isCollapsed, toggleCollapse } = useSidebar();
   const { logoUrl } = useBrandTheme();
 
-  const isOrgContext = bootstrap?.contexts?.current === "organization";
+  const isPlatformContext = location.pathname.startsWith("/platform");
+  const isOrgContext = !isPlatformContext && location.pathname.startsWith("/organization");
+  const isWorkspaceContext = !isPlatformContext && !location.pathname.startsWith("/organization") && location.pathname !== "/login";
+
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const activeBranchSlug = pathParts[0] || bootstrap?.branch?.slug || bootstrap?.workspace?.slug || "main";
+
+  const activeScope = isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace";
+  const { data: navData } = useNavigation({
+    scope: activeScope,
+    branchSlug: isWorkspaceContext ? activeBranchSlug : undefined,
+  });
+
   const orgName = bootstrap?.organization?.name || "Curexal";
-  const roleBadge = getRolePresentationBadge(
-    bootstrap?.organization?.role || bootstrap?.platform?.role,
-    bootstrap?.contexts?.current
-  );
-  const homePath = isOrgContext ? "/organization/dashboard" : "/platform/dashboard";
+  const activeBranch =
+    bootstrap?.availableBranches?.find(
+      (b: any) => b.slug === activeBranchSlug || b.code?.toLowerCase() === activeBranchSlug.toLowerCase()
+    ) ||
+    bootstrap?.branch ||
+    bootstrap?.workspace;
+  const facilityName = activeBranch?.name || activeBranchSlug.toUpperCase() + " Facility";
+  const facilityType = activeBranch?.facilityType || "Diagnostic Facility";
+  const FacilityIcon = getFacilityTypeIcon(facilityType);
 
-  // Unified navigation from backend bootstrap with fallback and route deduplication
-  const backendNavigation = React.useMemo(() => {
-    const rawItems =
-      bootstrap?.structuredNavigation?.primary?.length
-        ? bootstrap.structuredNavigation.primary
-        : bootstrap?.navigation?.length
-        ? bootstrap.navigation
-        : defaultPlatformNavigation;
+  const isOrgAdminOrOwner =
+    bootstrap?.platform?.isStaff === true ||
+    bootstrap?.organization?.role === "owner" ||
+    bootstrap?.organization?.role === "org_admin" ||
+    bootstrap?.organization?.role === "org_regional_manager" ||
+    bootstrap?.contexts?.available?.includes("organization") ||
+    (bootstrap?.identity as any)?.role === "owner" ||
+    (bootstrap?.identity as any)?.role === "org_admin";
 
-    const seenPaths = new Set<string>();
-    return rawItems.filter((item) => {
-      if (seenPaths.has(item.path)) return false;
-      seenPaths.add(item.path);
-      return true;
-    });
-  }, [bootstrap]);
+  const activeRole = isPlatformContext
+    ? (bootstrap?.platform?.role || (bootstrap?.platform?.isStaff ? "platform_staff" : undefined) || "super_admin")
+    : (bootstrap?.organization?.role || bootstrap?.platform?.role);
+
+  const roleBadge = isWorkspaceContext
+    ? facilityType.replace(/_/g, " ")
+    : getRolePresentationBadge(
+        activeRole,
+        isPlatformContext ? CONTEXT_SCOPES.PLATFORM : bootstrap?.contexts?.current
+      );
+
+  const homePath = isPlatformContext
+    ? "/platform/dashboard"
+    : isOrgContext
+    ? "/organization/dashboard"
+    : `/${activeBranchSlug}/dashboard`;
+
+  // 100% Database-driven navigation items derived from backend Navigation API or Bootstrap contract
+  const backendNavigation: NavigationItem[] = React.useMemo(() => {
+    // 1. Primary: Use dedicated /api/v1/navigation response items
+    if (navData?.items && navData.items.length > 0) {
+      return navData.items;
+    }
+
+    // 2. Secondary: Fallback to bootstrap contract navigation payload
+    if (bootstrap?.structuredNavigation?.primary?.length) {
+      return bootstrap.structuredNavigation.primary.map((item): NavigationItem => {
+        let p = item.path;
+        if (isWorkspaceContext && p.includes("/:branch")) {
+          p = p.replace("/:branch", `/${activeBranchSlug}`);
+        }
+        return {
+          id: item.id,
+          key: item.id,
+          contextScope: isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace",
+          title: item.title,
+          icon: item.icon,
+          path: p,
+          order: item.order || 0,
+          status: "active",
+          isVisible: true,
+          isActive: true,
+          badgeCount: undefined,
+          children: item.children as any,
+        };
+      });
+    }
+
+    if (bootstrap?.navigation?.length) {
+      return bootstrap.navigation.map((item): NavigationItem => {
+        let p = item.path;
+        if (isWorkspaceContext && p.includes("/:branch")) {
+          p = p.replace("/:branch", `/${activeBranchSlug}`);
+        }
+        return {
+          id: item.id,
+          key: item.id,
+          contextScope: isPlatformContext ? "platform" : isOrgContext ? "organization" : "workspace",
+          title: item.title,
+          icon: item.icon,
+          path: p,
+          order: item.order || 0,
+          status: "active",
+          isVisible: true,
+          isActive: true,
+          badgeCount: undefined,
+          children: item.children as any,
+        };
+      });
+    }
+
+    return [];
+  }, [navData, bootstrap, isPlatformContext, isOrgContext, isWorkspaceContext, activeBranchSlug]);
 
   return (
-    <TooltipProvider delayDuration={150}> 
+    <TooltipProvider delayDuration={150}>
       <aside
         className={cn(
           "fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out",
@@ -141,19 +245,23 @@ export function PlatformSidebar() {
         >
           <Link
             to={homePath}
-            className="flex items-center gap-3 overflow-hidden group"
+            className="flex items-center gap-3 overflow-hidden group min-w-0"
           >
             <div className="relative flex items-center justify-center p-1 rounded-xl bg-slate-900 shadow-md shrink-0 group-hover:scale-105 transition-transform">
-              {isOrgContext && logoUrl ? (
+              {isWorkspaceContext ? (
+                <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary/20 text-primary">
+                  <FacilityIcon className="w-4 h-4" />
+                </div>
+              ) : isOrgContext && logoUrl ? (
                 <img src={logoUrl} alt={orgName} className="w-7 h-7 object-contain rounded-lg" />
               ) : (
                 <CurexalLogoSymbol className="w-7 h-7" />
               )}
             </div>
             {!isCollapsed && (
-              <div className="flex flex-col truncate">
+              <div className="flex flex-col truncate min-w-0">
                 <span className="font-extrabold tracking-tight text-foreground text-sm leading-tight truncate">
-                  {isOrgContext ? orgName : "CUREXAL"}
+                  {isWorkspaceContext ? facilityName : isOrgContext ? orgName : "CUREXAL"}
                 </span>
                 <span className="text-[10px] tracking-wider font-semibold text-primary uppercase truncate">
                   {roleBadge}
@@ -175,26 +283,53 @@ export function PlatformSidebar() {
           )}
         </div>
 
-        {/* Navigation Links strictly from backend */}
+        {/* Quick Return to Org HQ button inside sidebar for Org Admins in Workspace */}
+        {isWorkspaceContext && isOrgAdminOrOwner && !isCollapsed && (
+          <div className="px-3 pt-3">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs h-8 gap-2 border-border/80 bg-secondary/40 hover:bg-secondary text-foreground"
+            >
+              <Link to="/organization/dashboard">
+                <ArrowLeft className="w-3.5 h-3.5 text-primary" />
+                <span>Return to Executive HQ</span>
+              </Link>
+            </Button>
+          </div>
+        )}
+
+        {/* Navigation Links strictly rendered from database SSOT */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 scrollbar-thin">
           {!isCollapsed && (
             <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
-              {isOrgContext ? "Executive Management & Operations" : "Operations & Management"}
+              {isWorkspaceContext
+                ? "Clinical & Facility Operations"
+                : isOrgContext
+                ? "Executive Management & Operations"
+                : "Operations & Management"}
             </div>
           )}
 
           {backendNavigation.map((item) => {
             const IconComponent = iconMap[item.icon] || Activity;
             const targetPath = item.path;
-            const isRootDashboard = targetPath === "/platform/dashboard" || targetPath === "/organization/dashboard";
+            const isRootDashboard =
+              targetPath === "/platform/dashboard" ||
+              targetPath === "/organization/dashboard" ||
+              targetPath === `/${activeBranchSlug}/dashboard`;
             const isActive =
               location.pathname === targetPath ||
               (!isRootDashboard && location.pathname.startsWith(targetPath));
 
+            const isPending = item.status === "pending";
+
             const linkElement = (
               <Link
                 key={item.id || item.path}
-                to={targetPath}
+                to={isPending ? "#" : targetPath}
+                onClick={isPending ? (e) => e.preventDefault() : undefined}
                 className={cn(
                   "group relative flex items-center rounded-lg text-sm font-medium transition-all duration-200",
                   isCollapsed
@@ -202,6 +337,8 @@ export function PlatformSidebar() {
                     : "gap-3 px-3 py-2.5",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                    : isPending
+                    ? "opacity-60 cursor-not-allowed text-muted-foreground"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
@@ -215,7 +352,17 @@ export function PlatformSidebar() {
                 {!isCollapsed && (
                   <>
                     <span className="flex-1 truncate">{item.title}</span>
-                    {isActive && <ChevronRight className="h-3.5 w-3.5 opacity-80" />}
+                    {isPending ? (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                        Pending
+                      </Badge>
+                    ) : item.badgeCount !== undefined && item.badgeCount > 0 ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary">
+                        {item.badgeCount}
+                      </Badge>
+                    ) : isActive ? (
+                      <ChevronRight className="h-3.5 w-3.5 opacity-80" />
+                    ) : null}
                   </>
                 )}
               </Link>
@@ -226,7 +373,7 @@ export function PlatformSidebar() {
                 <Tooltip key={item.id || item.path}>
                   <TooltipTrigger asChild>{linkElement}</TooltipTrigger>
                   <TooltipContent side="right" className="text-xs font-medium">
-                    {item.title}
+                    {item.title} {isPending && "(Pending)"}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -247,6 +394,7 @@ export function PlatformSidebar() {
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 title="Expand Sidebar"
               >
+                <ChevronRight className="h-4 w-4" />
               </Button>
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title="Live Cluster" />
             </div>
@@ -254,7 +402,7 @@ export function PlatformSidebar() {
             <>
               <div className="flex flex-col">
                 <span className="font-mono text-[11px] text-muted-foreground">
-                  {bootstrap?.metadata?.version || "Cluster"}
+                  {bootstrap?.metadata?.version || "Cluster v1.0.0"}
                 </span>
                 <span className="flex items-center gap-1.5 font-medium text-[11px] text-emerald-600 dark:text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />

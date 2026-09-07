@@ -48,7 +48,7 @@ func (s *OrganizationBrandingService) isPlatformAdmin(principal *middleware.Auth
 	return false
 }
 
-func (s *OrganizationBrandingService) resolveActiveOrgUUID(principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
+func (s *OrganizationBrandingService) resolveActiveOrgUUID(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
 	if principal == nil {
 		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 	}
@@ -61,16 +61,21 @@ func (s *OrganizationBrandingService) resolveActiveOrgUUID(principal *middleware
 		orgIDStr = principal.TenantID
 	}
 
-	if orgIDStr == "" {
-		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+	if orgIDStr != "" {
+		parsed, err := uuid.Parse(orgIDStr)
+		if err == nil {
+			return parsed, nil
+		}
 	}
 
-	parsed, err := uuid.Parse(orgIDStr)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid active organization ID: %w", err)
+	if s.orgRepo != nil && principal.UserID != "" {
+		orgs, err := s.orgRepo.List(ctx, principal.UserID, s.isPlatformAdmin(principal))
+		if err == nil && len(orgs) > 0 {
+			return orgs[0].ID, nil
+		}
 	}
 
-	return parsed, nil
+	return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 }
 
 const redactedSecretMask = "••••••••"
@@ -92,7 +97,7 @@ func (s *OrganizationBrandingService) redactConfigSecrets(cfg *domain.Notificati
 }
 
 func (s *OrganizationBrandingService) GetBranding(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (*domain.BrandingConfig, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -105,14 +110,14 @@ func (s *OrganizationBrandingService) UpdateBranding(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.UpdateBrandingPayload,
 ) (*domain.BrandingConfig, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	updated, errUp := s.brandingRepo.UpdateBranding(ctx, orgUUID, payload, actorUUID)
@@ -152,14 +157,14 @@ func (s *OrganizationBrandingService) SaveNotificationConfig(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.SaveNotificationConfigPayload,
 ) (*domain.NotificationConfig, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	if !domain.IsValidNotificationChannel(payload.Channel) {
@@ -243,7 +248,7 @@ func (s *OrganizationBrandingService) SaveNotificationConfig(
 }
 
 func (s *OrganizationBrandingService) ListNotificationConfigs(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.NotificationConfig, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -267,14 +272,14 @@ func (s *OrganizationBrandingService) SaveNotificationTemplate(
 	templateKey string,
 	payload *domain.SaveNotificationTemplatePayload,
 ) (*domain.NotificationTemplate, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	if !domain.IsValidNotificationChannel(payload.Channel) {
@@ -324,7 +329,7 @@ func (s *OrganizationBrandingService) SaveNotificationTemplate(
 }
 
 func (s *OrganizationBrandingService) ListNotificationTemplates(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.NotificationTemplate, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -333,49 +338,49 @@ func (s *OrganizationBrandingService) ListNotificationTemplates(ctx context.Cont
 }
 
 func (s *OrganizationBrandingService) ListUserNotifications(ctx context.Context, principal *middleware.AuthenticatedPrincipal, limit int) ([]domain.UserNotification, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	userUUID, errUser := uuid.Parse(principal.UserID)
-	if errUser != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errUser)
+	userUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		userUUID = parsed
 	}
 
 	return s.brandingRepo.ListUserNotifications(ctx, orgUUID, userUUID, limit)
 }
 
 func (s *OrganizationBrandingService) MarkNotificationRead(ctx context.Context, principal *middleware.AuthenticatedPrincipal, notifID uuid.UUID) error {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return err
 	}
 
-	userUUID, errUser := uuid.Parse(principal.UserID)
-	if errUser != nil {
-		return fmt.Errorf("invalid principal user ID: %w", errUser)
+	userUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		userUUID = parsed
 	}
 
 	return s.brandingRepo.MarkNotificationRead(ctx, orgUUID, userUUID, notifID)
 }
 
 func (s *OrganizationBrandingService) MarkAllNotificationsRead(ctx context.Context, principal *middleware.AuthenticatedPrincipal) error {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return err
 	}
 
-	userUUID, errUser := uuid.Parse(principal.UserID)
-	if errUser != nil {
-		return fmt.Errorf("invalid principal user ID: %w", errUser)
+	userUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		userUUID = parsed
 	}
 
 	return s.brandingRepo.MarkAllNotificationsRead(ctx, orgUUID, userUUID)
 }
 
 func (s *OrganizationBrandingService) ListNotificationDeliveries(ctx context.Context, principal *middleware.AuthenticatedPrincipal, limit int) ([]domain.NotificationDelivery, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}

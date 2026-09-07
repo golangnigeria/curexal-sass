@@ -2,7 +2,7 @@ package application
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
@@ -41,11 +41,14 @@ func (s *FacilityBranchService) isPlatformAdmin(principal *middleware.Authentica
 	return false
 }
 
-func (s *FacilityBranchService) resolveActiveOrgUUID(principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
+func (s *FacilityBranchService) resolveActiveOrgUUID(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
 	if principal == nil {
 		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 	}
 
+	isPlatform := s.isPlatformAdmin(principal)
+
+	// 1. Try parsing explicit requested organization ID
 	orgIDStr := principal.Organization.ActiveOrganizationID
 	if orgIDStr == "" {
 		orgIDStr = principal.OrganizationID
@@ -54,16 +57,32 @@ func (s *FacilityBranchService) resolveActiveOrgUUID(principal *middleware.Authe
 		orgIDStr = principal.TenantID
 	}
 
-	if orgIDStr == "" {
-		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+	if orgIDStr != "" {
+		parsed, err := uuid.Parse(orgIDStr)
+		if err == nil {
+			if isPlatform {
+				return parsed, nil
+			}
+			// Authoritative membership check - NEVER trust client supplied ID without DB verification
+			if s.orgRepo != nil && principal.UserID != "" {
+				isMember, errCheck := s.orgRepo.VerifyMembership(ctx, parsed, principal.UserID)
+				if errCheck == nil && isMember {
+					return parsed, nil
+				}
+			}
+			return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+		}
 	}
 
-	parsed, err := uuid.Parse(orgIDStr)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid active organization ID: %w", err)
+	// 2. Fallback to resolving the user's primary active organization from memberships
+	if s.orgRepo != nil && principal.UserID != "" {
+		orgs, err := s.orgRepo.List(ctx, principal.UserID, isPlatform)
+		if err == nil && len(orgs) > 0 {
+			return orgs[0].ID, nil
+		}
 	}
 
-	return parsed, nil
+	return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 }
 
 func (s *FacilityBranchService) getMaxBranchesForPlan(plan string) int {
@@ -82,7 +101,7 @@ func (s *FacilityBranchService) getMaxBranchesForPlan(plan string) int {
 }
 
 func (s *FacilityBranchService) ListBranches(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.FacilityBranch, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +110,17 @@ func (s *FacilityBranchService) ListBranches(ctx context.Context, principal *mid
 }
 
 func (s *FacilityBranchService) GetBranchByID(ctx context.Context, principal *middleware.AuthenticatedPrincipal, branchID uuid.UUID) (*domain.FacilityBranch, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
+	}
+
+	isOrgAdmin := s.isPlatformAdmin(principal) || principal.HasPermission("organization:branch:manage") || principal.HasPermission("organization:manage") || principal.Role == "owner" || principal.Role == "org_admin"
+
+	// Authoritative facility access verification
+	hasAccess, errAccess := s.branchRepo.VerifyUserFacilityAccess(ctx, orgUUID, branchID, principal.UserID, isOrgAdmin)
+	if errAccess != nil || !hasAccess {
+		return nil, domain.ErrUnauthorizedTenantAccess
 	}
 
 	return s.branchRepo.GetBranchByID(ctx, orgUUID, branchID)
@@ -104,17 +131,33 @@ func (s *FacilityBranchService) CreateBranch(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.CreateFacilityBranchPayload,
 ) (*domain.FacilityBranch, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
-	// 1. Verify Facility Type Exists AND is ACTIVE
+	// 1. Resolve Facility Type ID if passed as Code/Slug or UUID Nil
+	if payload.FacilityTypeID == uuid.Nil {
+		codeToLookup := payload.FacilityTypeCode
+		if codeToLookup == "" {
+			codeToLookup = payload.FacilityType
+		}
+		if codeToLookup == "" {
+			codeToLookup = "diagnostic_center"
+		}
+		ft, errFT := s.branchRepo.GetFacilityTypeByCode(ctx, codeToLookup)
+		if errFT != nil || ft == nil {
+			return nil, domain.ErrInvalidFacilityType
+		}
+		payload.FacilityTypeID = ft.ID
+	}
+
+	// 2. Verify Facility Type Exists AND is ACTIVE
 	active, errActive := s.branchRepo.CheckFacilityTypeActive(ctx, payload.FacilityTypeID)
 	if errActive != nil || !active {
 		return nil, domain.ErrInactiveFacilityType
@@ -145,6 +188,7 @@ func (s *FacilityBranchService) CreateBranch(
 		OrganizationID: orgUUID,
 		FacilityTypeID: payload.FacilityTypeID,
 		Code:           payload.Code,
+		Slug:           payload.Slug,
 		Name:           payload.Name,
 		IsHeadquarters: payload.IsHeadquarters,
 		Email:          payload.Email,
@@ -204,14 +248,14 @@ func (s *FacilityBranchService) UpdateBranch(
 	branchID uuid.UUID,
 	payload *domain.UpdateFacilityBranchPayload,
 ) (*domain.FacilityBranch, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	existing, errGet := s.branchRepo.GetBranchByID(ctx, orgUUID, branchID)
@@ -221,6 +265,12 @@ func (s *FacilityBranchService) UpdateBranch(
 
 	if payload.Name != nil {
 		existing.Name = *payload.Name
+	}
+	if payload.Slug != nil && *payload.Slug != "" {
+		existing.Slug = *payload.Slug
+		if errVal := existing.Validate(); errVal != nil {
+			return nil, errVal
+		}
 	}
 	if payload.IsHeadquarters != nil {
 		existing.IsHeadquarters = *payload.IsHeadquarters
@@ -249,7 +299,9 @@ func (s *FacilityBranchService) UpdateBranch(
 	if payload.Status != nil {
 		existing.Status = *payload.Status
 	}
-	existing.Version = payload.Version
+	if payload.Version > 0 {
+		existing.Version = payload.Version
+	}
 
 	updated, errUp := s.branchRepo.UpdateBranch(ctx, existing, actorUUID)
 	if errUp != nil {
@@ -288,14 +340,14 @@ func (s *FacilityBranchService) DeactivateBranch(
 	principal *middleware.AuthenticatedPrincipal,
 	branchID uuid.UUID,
 ) error {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	errDeact := s.branchRepo.DeactivateBranch(ctx, orgUUID, branchID, actorUUID)
@@ -328,4 +380,61 @@ func (s *FacilityBranchService) DeactivateBranch(
 	}
 
 	return nil
+}
+
+func (s *FacilityBranchService) SetHeadquarters(
+	ctx context.Context,
+	principal *middleware.AuthenticatedPrincipal,
+	branchID uuid.UUID,
+) (*domain.FacilityBranch, error) {
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
+	if err != nil {
+		return nil, err
+	}
+
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
+	}
+
+	// Verify branch exists in this organization
+	branch, errGet := s.branchRepo.GetBranchByID(ctx, orgUUID, branchID)
+	if errGet != nil {
+		return nil, errGet
+	}
+
+	if branch.Status != "ACTIVE" {
+		return nil, errors.New("cannot set inactive or suspended branch as headquarters")
+	}
+
+	errSet := s.branchRepo.SetHeadquarters(ctx, orgUUID, branchID, actorUUID)
+	if errSet != nil {
+		return nil, errSet
+	}
+
+	if s.auditRepo != nil {
+		action := "HEADQUARTERS_CHANGED"
+		resType := "organization.facility_branches"
+		resID := branchID.String()
+		eventCat := "ORGANIZATION_OPERATIONS"
+		severity := "HIGH"
+		status := "SUCCESS"
+		orgIDStr := orgUUID.String()
+
+		_, _ = s.auditRepo.Create(ctx, &auditDomain.CreateAuditLogPayload{
+			IsPlatform:    s.isPlatformAdmin(principal),
+			TenantID:      &orgIDStr,
+			ActorID:       &principal.UserID,
+			ActorName:     &principal.Identity.FullName,
+			ActorRole:     &principal.Role,
+			Action:        action,
+			ResourceType:  &resType,
+			ResourceID:    &resID,
+			EventCategory: &eventCat,
+			Severity:      severity,
+			Status:        status,
+		})
+	}
+
+	return s.branchRepo.GetBranchByID(ctx, orgUUID, branchID)
 }

@@ -11,6 +11,7 @@ import (
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,12 +30,38 @@ type PlatformPayload struct {
 }
 
 type OrganizationPayload struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Slug         string `json:"slug,omitempty"`
-	Logo         string `json:"logo,omitempty"`
-	Role         string `json:"role,omitempty"`
-	Subscription string `json:"subscription"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug,omitempty"`
+	Logo           string `json:"logo,omitempty"`
+	Role           string `json:"role,omitempty"`
+	Subscription   string `json:"subscription"`
+	Status         string `json:"status,omitempty"`
+	SetupState     string `json:"setupState,omitempty"`
+	Hostname       string `json:"hostname,omitempty"`
+	IsCustomDomain bool   `json:"isCustomDomain,omitempty"`
+}
+
+type BranchPayload struct {
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Slug           string                 `json:"slug"`
+	Code           string                 `json:"code"`
+	FacilityType   string                 `json:"facilityType"`
+	IsHeadquarters bool                   `json:"isHeadquarters"`
+	City           string                 `json:"city,omitempty"`
+	State          string                 `json:"state,omitempty"`
+	OperatingHours map[string]interface{} `json:"operatingHours,omitempty"`
+	Status         string                 `json:"status,omitempty"`
+}
+
+type BranchSummaryPayload struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Code           string `json:"code"`
+	FacilityType   string `json:"facilityType"`
+	IsHeadquarters bool   `json:"isHeadquarters"`
 }
 
 type WorkspacePayload struct {
@@ -131,7 +158,9 @@ type BootstrapContractResponse struct {
 	Identity             IdentityPayload             `json:"identity"`
 	Platform             PlatformPayload             `json:"platform"`
 	Organization         OrganizationPayload         `json:"organization"`
+	Branch               *BranchPayload              `json:"branch,omitempty"`
 	Workspace            WorkspacePayload            `json:"workspace"`
+	AvailableBranches    []BranchSummaryPayload      `json:"availableBranches,omitempty"`
 	Subscription         SubscriptionPayload         `json:"subscription"`
 	Modules              []ModuleCapabilityPayload   `json:"modules"`
 	Capabilities         []string                    `json:"capabilities"`
@@ -172,6 +201,10 @@ func (b *BootstrapBuilder) SetDBPool(pool *pgxpool.Pool) {
 }
 
 func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (*BootstrapContractResponse, error) {
+	return b.BuildBootstrapWithContext(ctx, principal, "", "")
+}
+
+func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, principal *middleware.AuthenticatedPrincipal, reqHost, reqBranchSlug string) (*BootstrapContractResponse, error) {
 	userID := "usr_default"
 	userEmail := ""
 	displayName := ""
@@ -206,33 +239,115 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 	var activeOrgName string
 	var activeOrgSlug string
 	var activeOrgPlan string
+	var activeOrgStatus string
+	var activeOrgSetupState string
 	var activeMembershipRole string
 	var activeMembershipTenantID string
 	var activePrimaryColor string
 	var activeThemeBrandingJSON []byte
 	var activeCustomDomain string
 	var activeLogoURL string
+	var resolvedHostname string
+	var isCustomDomain bool
 	var activeTenant *orgDomain.Tenant
+	var activeBranch *BranchPayload
+	var availableBranches []BranchSummaryPayload
 
-	if b.dbPool != nil && userID != "" && userID != "usr_default" {
-		row := b.dbPool.QueryRow(ctx, `
-			SELECT 
-				m.organization_id::text, 
-				COALESCE(m.tenant_id::text, ''), 
-				COALESCE(m.role, m.role_title, 'member'), 
-				o.name, 
-				o.slug, 
-				COALESCE(o.plan, 'smart'),
-				COALESCE(o.primary_color, '#0284c7'),
-				COALESCE(o.theme_branding, '{}'::jsonb),
-				COALESCE(o.custom_domain, ''),
-				COALESCE(o.logo_url, '')
-			FROM organization.organization_memberships m
-			JOIN organization.organizations o ON o.id = m.organization_id
-			WHERE m.user_id = $1 AND m.is_active = TRUE
-			ORDER BY (m.role = 'owner') DESC, m.created_at ASC
-			LIMIT 1
-		`, userID)
+	cleanHost := strings.ToLower(strings.TrimSpace(reqHost))
+	if colonIdx := strings.Index(cleanHost, ":"); colonIdx != -1 {
+		cleanHost = cleanHost[:colonIdx]
+	}
+
+	// Step 1a: Attempt to resolve specific organization by incoming Host header if provided
+	var targetOrgIDFromHost string
+	if b.dbPool != nil && cleanHost != "" && cleanHost != "localhost" && cleanHost != "127.0.0.1" && cleanHost != "app.curexal.space" && cleanHost != "curexal.space" {
+		if strings.HasSuffix(cleanHost, ".localhost") {
+			sub := strings.TrimSuffix(cleanHost, ".localhost")
+			if sub != "app" && sub != "api" && sub != "public" {
+				_ = b.dbPool.QueryRow(ctx, `SELECT id::text FROM organization.organizations WHERE slug = $1 LIMIT 1`, sub).Scan(&targetOrgIDFromHost)
+				resolvedHostname = cleanHost
+			}
+		} else if strings.HasSuffix(cleanHost, ".curexal.space") || strings.HasSuffix(cleanHost, ".curexal.internal") {
+			sub := strings.TrimSuffix(cleanHost, ".curexal.space")
+			sub = strings.TrimSuffix(sub, ".curexal.internal")
+			if sub != "app" && sub != "api" && sub != "public" && sub != "admin" {
+				_ = b.dbPool.QueryRow(ctx, `
+					SELECT o.id::text FROM organization.organizations o
+					LEFT JOIN organization.organization_domains od ON od.organization_id = o.id
+					WHERE od.hostname = $1 OR o.slug = $2 LIMIT 1
+				`, cleanHost, sub).Scan(&targetOrgIDFromHost)
+				resolvedHostname = cleanHost
+			}
+		} else {
+			// Custom domain lookup
+			_ = b.dbPool.QueryRow(ctx, `
+				SELECT o.id::text FROM organization.organization_domains od
+				JOIN organization.organizations o ON o.id = od.organization_id
+				WHERE od.hostname = $1 AND od.is_verified = TRUE LIMIT 1
+			`, cleanHost).Scan(&targetOrgIDFromHost)
+			if targetOrgIDFromHost != "" {
+				resolvedHostname = cleanHost
+				isCustomDomain = true
+			}
+		}
+	}
+
+	if b.dbPool != nil && (userID != "" || userEmail != "") {
+		var row pgx.Row
+		if targetOrgIDFromHost != "" {
+			row = b.dbPool.QueryRow(ctx, `
+				SELECT 
+					m.organization_id::text, 
+					COALESCE(m.tenant_id::text, ''), 
+					CASE 
+						WHEN m.role IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager') THEN m.role
+						ELSE COALESCE(NULLIF(m.role, 'member'), m.role, 'member')
+					END, 
+					o.name, 
+					o.slug, 
+					COALESCE(o.plan, 'smart'),
+					COALESCE(o.status, 'active'),
+					COALESCE(o.setup_state, ''),
+					COALESCE(o.primary_color, '#0284c7'),
+					COALESCE(o.theme_branding, '{}'::jsonb),
+					COALESCE(o.custom_domain, ''),
+					COALESCE(o.logo_url, '')
+				FROM organization.organization_memberships m
+				JOIN organization.organizations o ON o.id = m.organization_id
+				LEFT JOIN identity.users u ON u.id = m.user_id
+				WHERE (m.user_id::text = $1 OR u.id::text = $1 OR u.email = $2 OR ($2 != '' AND u.email ILIKE $2)) 
+				  AND m.organization_id::text = $3 
+				  AND m.is_active = TRUE
+				LIMIT 1
+			`, userID, userEmail, targetOrgIDFromHost)
+		} else {
+			row = b.dbPool.QueryRow(ctx, `
+				SELECT 
+					m.organization_id::text, 
+					COALESCE(m.tenant_id::text, ''), 
+					CASE 
+						WHEN m.role IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager') THEN m.role
+						ELSE COALESCE(NULLIF(m.role, 'member'), m.role, 'member')
+					END, 
+					o.name, 
+					o.slug, 
+					COALESCE(o.plan, 'smart'),
+					COALESCE(o.status, 'active'),
+					COALESCE(o.setup_state, ''),
+					COALESCE(o.primary_color, '#0284c7'),
+					COALESCE(o.theme_branding, '{}'::jsonb),
+					COALESCE(o.custom_domain, ''),
+					COALESCE(o.logo_url, '')
+				FROM organization.organization_memberships m
+				JOIN organization.organizations o ON o.id = m.organization_id
+				LEFT JOIN identity.users u ON u.id = m.user_id
+				WHERE (m.user_id::text = $1 OR u.id::text = $1 OR u.email = $2 OR ($2 != '' AND u.email ILIKE $2)) 
+				  AND m.is_active = TRUE
+				ORDER BY (m.role IN ('owner', 'org_admin')) DESC, m.created_at ASC
+				LIMIT 1
+			`, userID, userEmail)
+		}
+
 		_ = row.Scan(
 			&activeOrgID, 
 			&activeMembershipTenantID, 
@@ -240,11 +355,35 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 			&activeOrgName, 
 			&activeOrgSlug, 
 			&activeOrgPlan,
+			&activeOrgStatus,
+			&activeOrgSetupState,
 			&activePrimaryColor,
 			&activeThemeBrandingJSON,
 			&activeCustomDomain,
 			&activeLogoURL,
 		)
+
+		if activeOrgID == "" && targetOrgIDFromHost != "" {
+			_ = b.dbPool.QueryRow(ctx, `
+				SELECT id::text, name, slug, COALESCE(plan, 'smart'), COALESCE(status, 'active'), COALESCE(setup_state, ''), COALESCE(primary_color, '#0284c7'), COALESCE(theme_branding, '{}'::jsonb), COALESCE(custom_domain, ''), COALESCE(logo_url, '')
+				FROM organization.organizations WHERE id::text = $1 LIMIT 1
+			`, targetOrgIDFromHost).Scan(&activeOrgID, &activeOrgName, &activeOrgSlug, &activeOrgPlan, &activeOrgStatus, &activeOrgSetupState, &activePrimaryColor, &activeThemeBrandingJSON, &activeCustomDomain, &activeLogoURL)
+		}
+
+		if !isPlatformStaff && userRole == "" {
+			var dbIsAdmin bool
+			var dbPlatformRole *string
+			if errUser := b.dbPool.QueryRow(ctx, `SELECT is_platform_admin, platform_role FROM identity.users WHERE id::text = $1 OR email = $2 LIMIT 1`, userID, userEmail).Scan(&dbIsAdmin, &dbPlatformRole); errUser == nil {
+				if dbIsAdmin || (dbPlatformRole != nil && (*dbPlatformRole == "super_admin" || *dbPlatformRole == "platform_admin" || *dbPlatformRole == "platform_staff")) {
+					isPlatformStaff = true
+					if dbPlatformRole != nil && *dbPlatformRole != "" {
+						userRole = *dbPlatformRole
+					} else {
+						userRole = "super_admin"
+					}
+				}
+			}
+		}
 	}
 
 	// Fallback to orgRepo if not resolved from direct query
@@ -257,8 +396,20 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 			if orgs[0].Plan != "" {
 				activeOrgPlan = orgs[0].Plan
 			}
-			activeMembershipRole = "owner"
+			if orgs[0].Status != "" {
+				activeOrgStatus = string(orgs[0].Status)
+			}
+			if orgs[0].SetupState != "" {
+				activeOrgSetupState = string(orgs[0].SetupState)
+			}
+			if activeMembershipRole == "" && userRole != "" && userRole != "user" && userRole != "member" {
+				activeMembershipRole = userRole
+			}
 		}
+	}
+
+	if resolvedHostname == "" && activeOrgSlug != "" {
+		resolvedHostname = activeOrgSlug + ".curexal.space"
 	}
 
 	// 2. Resolve Active Context
@@ -269,7 +420,15 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 		currentContext = "platform"
 		availableContexts = []string{"platform", "organization", "workspace"}
 	} else if activeOrgID != "" {
-		if activeMembershipRole == "owner" || activeMembershipRole == "org_admin" || activeMembershipRole == "admin" || activeMembershipRole == "org_regional_manager" || userRole == "owner" {
+		isExecRole := activeMembershipRole == "owner" || activeMembershipRole == "org_admin" || activeMembershipRole == "admin" || activeMembershipRole == "org_regional_manager" || activeMembershipRole == "org_quality_manager" || activeMembershipRole == "org_finance_manager" || activeMembershipRole == "org_hr_manager" || userRole == "owner" || userRole == "org_admin"
+		if reqBranchSlug != "" {
+			currentContext = "workspace"
+			if isExecRole {
+				availableContexts = []string{"organization", "workspace"}
+			} else {
+				availableContexts = []string{"workspace"}
+			}
+		} else if isExecRole {
 			currentContext = "organization"
 			availableContexts = []string{"organization", "workspace"}
 			if userRole == "" {
@@ -281,12 +440,103 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 		}
 	}
 
-	// 3. Resolve Workspace / Facility details
+	// 3. Resolve Facility Branches & Active Branch / Workspace details
 	targetTenantID := ""
 	if principal != nil && principal.TenantID != "" {
 		targetTenantID = principal.TenantID
 	} else if activeMembershipTenantID != "" {
 		targetTenantID = activeMembershipTenantID
+	}
+
+	var activeBranchThemeBrandingJSON []byte
+	if b.dbPool != nil && activeOrgID != "" {
+		bRows, bErr := b.dbPool.Query(ctx, `
+			SELECT b.id::text, b.name, b.code, COALESCE(b.slug, b.code), ft.name, b.is_headquarters, COALESCE(b.city, ''), COALESCE(b.state, ''), b.operating_hours, COALESCE(b.theme_branding, '{}'::jsonb), b.status
+			FROM organization.facility_branches b
+			JOIN platform.facility_types ft ON ft.id = b.facility_type_id
+			WHERE b.organization_id = $1
+			ORDER BY b.is_headquarters DESC, b.name ASC
+		`, activeOrgID)
+		if bErr == nil {
+			defer bRows.Close()
+			for bRows.Next() {
+				var (
+					bID, bName, bCode, bSlug, ftName, bCity, bState, bStatus string
+					isHQ                                                    bool
+					opHoursJSON, themeJSON                                  []byte
+				)
+				if errScan := bRows.Scan(&bID, &bName, &bCode, &bSlug, &ftName, &isHQ, &bCity, &bState, &opHoursJSON, &themeJSON, &bStatus); errScan == nil {
+					if bStatus == "ACTIVE" {
+						availableBranches = append(availableBranches, BranchSummaryPayload{
+							ID:             bID,
+							Name:           bName,
+							Slug:           bSlug,
+							Code:           bCode,
+							FacilityType:   ftName,
+							IsHeadquarters: isHQ,
+						})
+					}
+
+					// Check if this branch matches the requested branch slug, code, or tenant ID
+					isTargetBranch := false
+					if reqBranchSlug != "" && (strings.EqualFold(bSlug, reqBranchSlug) || strings.EqualFold(bCode, reqBranchSlug)) {
+						isTargetBranch = true
+					} else if targetTenantID != "" && bID == targetTenantID {
+						isTargetBranch = true
+					} else if activeBranch == nil && isHQ && bStatus == "ACTIVE" {
+						isTargetBranch = true
+					}
+
+					if isTargetBranch || (activeBranch == nil && bStatus == "ACTIVE") {
+						var parsedHours map[string]interface{}
+						if len(opHoursJSON) > 0 {
+							_ = json.Unmarshal(opHoursJSON, &parsedHours)
+						}
+						activeBranch = &BranchPayload{
+							ID:             bID,
+							Name:           bName,
+							Slug:           bSlug,
+							Code:           bCode,
+							FacilityType:   ftName,
+							IsHeadquarters: isHQ,
+							City:           bCity,
+							State:          bState,
+							OperatingHours: parsedHours,
+							Status:         bStatus,
+						}
+						activeBranchThemeBrandingJSON = themeJSON
+					}
+				}
+			}
+		}
+	}
+
+	isOrgAdminOrOwner := isPlatformStaff || userRole == "owner" || userRole == "org_admin" || activeMembershipRole == "owner" || activeMembershipRole == "org_admin" || activeMembershipRole == "org_regional_manager" || activeMembershipRole == "admin"
+
+	// Filter available branches for branch-only staff members to ensure multi-tenant facility isolation
+	if !isPlatformStaff && !isOrgAdminOrOwner && targetTenantID != "" {
+		filteredBranches := make([]BranchSummaryPayload, 0)
+		for _, b := range availableBranches {
+			if b.ID == targetTenantID {
+				filteredBranches = append(filteredBranches, b)
+			}
+		}
+		if len(filteredBranches) > 0 {
+			availableBranches = filteredBranches
+			if activeBranch != nil && activeBranch.ID != targetTenantID {
+				for _, fb := range filteredBranches {
+					if fb.ID == targetTenantID {
+						activeBranch.ID = fb.ID
+						activeBranch.Name = fb.Name
+						activeBranch.Slug = fb.Slug
+						activeBranch.Code = fb.Code
+						activeBranch.FacilityType = fb.FacilityType
+						activeBranch.IsHeadquarters = fb.IsHeadquarters
+						break
+					}
+				}
+			}
+		}
 	}
 
 	if targetTenantID != "" && b.tenantRepo != nil {
@@ -310,10 +560,31 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 	tenantID := "default-tenant-id"
 	tenantName := "Main Diagnostic Facility"
 	tenantSlug := "main-facility"
+	facilityTypeVal := "Laboratory"
 	currency := "NGN"
 	enabledModules := []string{"laboratory", "clinical", "pharmacy", "billing", "inventory", "customer_care", "qms"}
 
-	if activeTenant != nil {
+	if activeBranch != nil {
+		tenantID = activeBranch.ID
+		tenantName = activeBranch.Name
+		tenantSlug = activeBranch.Slug
+		if activeBranch.FacilityType != "" {
+			facilityTypeVal = activeBranch.FacilityType
+		}
+		// Adjust enabled modules according to facility type blueprint
+		normFT := strings.ToLower(activeBranch.FacilityType)
+		if strings.Contains(normFT, "clinic") || strings.Contains(normFT, "outpatient") || strings.Contains(normFT, "emr") {
+			enabledModules = []string{"clinical", "customer_care", "billing", "pharmacy"}
+		} else if strings.Contains(normFT, "pharmacy") {
+			enabledModules = []string{"pharmacy", "inventory", "billing"}
+		} else if strings.Contains(normFT, "radiology") || strings.Contains(normFT, "imaging") {
+			enabledModules = []string{"radiology", "customer_care", "billing"}
+		} else if strings.Contains(normFT, "hospital") {
+			enabledModules = []string{"hospital", "clinical", "laboratory", "pharmacy", "radiology", "billing", "inventory", "customer_care", "qms"}
+		} else if strings.Contains(normFT, "lab") || strings.Contains(normFT, "diagnostic") {
+			enabledModules = []string{"laboratory", "customer_care", "billing", "qms"}
+		}
+	} else if activeTenant != nil {
 		tenantID = activeTenant.ID.String()
 		tenantName = activeTenant.Name
 		tenantSlug = activeTenant.Slug
@@ -334,6 +605,7 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 	// 4. Resolve Effective Permissions
 	effectivePermissions := make([]string, 0)
 	isSuperAdminOrOwner := isPlatformStaff || userRole == "owner" || activeMembershipRole == "owner"
+	isWorkspaceAdmin := isSuperAdminOrOwner || (currentContext == "workspace" && (userRole == "branch_admin" || activeMembershipRole == "branch_admin" || userRole == "branch_manager"))
 
 	if isPlatformStaff {
 		effectivePermissions = platformAuth.GetAllPermissions()
@@ -362,7 +634,7 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 			FROM "authorization".permissions p
 			JOIN "authorization".role_permissions rp ON rp.permission_id = p.id
 			JOIN "authorization".roles r ON r.id = rp.role_id
-			JOIN organization.organization_memberships m ON (m.role_title = r.code OR m.role = r.code OR m.role_title = r.name)
+			JOIN organization.organization_memberships m ON (m.role = r.code OR m.role = r.name)
 			WHERE m.user_id = $1 AND (m.tenant_id = $2 OR $2 = '' OR $2 IS NULL) AND m.is_active = TRUE
 		`, userID, tenantID)
 		if err == nil {
@@ -377,41 +649,107 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 	}
 
 	if len(effectivePermissions) == 0 {
-		effectivePermissions = []string{
-			"organization:read",
-			"organization:dashboard:read",
-			"workspace:patient:read",
-			"workspace:patient:create",
-			"workspace:sample:receive",
-			"workspace:worksheet:update",
-			"workspace:result:authorize",
-			"workspace:billing:create",
-		}
-	}
-
-	// 5. Context-Bound Navigation Tree (DB-Driven & Permission Filtered)
-	var navigationItems []NavigationItemPayload
-	if b.dbPool != nil {
-		rows, err := b.dbPool.Query(ctx, `
-			SELECT id, title, icon, path, sort_order
-			FROM navigation_item
-			WHERE context_scope = $1
-			  AND (module_code IS NULL OR module_code = ANY($2))
-			  AND (required_permission IS NULL OR required_permission = ANY($3) OR $4 = TRUE)
-			ORDER BY sort_order ASC
-		`, currentContext, enabledModules, effectivePermissions, isSuperAdminOrOwner)
-		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var item NavigationItemPayload
-				if err := rows.Scan(&item.ID, &item.Title, &item.Icon, &item.Path, &item.Order); err == nil {
-					navigationItems = append(navigationItems, item)
-				}
+		if currentContext == "organization" {
+			effectivePermissions = []string{
+				"organization:read",
+				"organization:view",
+				"organization:manage",
+				"organization:branch:read",
+				"organization:branch:write",
+				"users:read",
+				"users:write",
+				"organization:catalog:read",
+				"organization:catalog:write",
+				"organization:branding:read",
+				"organization:branding:write",
+				"organization:notifications:read",
+				"organization:notifications:write",
+				"organization:integrations:read",
+				"organization:integrations:write",
+				"organization:audit:read",
+				"organization:settings:read",
+				"organization:settings:write",
+				"organization:document:upload",
+				"organization:document:read",
+				"audit:read",
+			}
+		} else {
+			effectivePermissions = []string{
+				"organization:read",
+				"organization:dashboard:read",
+				"workspace:patient:read",
+				"workspace:patient:create",
+				"workspace:sample:receive",
+				"workspace:worksheet:update",
+				"workspace:result:authorize",
+				"workspace:billing:create",
 			}
 		}
 	}
 
-	if len(navigationItems) == 0 {
+	// 5. Context-Bound Navigation Tree (100% DB-Driven & Permission Filtered)
+	var navigationItems []NavigationItemPayload
+	if b.dbPool != nil {
+		activeBranchSlug := reqBranchSlug
+		if activeBranchSlug == "" {
+			activeBranchSlug = tenantSlug
+		}
+		if activeBranchSlug == "" {
+			activeBranchSlug = "main"
+		}
+
+		branchCapSet := make(map[string]bool)
+		if currentContext == "workspace" && activeBranch != nil && activeBranch.ID != "" {
+			fRows, fErr := b.dbPool.Query(ctx, `
+				SELECT c.code
+				FROM platform.facility_capabilities fc
+				JOIN subscription.capabilities c ON c.id = fc.capability_id
+				WHERE fc.facility_type_id = (
+					SELECT facility_type_id FROM organization.facility_branches WHERE id = $1
+				)
+			`, activeBranch.ID)
+			if fErr == nil {
+				defer fRows.Close()
+				for fRows.Next() {
+					var capCode string
+					if errScan := fRows.Scan(&capCode); errScan == nil {
+						branchCapSet[capCode] = true
+					}
+				}
+			}
+		}
+
+		rows, err := b.dbPool.Query(ctx, `
+			SELECT id, title, icon, path, sort_order, required_capability
+			FROM navigation_item
+			WHERE context_scope = $1
+			  AND is_active = true
+			  AND is_visible = true
+			  AND (module_code IS NULL OR module_code = ANY($2) OR $4 = TRUE)
+			  AND (required_permission IS NULL OR required_permission = ANY($3) OR $4 = TRUE)
+			ORDER BY sort_order ASC
+		`, currentContext, enabledModules, effectivePermissions, isWorkspaceAdmin)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var item NavigationItemPayload
+				var reqCap *string
+				if err := rows.Scan(&item.ID, &item.Title, &item.Icon, &item.Path, &item.Order, &reqCap); err == nil {
+					if currentContext == "workspace" && reqCap != nil && *reqCap != "" && len(branchCapSet) > 0 && !branchCapSet[*reqCap] {
+						continue
+					}
+					if currentContext == "workspace" {
+						item.Path = strings.Replace(item.Path, "/:branch", "/"+activeBranchSlug, 1)
+						if strings.HasPrefix(item.Path, "/workspace/") {
+							item.Path = strings.Replace(item.Path, "/workspace/", "/"+activeBranchSlug+"/", 1)
+						}
+					}
+					navigationItems = append(navigationItems, item)
+				}
+			}
+		}
+	} else {
+		// In-memory domain fallbacks for unit test suites without a live PostgreSQL connection
 		if currentContext == "platform" {
 			platNav := b.platformDomain.GetPlatformNavigation()
 			for _, item := range platNav {
@@ -434,34 +772,6 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 					Order: item.Order,
 				})
 			}
-		} else {
-			// Workspace Context Fallback
-			navigationItems = []NavigationItemPayload{
-				{ID: "nav_wsp_dashboard", Title: "Workspace Dashboard", Icon: "LayoutDashboard", Path: "/workspace/dashboard", Order: 1},
-			}
-			if enabledSet["customer_care"] {
-				navigationItems = append(navigationItems, NavigationItemPayload{
-					ID: "nav_wsp_patients", Title: "Patient Reception", Icon: "UserPlus", Path: "/workspace/patients", Order: 2,
-				})
-			}
-			if enabledSet["laboratory"] {
-				navigationItems = append(navigationItems, NavigationItemPayload{
-					ID: "nav_wsp_laboratory", Title: "Laboratory LIS", Icon: "Activity", Path: "/workspace/laboratory/accessioning", Order: 3,
-				})
-			}
-			if enabledSet["clinical"] {
-				navigationItems = append(navigationItems, NavigationItemPayload{
-					ID: "nav_wsp_clinical", Title: "Clinical & EMR", Icon: "Stethoscope", Path: "/workspace/clinical/tests", Order: 4,
-				})
-			}
-			if enabledSet["billing"] {
-				navigationItems = append(navigationItems, NavigationItemPayload{
-					ID: "nav_wsp_billing", Title: "Billing POS", Icon: "CreditCard", Path: "/workspace/billing", Order: 5,
-				})
-			}
-			navigationItems = append(navigationItems, NavigationItemPayload{
-				ID: "nav_wsp_settings", Title: "Facility Settings", Icon: "Settings", Path: "/workspace/settings", Order: 6,
-			})
 		}
 	}
 
@@ -477,6 +787,8 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 	orgName := activeOrgName
 	orgSlug := activeOrgSlug
 	orgSubPlan := activeOrgPlan
+	orgStatus := activeOrgStatus
+	orgSetupState := activeOrgSetupState
 	orgRole := activeMembershipRole
 
 	if orgID == "" && b.orgRepo != nil {
@@ -501,15 +813,101 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 			if selectedOrg.Plan != "" {
 				orgSubPlan = strings.ToLower(selectedOrg.Plan)
 			}
+			if selectedOrg.Status != "" {
+				orgStatus = string(selectedOrg.Status)
+			}
+			if selectedOrg.SetupState != "" {
+				orgSetupState = string(selectedOrg.SetupState)
+			}
 		}
 	}
 
+	if orgID == "" || orgID == "org_default" {
+		if b.dbPool != nil {
+			var firstOrgID, firstOrgName, firstOrgSlug, firstOrgPlan, firstOrgStatus, firstOrgSetupState string
+			errFirst := b.dbPool.QueryRow(ctx, `SELECT id::text, name, slug, COALESCE(plan, 'smart'), COALESCE(status, 'active'), COALESCE(setup_state, 'VERIFIED') FROM organization.organizations ORDER BY created_at ASC LIMIT 1`).Scan(&firstOrgID, &firstOrgName, &firstOrgSlug, &firstOrgPlan, &firstOrgStatus, &firstOrgSetupState)
+			if errFirst == nil && firstOrgID != "" {
+				orgID = firstOrgID
+				orgName = firstOrgName
+				orgSlug = firstOrgSlug
+				orgSubPlan = firstOrgPlan
+				orgStatus = firstOrgStatus
+				orgSetupState = firstOrgSetupState
+				if orgRole == "" {
+					orgRole = "owner"
+				}
+			}
+		}
+	}
 	if orgID == "" {
-		orgID = "org_default"
+		orgID = "00000000-0000-0000-0000-000000000001"
 		orgName = "Curexal Health Network"
 		orgSlug = "curexal"
 		orgSubPlan = "smart"
+		orgStatus = "active"
+		orgSetupState = "VERIFIED"
 		orgRole = userRole
+	}
+
+	// 7. Structured Navigation (Primary, Topbar, QuickActions, Breadcrumbs)
+	var breadcrumbItems []BreadcrumbPayload
+	var topbarItems []NavigationItemPayload
+	var quickActionItems []NavigationItemPayload
+
+	if currentContext == "platform" {
+		breadcrumbItems = []BreadcrumbPayload{
+			{Title: "Platform Console", Path: "/platform/dashboard"},
+		}
+	} else if currentContext == "organization" {
+		breadcrumbItems = []BreadcrumbPayload{
+			{Title: orgName, Path: "/organization/dashboard"},
+		}
+		topbarItems = []NavigationItemPayload{
+			{ID: "top_branches", Title: "Branch Facilities", Icon: "Building2", Path: "/organization/branches"},
+			{ID: "top_members", Title: "Staff Roster", Icon: "Users", Path: "/organization/members"},
+			{ID: "top_billing", Title: "Subscription", Icon: "CreditCard", Path: "/organization/billing"},
+		}
+		quickActionItems = []NavigationItemPayload{
+			{ID: "qa_provision_branch", Title: "Provision Branch", Icon: "Building2", Path: "/organization/branches"},
+			{ID: "qa_invite_member", Title: "Invite Staff Member", Icon: "Users", Path: "/organization/members"},
+		}
+	} else {
+		// Workspace Context
+		if isOrgAdminOrOwner {
+			breadcrumbItems = []BreadcrumbPayload{
+				{Title: orgName, Path: "/organization/dashboard"},
+				{Title: tenantName, Path: "/" + tenantSlug + "/dashboard"},
+			}
+			topbarItems = []NavigationItemPayload{
+				{ID: "top_return_hq", Title: "Executive Org HQ", Icon: "Building2", Path: "/organization/dashboard"},
+				{ID: "top_facility_settings", Title: "Facility Settings", Icon: "Settings", Path: "/organization/branches"},
+			}
+		} else {
+			breadcrumbItems = []BreadcrumbPayload{
+				{Title: tenantName, Path: "/" + tenantSlug + "/dashboard"},
+			}
+		}
+
+		if enabledSet["laboratory"] {
+			quickActionItems = append(quickActionItems, NavigationItemPayload{
+				ID: "qa_accession_sample", Title: "Accession Specimen", Icon: "Activity", Path: "/" + tenantSlug + "/laboratory",
+			})
+		}
+		if enabledSet["clinical"] {
+			quickActionItems = append(quickActionItems, NavigationItemPayload{
+				ID: "qa_queue_patient", Title: "Consultation Queue", Icon: "Stethoscope", Path: "/" + tenantSlug + "/clinical",
+			})
+		}
+		if enabledSet["pharmacy"] {
+			quickActionItems = append(quickActionItems, NavigationItemPayload{
+				ID: "qa_dispense_rx", Title: "Dispense Medication", Icon: "Pill", Path: "/" + tenantSlug + "/pharmacy",
+			})
+		}
+		if enabledSet["billing"] {
+			quickActionItems = append(quickActionItems, NavigationItemPayload{
+				ID: "qa_pos_bill", Title: "Cashier POS Invoice", Icon: "CreditCard", Path: "/" + tenantSlug + "/billing",
+			})
+		}
 	}
 
 	effectiveCapabilities := []string{
@@ -523,6 +921,43 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 		}
 		if effCaps, errCaps := b.entitlementSvc.GetEffectiveCapabilities(ctx, orgUUID); errCaps == nil && len(effCaps) > 0 {
 			effectiveCapabilities = effCaps
+		}
+	}
+
+	// Intersect with Facility Blueprint Capabilities if in facility workspace context
+	if activeBranch != nil && activeBranch.ID != "" && b.dbPool != nil {
+		fRows, fErr := b.dbPool.Query(ctx, `
+			SELECT c.code
+			FROM platform.facility_capabilities fc
+			JOIN subscription.capabilities c ON c.id = fc.capability_id
+			WHERE fc.facility_type_id = (
+				SELECT facility_type_id FROM organization.facility_branches WHERE id = $1
+			)
+		`, activeBranch.ID)
+		if fErr == nil {
+			defer fRows.Close()
+			blueprintCapSet := map[string]bool{
+				"core.organization":  true,
+				"core.patient":       true,
+				"core.billing":       true,
+				"core.customer_care": true,
+			}
+			for fRows.Next() {
+				var capCode string
+				if errScan := fRows.Scan(&capCode); errScan == nil {
+					blueprintCapSet[capCode] = true
+				}
+			}
+
+			intersected := make([]string, 0)
+			for _, capCode := range effectiveCapabilities {
+				if blueprintCapSet[capCode] {
+					intersected = append(intersected, capCode)
+				}
+			}
+			if len(intersected) > 0 {
+				effectiveCapabilities = intersected
+			}
 		}
 	}
 
@@ -608,6 +1043,31 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 		}
 	}
 
+	// Apply Facility-level Theme Overrides on top of Organization theme
+	if activeBranchThemeBrandingJSON != nil && len(activeBranchThemeBrandingJSON) > 0 {
+		var facilityTheme map[string]interface{}
+		if errUn := json.Unmarshal(activeBranchThemeBrandingJSON, &facilityTheme); errUn == nil {
+			useOrgBranding, _ := facilityTheme["useOrganizationBranding"].(bool)
+			if !useOrgBranding {
+				if prim, ok := facilityTheme["primaryColor"].(string); ok && prim != "" {
+					resolvedPrimaryColor = prim
+				}
+				if sec, ok := facilityTheme["secondaryColor"].(string); ok && sec != "" {
+					resolvedSecondaryColor = sec
+				}
+				if acc, ok := facilityTheme["accentColor"].(string); ok && acc != "" {
+					resolvedAccentColor = acc
+				}
+				if font, ok := facilityTheme["fontFamily"].(string); ok && font != "" {
+					resolvedFontFamily = font
+				}
+				if rad, ok := facilityTheme["borderRadius"].(string); ok && rad != "" {
+					resolvedBorderRadius = rad
+				}
+			}
+		}
+	}
+
 	return &BootstrapContractResponse{
 		Identity: IdentityPayload{
 			ID:          userID,
@@ -621,20 +1081,26 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 			Role:    userRole,
 		},
 		Organization: OrganizationPayload{
-			ID:           orgID,
-			Name:         orgName,
-			Slug:         orgSlug,
-			Role:         orgRole,
-			Subscription: orgSubPlan,
+			ID:             orgID,
+			Name:           orgName,
+			Slug:           orgSlug,
+			Role:           orgRole,
+			Subscription:   orgSubPlan,
+			Status:         orgStatus,
+			SetupState:     orgSetupState,
+			Hostname:       resolvedHostname,
+			IsCustomDomain: isCustomDomain,
 		},
+		Branch: activeBranch,
 		Workspace: WorkspacePayload{
 			ID:           tenantID,
 			Name:         tenantName,
-			FacilityType: "Laboratory",
+			FacilityType: facilityTypeVal,
 			Slug:         tenantSlug,
 			Timezone:     "Africa/Lagos",
 			Currency:     currency,
 		},
+		AvailableBranches: availableBranches,
 		Subscription: SubscriptionPayload{
 			Plan:   orgSubPlan,
 			Status: "active",
@@ -645,7 +1111,10 @@ func (b *BootstrapBuilder) BuildBootstrap(ctx context.Context, principal *middle
 		Permissions:  effectivePermissions,
 		Navigation:   navigationItems,
 		StructuredNavigation: StructuredNavigationPayload{
-			Primary: navigationItems,
+			Primary:      navigationItems,
+			Topbar:       topbarItems,
+			QuickActions: quickActionItems,
+			Breadcrumbs:  breadcrumbItems,
 		},
 		Dashboard: DashboardPayload{
 			Widgets: dashboardWidgets,

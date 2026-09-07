@@ -18,9 +18,14 @@ const (
 
 // Authenticate is the platform Echo middleware that extracts identity using ResolvePrincipal and sets context.
 func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
+	return AuthenticateWithVerifier(cfg, nil)
+}
+
+// AuthenticateWithVerifier is the platform Echo middleware that extracts identity and verifies tenant membership.
+func AuthenticateWithVerifier(cfg *config.Config, verifier TenantMembershipVerifier) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			principal := ResolvePrincipal(c, cfg)
+			principal := ResolvePrincipalWithVerifier(c, cfg, verifier)
 			if principal != nil {
 				c.Set(PrincipalKey, principal)
 				c.Set(UserIDKey, principal.UserID)
@@ -39,6 +44,9 @@ func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 				}
 				if principal.Organization.ActiveOrganizationID != "" {
 					c.Set("organization_id", principal.Organization.ActiveOrganizationID)
+				}
+				if principal.ActiveBranchID != "" {
+					c.Set("branch_id", principal.ActiveBranchID)
 				}
 			}
 			return next(c)

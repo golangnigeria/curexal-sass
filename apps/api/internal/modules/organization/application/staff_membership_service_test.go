@@ -113,12 +113,20 @@ func (m *MockStaffRepo) UpdateMemberRole(ctx context.Context, orgID, membershipI
 	return args.Get(0).(*domain.StaffMemberDTO), args.Error(1)
 }
 
+func (m *MockStaffRepo) DirectCreateMember(ctx context.Context, orgID uuid.UUID, fullName, email, passwordHash, role, roleTitle string, branchIDs []uuid.UUID, actorID uuid.UUID) (*domain.StaffMemberDTO, error) {
+	args := m.Called(ctx, orgID, fullName, email, passwordHash, role, roleTitle, branchIDs, actorID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.StaffMemberDTO), args.Error(1)
+}
+
 func TestStaffMembershipService_CreateInvitation_SHA256HashToken_Success(t *testing.T) {
 	mockStaffRepo := new(MockStaffRepo)
 	mockOrgRepo := new(MockOrgRepo)
 	mockBranchRepo := new(MockBranchRepo)
 	mockAuditRepo := new(MockAuditRepo)
-	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, mockBranchRepo, mockAuditRepo)
+	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, mockBranchRepo, mockAuditRepo, nil)
 
 	orgID := uuid.New()
 	actorID := uuid.New()
@@ -136,10 +144,7 @@ func TestStaffMembershipService_CreateInvitation_SHA256HashToken_Success(t *test
 		RoleTitle: "Medical Doctor",
 	}
 
-	// 1. Check pending invite -> false
-	mockStaffRepo.On("CheckPendingInviteExists", mock.Anything, orgID, "new.clinician@curexal.health").Return(false, nil)
-
-	// 2. Org plan -> smart (max 10 staff)
+	// 1. Org plan -> smart (max 10 staff)
 	mockOrgRepo.On("GetByID", mock.Anything, orgID).Return(&domain.Organization{ID: orgID, Plan: "smart"}, nil)
 	mockStaffRepo.On("CountActiveMembers", mock.Anything, orgID).Return(2, nil)
 
@@ -164,7 +169,7 @@ func TestStaffMembershipService_CreateInvitation_SHA256HashToken_Success(t *test
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.NotEmpty(t, res.RawToken)
-	assert.Equal(t, 64, len(res.RawToken)) // 32 bytes hex = 64 chars
+	assert.Equal(t, 6, len(res.RawToken)) // 6-character alphanumeric verification code
 	assert.NotEqual(t, res.RawToken, res.Invitation.InviteTokenHash) // Plaintext token differs from stored hash
 
 	mockStaffRepo.AssertExpectations(t)
@@ -175,7 +180,7 @@ func TestStaffMembershipService_CreateInvitation_SHA256HashToken_Success(t *test
 func TestStaffMembershipService_CreateInvitation_MaxStaffExceeded_Fails(t *testing.T) {
 	mockStaffRepo := new(MockStaffRepo)
 	mockOrgRepo := new(MockOrgRepo)
-	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, nil, nil)
+	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, nil, nil, nil)
 
 	orgID := uuid.New()
 	principal := &middleware.AuthenticatedPrincipal{
@@ -190,7 +195,6 @@ func TestStaffMembershipService_CreateInvitation_MaxStaffExceeded_Fails(t *testi
 		Role:  "cashier",
 	}
 
-	mockStaffRepo.On("CheckPendingInviteExists", mock.Anything, orgID, "extra.staff@curexal.health").Return(false, nil)
 	// Smart plan allows max 10 staff
 	mockOrgRepo.On("GetByID", mock.Anything, orgID).Return(&domain.Organization{ID: orgID, Plan: "smart"}, nil)
 	mockStaffRepo.On("CountActiveMembers", mock.Anything, orgID).Return(10, nil)
@@ -208,7 +212,7 @@ func TestStaffMembershipService_AssignDepartment_ValidAndInvalidCodes(t *testing
 	mockOrgRepo := new(MockOrgRepo)
 	mockBranchRepo := new(MockBranchRepo)
 	mockAuditRepo := new(MockAuditRepo)
-	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, mockBranchRepo, mockAuditRepo)
+	svc := application.NewStaffMembershipService(mockStaffRepo, mockOrgRepo, mockBranchRepo, mockAuditRepo, nil)
 
 	orgID := uuid.New()
 	actorID := uuid.New()
@@ -254,7 +258,7 @@ func TestStaffMembershipService_AssignDepartment_ValidAndInvalidCodes(t *testing
 func TestStaffMembershipService_UpdateMemberRole_Success(t *testing.T) {
 	mockStaffRepo := new(MockStaffRepo)
 	mockAuditRepo := new(MockAuditRepo)
-	svc := application.NewStaffMembershipService(mockStaffRepo, nil, nil, mockAuditRepo)
+	svc := application.NewStaffMembershipService(mockStaffRepo, nil, nil, mockAuditRepo, nil)
 
 	orgID := uuid.New()
 	actorID := uuid.New()

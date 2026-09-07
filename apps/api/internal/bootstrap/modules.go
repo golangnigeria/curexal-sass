@@ -10,12 +10,14 @@ import (
 	"github.com/golangnigeria/curexal/internal/modules/billing"
 	"github.com/golangnigeria/curexal/internal/modules/catalogs"
 	"github.com/golangnigeria/curexal/internal/modules/clinical"
+	"github.com/golangnigeria/curexal/internal/modules/encounter"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config"
 	"github.com/golangnigeria/curexal/internal/modules/identity"
 	identityHdl "github.com/golangnigeria/curexal/internal/modules/identity/handler"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/notification"
+	"github.com/golangnigeria/curexal/internal/modules/orchestration"
 	"github.com/golangnigeria/curexal/internal/modules/organization"
 	"github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
 	"github.com/golangnigeria/curexal/internal/modules/patient"
@@ -24,6 +26,7 @@ import (
 	"github.com/golangnigeria/curexal/internal/modules/subscription"
 	subAPI "github.com/golangnigeria/curexal/internal/modules/subscription/api"
 	subApp "github.com/golangnigeria/curexal/internal/modules/subscription/application"
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
@@ -59,6 +62,8 @@ type ModuleRegistry struct {
 	Billing        *billing.Module
 	Settings       *settings.Module
 	Patient        *patient.Module
+	Orchestration  *orchestration.Module
+	Encounter      *encounter.Module
 	Notification   *notification.Module
 	Subscription   *subscription.Module
 	EntitlementSvc *subApp.EntitlementService
@@ -69,21 +74,28 @@ type ModuleRegistry struct {
 func InitModules(s *server.Server) *ModuleRegistry {
 	userRepo := repository.NewUserRepository(s)
 	patientMod := patient.NewModule(s, userRepo)
+	orchestrationMod := orchestration.NewModule(s)
+	encounterMod := encounter.NewModule(s)
 	orgTenantRepo := postgres.NewTenantRepository(s)
 	lookupAdapter := &tenantLookupAdapter{tenantRepo: orgTenantRepo}
 	identityMod := identity.NewModule(s, patientMod.Service, patientMod.Repo, lookupAdapter)
+
+	platMod := platform.NewModule(s)
+	orgMod := organization.NewModule(s)
+	subMod := subscription.NewModule(s)
 	notifMod := notification.NewModule(s, userRepo)
 
-	subMod := subscription.NewModule(s)
 	entitlementSvc := subMod.Service
 	entitlementHdl := subMod.Handler
 
-	platMod := platform.NewModule(s)
 	if platMod != nil && platMod.BootstrapHandler != nil {
 		platMod.BootstrapHandler.SetEntitlementService(entitlementSvc)
 	}
 
-	orgMod := organization.NewModule(s)
+	if platMod != nil && platMod.NavigationService != nil {
+		platMod.NavigationService.SetEntitlementService(entitlementSvc)
+	}
+
 	if orgMod != nil && orgMod.TenantHandler != nil {
 		orgMod.TenantHandler.SetEntitlementService(entitlementSvc)
 	}
@@ -91,6 +103,8 @@ func InitModules(s *server.Server) *ModuleRegistry {
 	reg := &ModuleRegistry{
 		Identity:       identityMod,
 		Patient:        patientMod,
+		Orchestration:  orchestrationMod,
+		Encounter:      encounterMod,
 		Notification:   notifMod,
 		Platform:       platMod,
 		Organization:   orgMod,
@@ -139,8 +153,16 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 	s.Echo.GET("/health", statusHandler)
 	s.Echo.GET("/api/v1/health", statusHandler)
 
+	// Global Domain & Organization Resolver Middleware + Tenant Verifier
+	var tenantVerifier platformAuth.TenantMembershipVerifier
+	if s.DB != nil && s.DB.Pool != nil {
+		domainResolver := platformAuth.NewOrganizationDomainResolver(s.DB.Pool)
+		s.Echo.Use(platformAuth.DomainResolverMiddleware(domainResolver))
+		tenantVerifier = platformAuth.NewPostgresTenantVerifier(s.DB.Pool)
+	}
+
 	api := s.Echo.Group("/api/v1")
-	api.Use(middleware.Authenticate(s.Config))
+	api.Use(middleware.AuthenticateWithVerifier(s.Config, tenantVerifier))
 
 	plt := api.Group("/platform")
 	plt.Use(middleware.RequirePlatformStaff())
@@ -191,6 +213,14 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 
 	if r.Patient != nil {
 		r.Patient.RegisterRoutes(api)
+	}
+
+	if r.Orchestration != nil {
+		r.Orchestration.RegisterRoutes(api)
+	}
+
+	if r.Encounter != nil {
+		r.Encounter.RegisterRoutes(api)
 	}
 
 	if r.Settings != nil {

@@ -18,16 +18,16 @@ import {
   Pill,
 } from "lucide-react";
 
-// Default diagnostic and clinical catalog items if API query pending
+// Default clinic and outpatient catalog items if API query pending
 const defaultCatalogItems = [
-  { id: "cat-1", code: "LAB-CBC", name: "Complete Blood Count (Automated 5-Part Diff)", category: "Hematology", moduleCode: "laboratory", standardPrice: 7500, customPrice: 7000, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-2", code: "LAB-FBS", name: "Fasting Blood Sugar (Glucose Hexokinase)", category: "Clinical Biochemistry", moduleCode: "laboratory", standardPrice: 3500, customPrice: 3500, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-3", code: "LAB-LIPID", name: "Lipid Profile Panel (Cholesterol, HDL, LDL, Trig)", category: "Clinical Biochemistry", moduleCode: "laboratory", standardPrice: 12000, customPrice: 10500, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-4", code: "LAB-LFT", name: "Liver Function Test (ALT, AST, ALP, Bilirubin)", category: "Clinical Biochemistry", moduleCode: "laboratory", standardPrice: 15000, customPrice: 14000, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-5", code: "RAD-XR-CHEST", name: "Chest X-Ray (PA & Lateral View)", category: "Radiology", moduleCode: "radiology", standardPrice: 18000, customPrice: 16500, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-6", code: "RAD-US-ABD", name: "Abdominal Ultrasound (Full Scan)", category: "Radiology", moduleCode: "radiology", standardPrice: 20000, customPrice: 18000, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-7", code: "CLN-CONS-GP", name: "General Practice Consultation", category: "Outpatient", moduleCode: "clinical", standardPrice: 10000, customPrice: 10000, currency: "NGN", taxRate: 0, isActive: true },
-  { id: "cat-8", code: "CLN-CONS-SPEC", name: "Specialist Consultant Review", category: "Outpatient", moduleCode: "clinical", standardPrice: 25000, customPrice: 25000, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-1", code: "CLN-CONS-GP", name: "General Practice Outpatient Consultation", category: "Consultation", moduleCode: "clinical", standardPrice: 10000, customPrice: 10000, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-2", code: "CLN-CONS-SPEC", name: "Specialist Consultant Review", category: "Consultation", moduleCode: "clinical", standardPrice: 25000, customPrice: 25000, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-3", code: "CLN-CONS-TELE", name: "Virtual Telehealth Consultation", category: "Telehealth", moduleCode: "clinical", standardPrice: 8500, customPrice: 8500, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-4", code: "NUR-TRIAGE-01", name: "Nursing Triage & Vital Signs Assessment", category: "Nursing Care", moduleCode: "clinical", standardPrice: 2500, customPrice: 2500, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-5", code: "PROC-WOUND-DRESS", name: "Wound Debridement & Minor Dressing", category: "Procedures", moduleCode: "clinical", standardPrice: 7500, customPrice: 7500, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-6", code: "PROC-INJECTION-ADMIN", name: "Intramuscular / IV Injection Administration", category: "Nursing Care", moduleCode: "clinical", standardPrice: 2000, customPrice: 2000, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-7", code: "CLN-IMMUNIZATION", name: "Routine Outpatient Immunization & Vaccine Administration", category: "Preventive Care", moduleCode: "clinical", standardPrice: 5000, customPrice: 5000, currency: "NGN", taxRate: 0, isActive: true },
+  { id: "cat-8", code: "CLN-ECG-INTERP", name: "12-Lead Resting ECG with Physician Interpretation", category: "Diagnostics", moduleCode: "clinical", standardPrice: 15000, customPrice: 15000, currency: "NGN", taxRate: 0, isActive: true },
 ];
 
 export default function OrganizationCatalogsPage() {
@@ -152,7 +152,9 @@ export default function OrganizationCatalogsPage() {
               <tbody className="divide-y divide-border">
                 {filteredItems.map((item) => {
                   const isEditing = editingItemId === item.id;
-                  const isDiscounted = item.customPrice < item.standardPrice;
+                  const stdPrice = item.standardPrice ?? (item as any).defaultPrice ?? 0;
+                  const custPrice = item.customPrice ?? stdPrice;
+                  const isDiscounted = custPrice < stdPrice;
 
                   return (
                     <tr key={item.id} className="hover:bg-secondary/20 transition-colors">
@@ -168,7 +170,7 @@ export default function OrganizationCatalogsPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 font-mono text-muted-foreground">
-                        {formatPrice(item.standardPrice)}
+                        {formatPrice(stdPrice)}
                       </td>
                       <td className="py-3 px-4">
                         {isEditing ? (
@@ -191,7 +193,7 @@ export default function OrganizationCatalogsPage() {
                         ) : (
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-foreground">
-                              {formatPrice(item.customPrice || item.standardPrice)}
+                              {formatPrice(custPrice)}
                             </span>
                             {isDiscounted && (
                               <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">

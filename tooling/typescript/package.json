@@ -1,0 +1,16 @@
+{
+  "name": "@curexal/typescript-config",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "files": [
+    "base.json",
+    "react-library.json",
+    "react-app.json"
+  ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./react-library.json": "./react-library.json",
+    "./react-app.json": "./react-app.json"
+  }
+}

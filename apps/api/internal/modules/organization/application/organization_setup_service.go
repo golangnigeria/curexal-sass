@@ -35,7 +35,7 @@ func (s *OrganizationSetupService) IsPlatformAdmin(principal *middleware.Authent
 	return false
 }
 
-func (s *OrganizationSetupService) resolveActiveOrgUUID(principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
+func (s *OrganizationSetupService) resolveActiveOrgUUID(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
 	if principal == nil {
 		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 	}
@@ -48,20 +48,26 @@ func (s *OrganizationSetupService) resolveActiveOrgUUID(principal *middleware.Au
 		orgIDStr = principal.TenantID
 	}
 
-	if orgIDStr == "" {
-		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+	if orgIDStr != "" {
+		parsed, err := uuid.Parse(orgIDStr)
+		if err == nil {
+			return parsed, nil
+		}
 	}
 
-	parsed, err := uuid.Parse(orgIDStr)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid active organization ID: %w", err)
+	// Fallback to primary organization from repository if available
+	if s.orgRepo != nil && principal.UserID != "" {
+		orgs, err := s.orgRepo.List(ctx, principal.UserID, s.IsPlatformAdmin(principal))
+		if err == nil && len(orgs) > 0 {
+			return orgs[0].ID, nil
+		}
 	}
 
-	return parsed, nil
+	return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 }
 
 func (s *OrganizationSetupService) GetProfile(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (*domain.Organization, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +85,14 @@ func (s *OrganizationSetupService) UpdateProfile(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.UpdateOrganizationProfilePayload,
 ) (*domain.Organization, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	existing, errGet := s.orgRepo.GetByID(ctx, orgUUID)
@@ -137,14 +143,14 @@ func (s *OrganizationSetupService) SubmitForReview(
 	ctx context.Context,
 	principal *middleware.AuthenticatedPrincipal,
 ) (*domain.Organization, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	existing, errGet := s.orgRepo.GetByID(ctx, orgUUID)

@@ -8,9 +8,21 @@
     "build": "vite build",
     "preview": "vite preview --host --port 3000",
     "start": "vite preview --host --port 3000",
-    "typecheck": "tsc"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
+    "@curexal/api-client": "workspace:*",
+    "@curexal/auth": "workspace:*",
+    "@curexal/contracts": "workspace:*",
+    "@curexal/design-system": "workspace:*",
+    "@curexal/documents": "workspace:*",
+    "@curexal/patient": "workspace:*",
+    "@curexal/permissions": "workspace:*",
+    "@curexal/tenant-context": "workspace:*",
+    "@curexal/ui": "workspace:*",
+    "@curexal/utils": "workspace:*",
+    "@curexal/validation": "workspace:*",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

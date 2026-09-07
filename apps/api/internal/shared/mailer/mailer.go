@@ -211,3 +211,77 @@ func (m *Mailer) SendPasswordDeliveryEmail(ctx context.Context, toEmail, userNam
 
 	return m.SendEmail(ctx, toEmail, subject, htmlBody)
 }
+
+func formatRoleTitle(role, roleTitle string) string {
+	if roleTitle != "" && roleTitle != "member" {
+		return roleTitle
+	}
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "doctor":
+		return "Medical Doctor"
+	case "nurse":
+		return "Registered Nurse"
+	case "lab_technician", "laboratory_scientist", "lab_scientist":
+		return "Laboratory Scientist"
+	case "pharmacist":
+		return "Pharmacist"
+	case "radiologist":
+		return "Radiologist"
+	case "receptionist", "front_desk":
+		return "Front Desk Specialist"
+	case "cashier", "billing":
+		return "Billing & Cashier Specialist"
+	case "branch_admin":
+		return "Branch Administrator"
+	case "org_admin":
+		return "Organization Administrator"
+	case "owner":
+		return "Owner and Primary Administrator"
+	default:
+		if role != "" {
+			parts := strings.Split(role, "_")
+			for i, p := range parts {
+				if len(p) > 0 {
+					parts[i] = strings.ToUpper(p[:1]) + strings.ToLower(p[1:])
+				}
+			}
+			return strings.Join(parts, " ")
+		}
+		return "Healthcare Team Member"
+	}
+}
+
+func (m *Mailer) SendStaffInvitationEmail(ctx context.Context, toEmail, orgName, role, roleTitle, code, inviteURL string) error {
+	formattedRole := formatRoleTitle(role, roleTitle)
+	subject := fmt.Sprintf("Welcome to %s — Invitation Code (%s): %s", orgName, formattedRole, code)
+
+	htmlBody, err := RenderTemplate("staff-invitation", TemplateData{
+		UserName:         toEmail,
+		OrgName:          orgName,
+		Role:             role,
+		RoleTitle:        formattedRole,
+		VerificationCode: code,
+		Code:             code,
+		ActionURL:        inviteURL,
+		ActionText:       "Set Up Password & Activate Account",
+		Title:            "Healthcare Team Invitation",
+		Message:          fmt.Sprintf("You have been invited to join the healthcare team at %s as %s. Please use the 6-character verification code below to activate your account and choose a secure password.", orgName, formattedRole),
+	})
+	if err != nil || htmlBody == "" {
+		htmlBody = renderFallbackHTML(TemplateData{
+			UserName:         toEmail,
+			OrgName:          orgName,
+			Role:             role,
+			RoleTitle:        formattedRole,
+			VerificationCode: code,
+			Code:             code,
+			ActionURL:        inviteURL,
+			ActionText:       "Set Up Password & Activate Account",
+			Title:            "Healthcare Team Invitation",
+			Message:          fmt.Sprintf("You have been invited to join the healthcare team at %s as %s. Your 6-character invitation verification code is: %s", orgName, formattedRole, code),
+		})
+	}
+
+	return m.SendEmail(ctx, toEmail, subject, htmlBody)
+}
+

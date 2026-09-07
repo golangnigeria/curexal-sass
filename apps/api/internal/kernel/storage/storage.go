@@ -45,12 +45,12 @@ type StorageConfig struct {
 func New(cfg StorageConfig, baseURL string) (ObjectStorage, error) {
 	provider := strings.ToLower(strings.TrimSpace(cfg.Provider))
 	switch provider {
-	case "s3", "r2", "cloudflare_r2":
+	case "s3", "r2", "minio", "cloudflare_r2":
 		return NewS3StorageService(cfg)
 	case "local", "":
 		return NewLocalStorageService(cfg.BaseDir, baseURL)
 	default:
-		return nil, fmt.Errorf("unsupported storage provider %q (supported: local, s3, r2)", cfg.Provider)
+		return nil, fmt.Errorf("unsupported storage provider %q (supported: local, s3, r2, minio)", cfg.Provider)
 	}
 }
 

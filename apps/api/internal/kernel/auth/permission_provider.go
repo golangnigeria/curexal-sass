@@ -40,11 +40,8 @@ func NewOrganizationPermissionProvider(rolePermissions map[string][]string) Perm
 			if principal.Organization.OrganizationRole != "" {
 				roles = append(roles, principal.Organization.OrganizationRole)
 			}
-			if principal.Role != "" {
+			if principal.Role != "" && principal.Role != principal.Organization.OrganizationRole {
 				roles = append(roles, principal.Role)
-			}
-			if len(roles) == 0 && principal.UserID != "" {
-				roles = append(roles, "owner", "member")
 			}
 			return roles
 		},

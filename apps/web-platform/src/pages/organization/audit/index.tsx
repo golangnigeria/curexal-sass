@@ -13,6 +13,7 @@ import {
   User,
   Activity,
 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default function OrganizationAuditPage() {
   const { data: auditLogs, isLoading } = useOrgAuditLogs();
@@ -133,8 +134,8 @@ export default function OrganizationAuditPage() {
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       <div>
-                        <p className="text-foreground">{new Date(log.createdAt).toLocaleTimeString()}</p>
-                        <p className="text-[10px] opacity-70">{log.ipAddress}</p>
+                        <p className="text-foreground">{formatDate((log as any).occurredAt || log.createdAt)}</p>
+                        <p className="text-[10px] opacity-70">{log.ipAddress || "—"}</p>
                       </div>
                     </td>
                   </tr>

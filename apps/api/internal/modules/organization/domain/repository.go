@@ -16,24 +16,32 @@ type OrganizationRepository interface {
 	GetSettings(ctx context.Context, orgID uuid.UUID) (*OrganizationSettings, error)
 	UpdateSettings(ctx context.Context, orgID uuid.UUID, logoURL, themeBranding, customDomain, supportEmail, supportPhone, cacNumber, tinNumber, taxNumber, businessType, address, timezone, currency, language *string) (*OrganizationSettings, error)
 	List(ctx context.Context, userID string, isPlatformAdmin bool) ([]Organization, error)
+	VerifyMembership(ctx context.Context, orgID uuid.UUID, userID string) (bool, error)
 }
 
 type FacilityBranchRepository interface {
 	ListBranches(ctx context.Context, orgID uuid.UUID) ([]FacilityBranch, error)
 	GetBranchByID(ctx context.Context, orgID, branchID uuid.UUID) (*FacilityBranch, error)
 	GetBranchByCode(ctx context.Context, orgID uuid.UUID, code string) (*FacilityBranch, error)
+	GetBranchBySlug(ctx context.Context, orgID uuid.UUID, slug string) (*FacilityBranch, error)
 	CreateBranch(ctx context.Context, branch *FacilityBranch, actorID uuid.UUID) (*FacilityBranch, error)
 	UpdateBranch(ctx context.Context, branch *FacilityBranch, actorID uuid.UUID) (*FacilityBranch, error)
 	DeactivateBranch(ctx context.Context, orgID, branchID uuid.UUID, actorID uuid.UUID) error
+	SetHeadquarters(ctx context.Context, orgID, branchID, actorID uuid.UUID) error
 	CountActiveBranches(ctx context.Context, orgID uuid.UUID) (int, error)
 	HasActiveHeadquarters(ctx context.Context, orgID uuid.UUID) (bool, error)
 	CheckFacilityTypeActive(ctx context.Context, facilityTypeID uuid.UUID) (bool, error)
+	GetFacilityTypeByCode(ctx context.Context, code string) (*FacilityType, error)
+	ListFacilityTypes(ctx context.Context) ([]FacilityType, error)
+	VerifyUserFacilityAccess(ctx context.Context, orgID, branchID uuid.UUID, userID string, isOrgAdmin bool) (bool, error)
+	IsUserAssignedToBranch(ctx context.Context, userID, orgID, branchID uuid.UUID) (bool, error)
 }
 
 type StaffMembershipRepository interface {
 	ListMembers(ctx context.Context, orgID uuid.UUID) ([]StaffMemberDTO, error)
 	GetMemberByID(ctx context.Context, orgID, membershipID uuid.UUID) (*StaffMemberDTO, error)
 	CountActiveMembers(ctx context.Context, orgID uuid.UUID) (int, error)
+	DirectCreateMember(ctx context.Context, orgID uuid.UUID, fullName, email, passwordHash, role, roleTitle string, branchIDs []uuid.UUID, actorID uuid.UUID) (*StaffMemberDTO, error)
 
 	CreateInvitation(ctx context.Context, invite *StaffInvitation) (*StaffInvitation, error)
 	ListInvitations(ctx context.Context, orgID uuid.UUID) ([]StaffInvitation, error)

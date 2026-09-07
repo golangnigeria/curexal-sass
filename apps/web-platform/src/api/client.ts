@@ -7,12 +7,19 @@ export const getApiUrl = (path: string = ""): string => {
 };
 
 let inMemoryCsrfToken = "";
+let inMemoryActiveOrgId = "";
 
 export const setCsrfToken = (token: string) => {
   inMemoryCsrfToken = token;
 };
 
 export const getCsrfToken = (): string => inMemoryCsrfToken;
+
+export const setClientActiveOrgId = (orgId: string) => {
+  inMemoryActiveOrgId = orgId;
+};
+
+export const getClientActiveOrgId = (): string => inMemoryActiveOrgId;
 
 export const apiClient = axios.create({
   withCredentials: true,
@@ -31,6 +38,43 @@ apiClient.interceptors.request.use((config) => {
   const method = config.method?.toLowerCase();
   if (inMemoryCsrfToken && method && ["post", "put", "patch", "delete"].includes(method)) {
     config.headers["X-CSRF-Token"] = inMemoryCsrfToken;
+  }
+
+  // Attach active organization headers if resolved in client memory
+  if (inMemoryActiveOrgId) {
+    config.headers["X-Organization-ID"] = inMemoryActiveOrgId;
+    config.headers["X-Tenant-ID"] = inMemoryActiveOrgId;
+  }
+
+  // Attach active branch slug if in branch workspace route
+  if (typeof window !== "undefined" && window.location?.pathname) {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    if (
+      parts.length > 0 &&
+      parts[0] !== "login" &&
+      parts[0] !== "platform" &&
+      parts[0] !== "organization" &&
+      parts[0] !== "workspace" &&
+      parts[0] !== "api"
+    ) {
+      config.headers["X-Branch-Slug"] = parts[0];
+    }
+
+    // Attach patient identity headers if authenticated in portal
+    try {
+      const portalToken = localStorage.getItem("curexal_portal_token");
+      if (portalToken && !config.headers["Authorization"]) {
+        config.headers["Authorization"] = `Bearer ${portalToken}`;
+      }
+
+      const rawPatient = localStorage.getItem("curexal_portal_patient");
+      if (rawPatient) {
+        const patient = JSON.parse(rawPatient);
+        if (patient?.id) {
+          config.headers["X-Patient-ID"] = patient.id;
+        }
+      }
+    } catch {}
   }
 
   return config;

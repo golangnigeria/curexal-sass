@@ -137,3 +137,28 @@ func (h *AuditHandler) GetAdminStats(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, stats)
 }
+
+func (h *AuditHandler) GetPatientDisclosures(c echo.Context) error {
+	patientIDStr := c.Param("patientId")
+	patientID, err := uuid.Parse(patientIDStr)
+	if err != nil {
+		return errs.NewBadRequestError("invalid patient id format: must be a valid UUID", false, nil, nil, nil)
+	}
+
+	limit := 50
+	offset := 0
+
+	logs, err := h.appService.ListPatientDisclosures(c.Request().Context(), patientID, limit, offset)
+	if err != nil {
+		if h.server != nil {
+			h.server.Logger.Error().Err(err).Str("patientId", patientIDStr).Msg("failed to query patient audit disclosures")
+		}
+		return errs.NewInternalServerError()
+	}
+	if logs == nil {
+		logs = []domain.AuditLog{}
+	}
+
+	return c.JSON(http.StatusOK, logs)
+}
+

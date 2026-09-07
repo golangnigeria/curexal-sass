@@ -54,7 +54,7 @@ func (s *OrganizationIntegrationService) isPlatformAdmin(principal *middleware.A
 	return false
 }
 
-func (s *OrganizationIntegrationService) resolveActiveOrgUUID(principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
+func (s *OrganizationIntegrationService) resolveActiveOrgUUID(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
 	if principal == nil {
 		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 	}
@@ -67,16 +67,21 @@ func (s *OrganizationIntegrationService) resolveActiveOrgUUID(principal *middlew
 		orgIDStr = principal.TenantID
 	}
 
-	if orgIDStr == "" {
-		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+	if orgIDStr != "" {
+		parsed, err := uuid.Parse(orgIDStr)
+		if err == nil {
+			return parsed, nil
+		}
 	}
 
-	parsed, err := uuid.Parse(orgIDStr)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid active organization ID: %w", err)
+	if s.orgRepo != nil && principal.UserID != "" {
+		orgs, err := s.orgRepo.List(ctx, principal.UserID, s.isPlatformAdmin(principal))
+		if err == nil && len(orgs) > 0 {
+			return orgs[0].ID, nil
+		}
 	}
 
-	return parsed, nil
+	return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 }
 
 func generateRandomToken(length int) (string, error) {
@@ -104,14 +109,14 @@ func (s *OrganizationIntegrationService) CreateAPIKey(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.CreateAPIKeyPayload,
 ) (*domain.APIKeyCreateResult, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	// Validate scopes
@@ -196,7 +201,7 @@ func (s *OrganizationIntegrationService) CreateAPIKey(
 }
 
 func (s *OrganizationIntegrationService) ListAPIKeys(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.APIKey, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -205,14 +210,14 @@ func (s *OrganizationIntegrationService) ListAPIKeys(ctx context.Context, princi
 }
 
 func (s *OrganizationIntegrationService) RevokeAPIKey(ctx context.Context, principal *middleware.AuthenticatedPrincipal, keyID uuid.UUID) error {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	errRev := s.integrationRepo.RevokeAPIKey(ctx, orgUUID, keyID, actorUUID)
@@ -252,14 +257,14 @@ func (s *OrganizationIntegrationService) CreateWebhookSubscription(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.CreateWebhookSubscriptionPayload,
 ) (*domain.WebhookSubscription, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	// Validate SSRF Protection URL boundary
@@ -327,7 +332,7 @@ func (s *OrganizationIntegrationService) CreateWebhookSubscription(
 }
 
 func (s *OrganizationIntegrationService) ListWebhookSubscriptions(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.WebhookSubscription, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -346,14 +351,14 @@ func (s *OrganizationIntegrationService) ListWebhookSubscriptions(ctx context.Co
 }
 
 func (s *OrganizationIntegrationService) DeleteWebhookSubscription(ctx context.Context, principal *middleware.AuthenticatedPrincipal, subID uuid.UUID) error {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	errDel := s.integrationRepo.DeleteWebhookSubscription(ctx, orgUUID, subID, actorUUID)
@@ -389,7 +394,7 @@ func (s *OrganizationIntegrationService) DeleteWebhookSubscription(ctx context.C
 }
 
 func (s *OrganizationIntegrationService) ListWebhookDeliveries(ctx context.Context, principal *middleware.AuthenticatedPrincipal, limit int) ([]domain.WebhookDelivery, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}

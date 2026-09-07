@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/config"
 	"github.com/google/uuid"
@@ -45,125 +44,70 @@ func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 	return platformAuth.Authenticate(cfg)
 }
 
+// AuthenticateWithVerifier is a middleware that extracts identity and verifies tenant membership against the database.
+func AuthenticateWithVerifier(cfg *config.Config, verifier platformAuth.TenantMembershipVerifier) echo.MiddlewareFunc {
+	return platformAuth.AuthenticateWithVerifier(cfg, verifier)
+}
+
 func resolvePrincipal(c echo.Context, secretKey string) *AuthenticatedPrincipal {
-	var tokenStr string
+	cfg := &config.Config{
+		Auth: config.AuthConfig{
+			SecretKey:     secretKey,
+			JWTCookieName: "jwt",
+		},
+	}
+	return platformAuth.ResolvePrincipal(c, cfg)
+}
 
-	// 1. Try extracting token from JWT Cookie
-	if cookie, err := c.Cookie("jwt"); err == nil && cookie.Value != "" {
-		tokenStr = cookie.Value
+func resolveRequestTenantID(c echo.Context) string {
+	if c == nil {
+		return ""
 	}
 
-	// 2. Try extracting token from Authorization header or X-Access-Token header
-	if tokenStr == "" {
-		authHeader := c.Request().Header.Get("Authorization")
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
-		} else if customToken := c.Request().Header.Get("X-Access-Token"); customToken != "" {
-			tokenStr = customToken
+	// 1. Direct Tenant / Organization Headers
+	if tid := c.Request().Header.Get("X-Tenant-ID"); tid != "" {
+		return tid
+	}
+	if orgID := c.Request().Header.Get("X-Organization-ID"); orgID != "" {
+		return orgID
+	}
+	if activeTid := c.Request().Header.Get("X-Active-Tenant-ID"); activeTid != "" {
+		return activeTid
+	}
+
+	// 2. Domain / Subdomain Resolved Organization ID
+	if val := c.Get(platformAuth.ResolvedOrgIDKey); val != nil {
+		if s, ok := val.(string); ok && s != "" {
+			return s
 		}
 	}
-
-	if tokenStr != "" && secretKey != "" {
-		token, errParse := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			return []byte(secretKey), nil
-		})
-		if errParse == nil && token.Valid {
-			if claims, ok := token.Claims.(jwt.MapClaims); ok {
-				sub, _ := claims.GetSubject()
-				sid, _ := claims["sid"].(string)
-
-				var platformRole string
-				if pr, ok := claims["platform_role"].(string); ok && pr != "" {
-					platformRole = pr
-				}
-				isPlatformAdmin, _ := claims["is_platform_admin"].(bool)
-
-				tenantID := c.Request().Header.Get("X-Tenant-ID")
-				role := c.Request().Header.Get("X-User-Role")
-				if role == "" {
-					role = platformRole
-				}
-
-				if sub != "" {
-					isStaff := isPlatformAdmin || platformRole == "super_admin" || platformRole == "platform_staff" || platformRole == "super_support_agent" || platformRole == "super_sales_staff"
-					return &AuthenticatedPrincipal{
-						UserID:    sub,
-						SessionID: sid,
-						TenantID:  tenantID,
-						Role:      role,
-						Identity: IdentityVector{
-							UserID: sub,
-						},
-						Platform: PlatformVector{
-							IsPlatformStaff: isStaff,
-							PlatformRole:    platformRole,
-						},
-						Organization: OrganizationVector{
-							ActiveOrganizationID: tenantID,
-						},
-						Workspace: WorkspaceVector{
-							ActiveWorkspaceID: tenantID,
-							WorkspaceRole:     role,
-						},
-						ActiveContext: ActiveContextVector{
-							Type:      "platform",
-							ContextID: tenantID,
-						},
-						Preferences: UserPreferencesVector{
-							Theme:              "dark",
-							Language:           "en",
-							Timezone:           "Africa/Lagos",
-							DateFormat:         "YYYY-MM-DD",
-							NumberFormat:       "en-NG",
-							DefaultLandingPage: "/dashboard",
-						},
-						Security: SecurityVector{
-							SessionID: sid,
-						},
-					}
-				}
-			}
-		}
+	if resolvedOrgID := platformAuth.GetResolvedOrgID(c); resolvedOrgID != "" {
+		return resolvedOrgID
 	}
 
-	// 3. Fallback to X-User-ID header (for internal service calls/tests)
-	if internalUserID := c.Request().Header.Get("X-User-ID"); internalUserID != "" {
-		tenantID := c.Request().Header.Get("X-Tenant-ID")
-		role := c.Request().Header.Get("X-User-Role")
-		return &AuthenticatedPrincipal{
-			UserID:   internalUserID,
-			TenantID: tenantID,
-			Role:     role,
-			Identity: IdentityVector{
-				UserID: internalUserID,
-			},
-			Platform: PlatformVector{
-				IsPlatformStaff: role == "super_admin" || role == "platform_staff" || role == "super_support_agent" || role == "super_sales_staff",
-				PlatformRole:    role,
-			},
-			Organization: OrganizationVector{
-				ActiveOrganizationID: tenantID,
-			},
-			Workspace: WorkspaceVector{
-				ActiveWorkspaceID: tenantID,
-				WorkspaceRole:     role,
-			},
-			ActiveContext: ActiveContextVector{
-				Type:      "platform",
-				ContextID: tenantID,
-			},
-			Preferences: UserPreferencesVector{
-				Theme:              "dark",
-				Language:           "en",
-				Timezone:           "Africa/Lagos",
-				DateFormat:         "YYYY-MM-DD",
-				NumberFormat:       "en-NG",
-				DefaultLandingPage: "/dashboard",
-			},
-		}
+	// 3. Query Parameter Overrides
+	if qOrgID := c.QueryParam("organization_id"); qOrgID != "" {
+		return qOrgID
+	}
+	if qTenantID := c.QueryParam("tenant_id"); qTenantID != "" {
+		return qTenantID
+	}
+	if qOrg := c.QueryParam("org_id"); qOrg != "" {
+		return qOrg
 	}
 
-	return nil
+	// 4. Session / Active Org Cookie Fallbacks
+	if cookie, err := c.Cookie("active_org_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+	if cookie, err := c.Cookie("active_organization_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+	if cookie, err := c.Cookie("tenant_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+
+	return ""
 }
 
 func GetPrincipal(c echo.Context) *AuthenticatedPrincipal {

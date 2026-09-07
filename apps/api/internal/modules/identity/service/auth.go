@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/mail"
+	"sort"
 	"strings"
 	"time"
 
@@ -46,6 +47,18 @@ type UserClaims struct {
 	PlatformRole    *string `json:"platform_role,omitempty"`
 	IsPlatformAdmin bool    `json:"is_platform_admin,omitempty"`
 	jwt.RegisteredClaims
+}
+
+// ParseUUIDPtr parses a UUID string to a pointer, returning nil if empty or invalid.
+func ParseUUIDPtr(s string) *uuid.UUID {
+	if s == "" {
+		return nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return nil
+	}
+	return &id
 }
 
 // LogAuthEvent logs authentication events to the audit_logs table.
@@ -408,6 +421,17 @@ func (s *AuthService) SignInCredentials(ctx context.Context, email, password, ip
 		s.server.Logger.Error().Err(resetErr).Str("user_id", cred.UserID).Msg("failed to update last_successful_login_at on login")
 	}
 
+	// Auto-upgrade legacy Bcrypt hashes to Argon2id upon successful verification
+	if crypto.NeedsRehash(cred.PasswordHash) {
+		if newArgonHash, errRehash := crypto.HashPassword(password); errRehash == nil {
+			if upErr := s.credRepo.UpdatePasswordHash(ctx, cred.UserID, newArgonHash); upErr != nil {
+				s.server.Logger.Warn().Err(upErr).Str("user_id", cred.UserID).Msg("failed to auto-upgrade password hash to Argon2id")
+			} else {
+				s.server.Logger.Info().Str("user_id", cred.UserID).Msg("successfully upgraded password hash to Argon2id")
+			}
+		}
+	}
+
 	// 3. Enforce email verification
 	if !u.EmailVerified {
 		// Log the failed login attempt due to unverified email
@@ -527,22 +551,57 @@ func (s *AuthService) VerifyLoginOTP(ctx context.Context, email, code, ip, ua st
 	return u, accessToken, refreshToken, nil
 }
 
-// CreateSession generates a new database-backed session.
-func (s *AuthService) CreateSession(ctx context.Context, userID, ipAddress, userAgent string, mfaVerified bool) (*model.Session, string, error) {
-	sessionID := "sess_" + ulid.Make().String()
+// CreateSession generates a new database-backed session conforming to Day 1 Specification.
+func (s *AuthService) CreateSession(ctx context.Context, userID, ipAddress, userAgent string, mfaVerified bool, opts ...string) (*model.Session, string, error) {
+	var orgID, branchID string
+	if len(opts) > 0 {
+		orgID = opts[0]
+	}
+	if len(opts) > 1 {
+		branchID = opts[1]
+	}
+
+	if orgID == "" {
+		_ = s.server.DB.Pool.QueryRow(ctx, `
+			SELECT organization_id::text
+			FROM organization.organization_memberships
+			WHERE user_id = $1 AND is_active = TRUE
+			ORDER BY (role IN ('owner', 'org_admin')) DESC, created_at ASC
+			LIMIT 1
+		`, userID).Scan(&orgID)
+	}
+
+	if orgID == "" {
+		_ = s.server.DB.Pool.QueryRow(ctx, `SELECT id::text FROM organization.organizations ORDER BY created_at ASC LIMIT 1`).Scan(&orgID)
+	}
+
+	sessionID := uuid.New().String()
+	familyID := uuid.New().String()
 
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return nil, "", fmt.Errorf("failed to generate secure refresh token: %w", err)
 	}
 	refreshToken := hex.EncodeToString(b)
+	tokenHashBytes := sha256.Sum256([]byte(refreshToken))
+	refreshTokenHash := hex.EncodeToString(tokenHashBytes[:])
+
+	var activeBranchPtr *string
+	if branchID != "" {
+		activeBranchPtr = &branchID
+	}
 
 	sess := &model.Session{
-		ID:          sessionID,
-		UserID:      userID,
-		Token:       refreshToken,
-		ExpiresAt:   time.Now().Add(30 * 24 * time.Hour), // 30 days
-		MfaVerified: mfaVerified,
+		ID:               sessionID,
+		UserID:           userID,
+		OrganizationID:   orgID,
+		ActiveBranchID:   activeBranchPtr,
+		RefreshTokenHash: refreshTokenHash,
+		TokenFamilyID:    familyID,
+		Token:            refreshToken,
+		ExpiresAt:        time.Now().Add(7 * 24 * time.Hour), // 7-day sliding expiration
+		LastActiveAt:     time.Now(),
+		MfaVerified:      mfaVerified,
 	}
 	if ipAddress != "" {
 		sess.IPAddress = &ipAddress
@@ -572,9 +631,11 @@ func (s *AuthService) GenerateToken(userID string, sessionID string) (string, er
 		if platformRole == nil || *platformRole == "" || *platformRole == "member" {
 			var orgRole string
 			errOrg := s.server.DB.Pool.QueryRow(ctx, `
-				SELECT role_title
+				SELECT role
 				FROM organization.organization_memberships
-				WHERE user_id = $1 AND role_title IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager')
+				WHERE user_id = $1 
+				  AND is_active = TRUE
+				  AND role IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager')
 				ORDER BY created_at ASC
 				LIMIT 1
 			`, userID).Scan(&orgRole)
@@ -585,6 +646,387 @@ func (s *AuthService) GenerateToken(userID string, sessionID string) (string, er
 	}
 
 	return platformAuth.GenerateAccessJWT(s.server.Config, userID, sessionID, platformRole, isPlatformAdmin, orgRolePtr)
+}
+
+type BranchSummary struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Code         string `json:"code"`
+	FacilityType string `json:"facilityType,omitempty"`
+	Role         string `json:"role,omitempty"`
+}
+
+type BranchResolutionResult struct {
+	OrganizationID         string          `json:"organizationId"`
+	OrganizationName       string          `json:"organizationName"`
+	OrganizationSlug       string          `json:"organizationSlug"`
+	ActiveBranch           *BranchSummary  `json:"activeBranch,omitempty"`
+	AssignedBranches       []BranchSummary `json:"assignedBranches"`
+	RequireBranchSelection bool            `json:"requireBranchSelection"`
+	SelectionToken         string          `json:"selectionToken,omitempty"`
+}
+
+// ResolveBranchContext enforces deterministic clinical branch resolution per Day 1 Specification.
+func (s *AuthService) ResolveBranchContext(ctx context.Context, userID string, orgSlug, branchID, branchCode *string) (*BranchResolutionResult, error) {
+	var orgID, orgName, resolvedSlug, userOrgRole string
+
+	if orgSlug != nil && *orgSlug != "" {
+		err := s.server.DB.Pool.QueryRow(ctx, `
+			SELECT o.id::text, o.name, o.slug, COALESCE(m.role, '')
+			FROM organization.organizations o
+			LEFT JOIN organization.organization_memberships m ON m.organization_id = o.id AND m.user_id = $1 AND m.is_active = TRUE
+			WHERE LOWER(o.slug) = LOWER($2)
+			LIMIT 1
+		`, userID, *orgSlug).Scan(&orgID, &orgName, &resolvedSlug, &userOrgRole)
+		if err != nil {
+			return nil, fmt.Errorf("organization not found: %w", err)
+		}
+	} else {
+		err := s.server.DB.Pool.QueryRow(ctx, `
+			SELECT o.id::text, o.name, o.slug, m.role
+			FROM organization.organization_memberships m
+			JOIN organization.organizations o ON o.id = m.organization_id
+			WHERE m.user_id = $1 AND m.is_active = TRUE
+			ORDER BY (m.role IN ('owner', 'org_admin')) DESC, m.created_at ASC
+			LIMIT 1
+		`, userID).Scan(&orgID, &orgName, &resolvedSlug, &userOrgRole)
+		if err != nil {
+			return nil, domain.ErrUnassignedFacilityBranch
+		}
+	}
+
+	isOrgAdminOrOwner := userOrgRole == "owner" || userOrgRole == "org_admin" || userOrgRole == "admin" ||
+		userOrgRole == "org_regional_manager" || userOrgRole == "org_quality_manager" ||
+		userOrgRole == "org_finance_manager" || userOrgRole == "org_hr_manager"
+
+	var assignedBranches []BranchSummary
+	if isOrgAdminOrOwner {
+		rows, err := s.server.DB.Pool.Query(ctx, `
+			SELECT b.id::text, b.name, b.code, COALESCE(ft.name, '')
+			FROM organization.facility_branches b
+			LEFT JOIN platform.facility_types ft ON ft.id = b.facility_type_id
+			WHERE b.organization_id = $1 AND b.status = 'ACTIVE'
+			ORDER BY b.name ASC
+		`, orgID)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var bs BranchSummary
+				if scanErr := rows.Scan(&bs.ID, &bs.Name, &bs.Code, &bs.FacilityType); scanErr == nil {
+					bs.Role = userOrgRole
+					assignedBranches = append(assignedBranches, bs)
+				}
+			}
+		}
+	} else {
+		rows, err := s.server.DB.Pool.Query(ctx, `
+			SELECT b.id::text, b.name, b.code, COALESCE(ft.name, ''), m.role
+			FROM organization.membership_branches mb
+			JOIN organization.organization_memberships m ON m.id = mb.membership_id
+			JOIN organization.facility_branches b ON b.id = mb.facility_branch_id
+			LEFT JOIN platform.facility_types ft ON ft.id = b.facility_type_id
+			WHERE m.user_id = $1 AND m.organization_id = $2 AND m.is_active = TRUE AND b.status = 'ACTIVE'
+			ORDER BY b.name ASC
+		`, userID, orgID)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var bs BranchSummary
+				if scanErr := rows.Scan(&bs.ID, &bs.Name, &bs.Code, &bs.FacilityType, &bs.Role); scanErr == nil {
+					assignedBranches = append(assignedBranches, bs)
+				}
+			}
+		}
+	}
+
+	result := &BranchResolutionResult{
+		OrganizationID:   orgID,
+		OrganizationName: orgName,
+		OrganizationSlug: resolvedSlug,
+		AssignedBranches: assignedBranches,
+	}
+
+	// 1. Explicit Branch Supplied:
+	if (branchID != nil && *branchID != "") || (branchCode != nil && *branchCode != "") {
+		targetID := ""
+		if branchID != nil {
+			targetID = *branchID
+		}
+		targetCode := ""
+		if branchCode != nil {
+			targetCode = *branchCode
+		}
+
+		for _, b := range assignedBranches {
+			if (targetID != "" && b.ID == targetID) || (targetCode != "" && strings.EqualFold(b.Code, targetCode)) {
+				chosen := b
+				result.ActiveBranch = &chosen
+				return result, nil
+			}
+		}
+		return nil, domain.ErrUnauthorizedBranchAccess
+	}
+
+	// 2. Single Assigned Branch:
+	if len(assignedBranches) == 1 {
+		chosen := assignedBranches[0]
+		result.ActiveBranch = &chosen
+		return result, nil
+	}
+
+	// 3. Multiple Assigned Branches (Prompt Required):
+	if len(assignedBranches) > 1 {
+		result.RequireBranchSelection = true
+		allowedIDs := make([]string, 0, len(assignedBranches))
+		for _, b := range assignedBranches {
+			allowedIDs = append(allowedIDs, b.ID)
+		}
+		selectionToken, err := platformAuth.GenerateBranchSelectionToken(s.server.Config, userID, orgID, allowedIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate branch selection token: %w", err)
+		}
+		result.SelectionToken = selectionToken
+		return result, nil
+	}
+
+	// 4. Zero Assigned Branches:
+	if isOrgAdminOrOwner {
+		// Executive organization leadership with no operational clinic branch assignments can access organization console
+		return result, nil
+	}
+	return result, domain.ErrUnassignedFacilityBranch
+}
+
+// GenerateTokenForSession generates access token with explicit activeBranch context and permissions hash.
+func (s *AuthService) GenerateTokenForSession(ctx context.Context, userID, sessionID, orgID, branchID string) (string, error) {
+	u, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	var roles []string
+	if u.PlatformRole != nil && *u.PlatformRole != "" {
+		roles = append(roles, *u.PlatformRole)
+	}
+
+	var orgRole string
+	_ = s.server.DB.Pool.QueryRow(ctx, `
+		SELECT role FROM organization.organization_memberships
+		WHERE user_id = $1 AND organization_id = $2 AND is_active = TRUE
+		LIMIT 1
+	`, userID, orgID).Scan(&orgRole)
+
+	if orgRole != "" {
+		roles = append(roles, orgRole)
+	}
+
+	// Resolve permissions
+	var permCodes []string
+	rows, errPerms := s.server.DB.Pool.Query(ctx, `
+		SELECT DISTINCT p.code
+		FROM authorization.role_permissions rp
+		JOIN authorization.roles r ON r.id = rp.role_id
+		JOIN authorization.permissions p ON p.id = rp.permission_id
+		WHERE r.code = ANY($1)
+	`, roles)
+	if errPerms == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var pCode string
+			if errScan := rows.Scan(&pCode); errScan == nil {
+				permCodes = append(permCodes, pCode)
+			}
+		}
+	}
+	sort.Strings(permCodes)
+	permHashBytes := sha256.Sum256([]byte(strings.Join(permCodes, ",")))
+	permHash := hex.EncodeToString(permHashBytes[:])
+
+	var orgRolePtr *string
+	if orgRole != "" {
+		orgRolePtr = &orgRole
+	}
+
+	claims := platformAuth.UserClaims{
+		Email:            u.Email,
+		OrganizationID:   orgID,
+		ActiveBranchID:   branchID,
+		Roles:            roles,
+		PermHash:         permHash,
+		SessionID:        sessionID,
+		PlatformRole:     u.PlatformRole,
+		OrganizationRole: orgRolePtr,
+		IsPlatformAdmin:  u.IsPlatformAdmin || u.Email == "superadmin@curexal.internal",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.server.Config.Auth.JWTExpiration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "curexal-auth-engine",
+			Audience:  jwt.ClaimStrings{"curexal-clinic-os"},
+		},
+	}
+
+	return platformAuth.GenerateTokenWithClaims(s.server.Config, claims)
+}
+
+// SelectBranch completes login after user chooses an active facility branch.
+func (s *AuthService) SelectBranch(ctx context.Context, selectionToken, branchID, ip, ua string) (*model.User, *model.Session, string, string, error) {
+	claims, err := platformAuth.ParseBranchSelectionToken(s.server.Config, selectionToken)
+	if err != nil {
+		return nil, nil, "", "", domain.ErrInvalidSelectionToken
+	}
+
+	allowed := false
+	for _, id := range claims.AllowedBranchIDs {
+		if id == branchID {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return nil, nil, "", "", domain.ErrUnauthorizedBranchAccess
+	}
+
+	u, err := s.userRepo.GetByID(ctx, claims.UserID)
+	if err != nil {
+		return nil, nil, "", "", err
+	}
+
+	sess, refreshToken, err := s.CreateSession(ctx, claims.UserID, ip, ua, true, claims.OrganizationID, branchID)
+	if err != nil {
+		return nil, nil, "", "", fmt.Errorf("failed to create session: %w", err)
+	}
+
+	accessToken, err := s.GenerateTokenForSession(ctx, claims.UserID, sess.ID, claims.OrganizationID, branchID)
+	if err != nil {
+		return nil, nil, "", "", fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	s.LogAuthEvent(ctx, ParseUUIDPtr(claims.OrganizationID), &u.ID, "login:success", fmt.Sprintf(`{"session_id":"%s","branch_id":"%s"}`, sess.ID, branchID), ip, ua, "info")
+
+	return u, sess, accessToken, refreshToken, nil
+}
+
+// SwitchBranch rotates active facility context for an existing session.
+func (s *AuthService) SwitchBranch(ctx context.Context, sessionID, userID, branchID, ip, ua string) (string, *BranchSummary, error) {
+	sess, err := s.userRepo.GetSessionByID(ctx, sessionID)
+	if err != nil || sess == nil || sess.IsRevoked {
+		return "", nil, errors.New("invalid or revoked session")
+	}
+
+	// Verify branch belongs to organization and is active
+	var bs BranchSummary
+	err = s.server.DB.Pool.QueryRow(ctx, `
+		SELECT b.id::text, b.name, b.code, COALESCE(ft.name, '')
+		FROM organization.facility_branches b
+		LEFT JOIN platform.facility_types ft ON ft.id = b.facility_type_id
+		WHERE b.id = $1 AND b.organization_id = $2 AND b.status = 'ACTIVE'
+	`, branchID, sess.OrganizationID).Scan(&bs.ID, &bs.Name, &bs.Code, &bs.FacilityType)
+	if err != nil {
+		return "", nil, domain.ErrUnauthorizedBranchAccess
+	}
+
+	// Verify staff membership in branch (or org_admin)
+	var isAllowed bool
+	err = s.server.DB.Pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM organization.organization_memberships m
+			WHERE m.user_id = $1 AND m.organization_id = $2 AND m.is_active = TRUE AND (
+				m.role IN ('owner', 'org_admin', 'admin') OR
+				EXISTS (
+					SELECT 1 FROM organization.membership_branches mb
+					WHERE mb.membership_id = m.id AND mb.facility_branch_id = $3
+				)
+			)
+		)
+	`, userID, sess.OrganizationID, branchID).Scan(&isAllowed)
+	if err != nil || !isAllowed {
+		return "", nil, domain.ErrUnauthorizedBranchAccess
+	}
+
+	if err := s.userRepo.UpdateSessionActiveBranch(ctx, sessionID, branchID); err != nil {
+		return "", nil, fmt.Errorf("failed to switch branch in session: %w", err)
+	}
+
+	accessToken, err := s.GenerateTokenForSession(ctx, userID, sessionID, sess.OrganizationID, branchID)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to generate access token for new branch: %w", err)
+	}
+
+	s.LogAuthEvent(ctx, ParseUUIDPtr(sess.OrganizationID), &userID, "auth.branch_switched", fmt.Sprintf(`{"session_id":"%s","new_branch_id":"%s"}`, sessionID, branchID), ip, ua, "info")
+
+	return accessToken, &bs, nil
+}
+
+// RefreshTokenWithRotation implements single-use refresh token rotation with family reuse protection.
+func (s *AuthService) RefreshTokenWithRotation(ctx context.Context, rawRefreshToken, ipAddress, userAgent string) (*model.Session, string, string, error) {
+	if rawRefreshToken == "" {
+		return nil, "", "", errors.New("missing refresh token")
+	}
+
+	tokenHashBytes := sha256.Sum256([]byte(rawRefreshToken))
+	refreshTokenHash := hex.EncodeToString(tokenHashBytes[:])
+
+	sess, err := s.userRepo.GetSessionByTokenHash(ctx, refreshTokenHash)
+	if err != nil || sess == nil {
+		return nil, "", "", errors.New("invalid or expired session")
+	}
+
+	// 1. Theft / Reuse Detection:
+	if sess.IsRevoked {
+		_ = s.userRepo.RevokeTokenFamily(ctx, sess.TokenFamilyID, "token_theft_reuse_detected")
+		s.LogAuthEvent(ctx, ParseUUIDPtr(sess.OrganizationID), &sess.UserID, "auth.token.theft_detected",
+			fmt.Sprintf(`{"family_id":"%s","session_id":"%s"}`, sess.TokenFamilyID, sess.ID), ipAddress, userAgent, "critical")
+		return nil, "", "", errors.New("security alert: compromised session revoked")
+	}
+
+	// 2. Expiration check:
+	if time.Now().After(sess.ExpiresAt) {
+		_ = s.userRepo.RevokeSession(ctx, sess.ID, "expired")
+		return nil, "", "", errors.New("session expired, please login again")
+	}
+
+	// 3. Issue new refresh token within same family:
+	newB := make([]byte, 32)
+	if _, err := rand.Read(newB); err != nil {
+		return nil, "", "", fmt.Errorf("failed to generate new refresh token: %w", err)
+	}
+	newRefreshToken := hex.EncodeToString(newB)
+	newHashBytes := sha256.Sum256([]byte(newRefreshToken))
+	newRefreshTokenHash := hex.EncodeToString(newHashBytes[:])
+
+	newSession := &model.Session{
+		ID:               uuid.New().String(),
+		UserID:           sess.UserID,
+		OrganizationID:   sess.OrganizationID,
+		ActiveBranchID:   sess.ActiveBranchID,
+		RefreshTokenHash: newRefreshTokenHash,
+		TokenFamilyID:    sess.TokenFamilyID, // preserve token family
+		Token:            newRefreshToken,
+		ExpiresAt:        time.Now().Add(7 * 24 * time.Hour), // 7-day sliding expiration
+		IPAddress:        &ipAddress,
+		UserAgent:        &userAgent,
+	}
+
+	if err := s.userRepo.RotateSessionRefreshToken(ctx, sess.ID, newSession); err != nil {
+		return nil, "", "", fmt.Errorf("failed to rotate session: %w", err)
+	}
+
+	var activeBranch string
+	if sess.ActiveBranchID != nil {
+		activeBranch = *sess.ActiveBranchID
+	}
+	accessToken, err := s.GenerateTokenForSession(ctx, sess.UserID, newSession.ID, sess.OrganizationID, activeBranch)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	return newSession, accessToken, newRefreshToken, nil
+}
+
+// Logout revokes the active session.
+func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
+	return s.userRepo.RevokeSession(ctx, sessionID, "user_logout")
 }
 
 // GetUserEmail retrieves user email.
@@ -862,6 +1304,115 @@ func (s *AuthService) SetPasswordWithInput(ctx context.Context, input SetPasswor
 	}
 
 	if userID == "" {
+		// 3. Fallback: check organization.staff_invitations for invited staff members
+		queryToken := cleanCode
+		if queryToken == "" {
+			queryToken = cleanToken
+		}
+		if queryToken != "" {
+			digest := sha256.Sum256([]byte(strings.ToUpper(queryToken)))
+			tokenHash := hex.EncodeToString(digest[:])
+
+			var invID, orgID uuid.UUID
+			var invBranchID *uuid.UUID
+			var invEmail, invRole, invRoleTitle, invStatus string
+			var invExpiresAt time.Time
+
+			errInv := s.server.DB.Conn(ctx).QueryRow(ctx, `
+				SELECT id, organization_id, facility_branch_id, email, role, role_title, status, expires_at
+				FROM organization.staff_invitations
+				WHERE (invite_token_hash = $1 OR invite_token_hash = $2) AND status = 'PENDING'
+				LIMIT 1
+			`, tokenHash, queryToken).Scan(&invID, &orgID, &invBranchID, &invEmail, &invRole, &invRoleTitle, &invStatus, &invExpiresAt)
+
+			if errInv == nil {
+				if invRoleTitle == "" || invRoleTitle == "member" {
+					invRoleTitle = invRole
+				}
+				if time.Now().After(invExpiresAt) {
+					return errors.New("invitation code has expired")
+				}
+				if cleanEmail != "" && strings.ToLower(invEmail) != cleanEmail {
+					return errors.New("invitation code does not match the provided email address")
+				}
+
+				// Find or create user in identity.users
+				var existingUserID uuid.UUID
+				errFindUser := s.server.DB.Conn(ctx).QueryRow(ctx, `
+					INSERT INTO identity.users (id, name, email, email_verified, is_platform_admin, platform_role)
+					VALUES ($1, $2, $3, TRUE, FALSE, NULL)
+					ON CONFLICT (email) DO UPDATE SET email_verified = TRUE, platform_role = NULL
+					RETURNING id
+				`, uuid.New(), strings.Split(invEmail, "@")[0], strings.ToLower(invEmail)).Scan(&existingUserID)
+				if errFindUser != nil {
+					return fmt.Errorf("failed to create staff user: %w", errFindUser)
+				}
+
+				// Create/update credentials
+				hashedPwd, hashErr := crypto.HashPassword(cleanPassword)
+				if hashErr != nil {
+					return fmt.Errorf("failed to hash password: %w", hashErr)
+				}
+				_, errCred := s.server.DB.Conn(ctx).Exec(ctx, `
+					INSERT INTO identity.credentials (id, account_id, auth_provider, user_id, password_hash, created_at, updated_at)
+					VALUES ($1, $2, 'credential', $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+					ON CONFLICT (user_id, auth_provider) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = CURRENT_TIMESTAMP
+				`, uuid.New().String(), strings.ToLower(invEmail), existingUserID.String(), hashedPwd)
+				if errCred != nil {
+					return fmt.Errorf("failed to save credentials: %w", errCred)
+				}
+
+				// Create organization membership
+				memID := uuid.New()
+				errMem := s.server.DB.Conn(ctx).QueryRow(ctx, `
+					INSERT INTO organization.organization_memberships (
+						id, organization_id, user_id, role, role_title, is_active, updated_at
+					)
+					VALUES ($1, $2, $3, $4, $5, TRUE, CURRENT_TIMESTAMP)
+					ON CONFLICT (organization_id, user_id) DO UPDATE SET
+						role = EXCLUDED.role,
+						role_title = EXCLUDED.role_title,
+						is_active = TRUE,
+						updated_at = CURRENT_TIMESTAMP
+					RETURNING id
+				`, memID, orgID, existingUserID.String(), invRole, invRoleTitle).Scan(&memID)
+				if errMem != nil {
+					return fmt.Errorf("failed to create organization membership: %w", errMem)
+				}
+
+				// Assign branch and workspace membership if specified
+				if invBranchID != nil {
+					_, _ = s.server.DB.Conn(ctx).Exec(ctx, `
+						INSERT INTO organization.membership_branches (id, membership_id, facility_branch_id)
+						VALUES ($1, $2, $3)
+						ON CONFLICT DO NOTHING
+					`, uuid.New(), memID, *invBranchID)
+
+					_, _ = s.server.DB.Conn(ctx).Exec(ctx, `
+						INSERT INTO workspace.workspace_memberships (id, workspace_id, user_id, role, role_title, is_active, updated_at)
+						SELECT gen_random_uuid(), w.id, $1, $2, $3, TRUE, CURRENT_TIMESTAMP
+						FROM workspace.workspaces w
+						WHERE w.organization_id = $4
+						ON CONFLICT (workspace_id, user_id) DO UPDATE SET
+							role = EXCLUDED.role,
+							role_title = EXCLUDED.role_title,
+							is_active = TRUE,
+							updated_at = CURRENT_TIMESTAMP
+					`, existingUserID.String(), invRole, invRoleTitle, orgID)
+				}
+
+				// Mark invitation ACCEPTED
+				_, _ = s.server.DB.Conn(ctx).Exec(ctx, `
+					UPDATE organization.staff_invitations SET status = 'ACCEPTED', updated_at = CURRENT_TIMESTAMP WHERE id = $1
+				`, invID)
+
+				uidStr := existingUserID.String()
+				s.LogAuthEvent(ctx, nil, &uidStr, "staff:invitation_accepted", fmt.Sprintf(`{"role":"%s","org_id":"%s"}`, invRole, orgID.String()), "", "", "info")
+
+				return nil
+			}
+		}
+
 		return errors.New("invalid or expired verification code")
 	}
 

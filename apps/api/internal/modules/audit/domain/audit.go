@@ -10,6 +10,7 @@ import (
 type AuditLog struct {
 	ID                uuid.UUID        `json:"id"                db:"id"`
 	OccurredAt        time.Time        `json:"occurredAt"        db:"occurred_at"`
+	CreatedAt         *time.Time       `json:"createdAt,omitempty" db:"created_at"`
 	OrganizationID    *uuid.UUID       `json:"organizationId"    db:"organization_id"`
 	TenantID          *uuid.UUID       `json:"tenantId"          db:"tenant_id"`
 	ActorID           *string          `json:"actorId"           db:"actor_id"`
@@ -31,6 +32,12 @@ type AuditLog struct {
 	RequestID         *string          `json:"requestId"         db:"request_id"`
 	SessionID         *string          `json:"sessionId"         db:"session_id"`
 	TraceID           *string          `json:"traceId"           db:"trace_id"`
+	FacilityBranchID  *uuid.UUID       `json:"facilityBranchId"  db:"facility_branch_id"`
+	PatientID         *uuid.UUID       `json:"patientId"         db:"patient_id"`
+	ActorEmail        *string          `json:"actorEmail"        db:"actor_email"`
+	IsBreakGlass      bool             `json:"isBreakGlass"      db:"is_break_glass"`
+	PrevRecordHash    *string          `json:"prevRecordHash"    db:"prev_record_hash"`
+	RecordHash        *string          `json:"recordHash"        db:"record_hash"`
 	BeforeState       *json.RawMessage `json:"beforeState"       db:"before_state"`
 	AfterState        *json.RawMessage `json:"afterState"        db:"after_state"`
 	Reason            *string          `json:"reason"            db:"reason"`
@@ -84,6 +91,12 @@ type CreateAuditLogPayload struct {
 	RequestID         *string `json:"requestId"`
 	SessionID         *string `json:"sessionId"`
 	TraceID           *string `json:"traceId"`
+	FacilityBranchID  *string `json:"facilityBranchId"`
+	PatientID         *string `json:"patientId"`
+	ActorEmail        *string `json:"actorEmail"`
+	IsBreakGlass      bool    `json:"isBreakGlass"`
+	PrevRecordHash    *string `json:"prevRecordHash"`
+	RecordHash        *string `json:"recordHash"`
 	BeforeState       *string `json:"beforeState"`
 	AfterState        *string `json:"afterState"`
 	Reason            *string `json:"reason"`

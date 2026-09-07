@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/golangnigeria/curexal/database/migrator"
 	"github.com/golangnigeria/curexal/internal/shared/config"
@@ -23,7 +24,9 @@ type txKey struct{}
 
 // Database wraps the PostgreSQL connection pool.
 type Database struct {
-	Pool *pgxpool.Pool
+	Pool   *pgxpool.Pool
+	Config *config.Config
+	Logger *zerolog.Logger
 }
 
 // DB is an alias for Database for backwards compatibility.
@@ -47,7 +50,11 @@ func New(cfg *config.Config, log *zerolog.Logger, _ interface{}) (*Database, err
 		return nil, fmt.Errorf("failed to create pgxpool: %w", err)
 	}
 
-	return &Database{Pool: pool}, nil
+	return &Database{
+		Pool:   pool,
+		Config: cfg,
+		Logger: log,
+	}, nil
 }
 
 // Conn returns active transaction if context contains one, otherwise connection pool.
@@ -79,7 +86,59 @@ func (d *Database) Tx(ctx context.Context, fn func(ctx context.Context) error) e
 	return d.RunInTx(ctx, fn)
 }
 
+// RunInTenantTx executes a function within a transaction scoped locally to the tenant schema.
+func (d *Database) RunInTenantTx(ctx context.Context, tenantSlug string, fn func(ctx context.Context) error) error {
+	cleanSlug := strings.ToLower(strings.TrimSpace(tenantSlug))
+	if cleanSlug == "" {
+		return d.RunInTx(ctx, fn)
+	}
+
+	schema := fmt.Sprintf("tenant_%s", strings.ReplaceAll(cleanSlug, "-", "_"))
+
+	return d.RunInTx(ctx, func(txCtx context.Context) error {
+		if tx, ok := txCtx.Value(txKey{}).(pgx.Tx); ok {
+			query := fmt.Sprintf("SET LOCAL search_path TO %s, public", pgx.Identifier{schema}.Sanitize())
+			if _, err := tx.Exec(txCtx, query); err != nil {
+				return fmt.Errorf("failed to set search_path to tenant schema %s: %w", schema, err)
+			}
+		}
+		return fn(txCtx)
+	})
+}
+
+// ProvisionTenant dynamically provisions an isolated tenant schema and applies versioned tenant DDL migrations.
 func (d *Database) ProvisionTenant(ctx context.Context, slug string) error {
+	cleanSlug := strings.ToLower(strings.TrimSpace(slug))
+	if cleanSlug == "" {
+		return fmt.Errorf("tenant slug cannot be empty")
+	}
+
+	schema := fmt.Sprintf("tenant_%s", strings.ReplaceAll(cleanSlug, "-", "_"))
+	sanitizedSchema := pgx.Identifier{schema}.Sanitize()
+
+	if d.Logger != nil {
+		d.Logger.Info().Str("tenantSlug", slug).Str("schema", schema).Msg("provisioning isolated tenant schema")
+	}
+
+	// 1. Create target isolated PostgreSQL schema safely
+	createSchemaQuery := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", sanitizedSchema)
+	if _, err := d.Pool.Exec(ctx, createSchemaQuery); err != nil {
+		return fmt.Errorf("failed to create tenant schema %s: %w", schema, err)
+	}
+
+	// 2. Run versioned tenant DDL migrations inside this schema
+	if d.Config != nil {
+		log := zerolog.Nop()
+		if d.Logger != nil {
+			log = *d.Logger
+		}
+		runner := migrator.NewRunner(&log)
+		dsn := d.Config.Database.DSN()
+		if err := runner.RunTenantSchema(ctx, dsn, schema); err != nil {
+			return fmt.Errorf("failed to run migrations for tenant schema %s: %w", schema, err)
+		}
+	}
+
 	return nil
 }
 

@@ -34,7 +34,8 @@ func IsValidDepartmentCode(code string) bool {
 }
 
 func HashInviteToken(rawToken string) string {
-	hash := sha256.Sum256([]byte(rawToken))
+	clean := strings.ToUpper(strings.TrimSpace(rawToken))
+	hash := sha256.Sum256([]byte(clean))
 	return hex.EncodeToString(hash[:])
 }
 
@@ -95,3 +96,14 @@ type CreateStaffInvitationResponse struct {
 	Invitation *StaffInvitation `json:"invitation"`
 	RawToken   string           `json:"rawToken"` // Exposed ONCE upon creation for delivery
 }
+
+type DirectCreateStaffMemberPayload struct {
+	FullName         string      `json:"fullName"`
+	Email            string      `json:"email"`
+	Password         string      `json:"password"`
+	Role             string      `json:"role"`
+	RoleTitle        string      `json:"roleTitle"`
+	FacilityBranchID *uuid.UUID  `json:"facilityBranchId"`
+	BranchIDs        []uuid.UUID `json:"branchIds"`
+}
+

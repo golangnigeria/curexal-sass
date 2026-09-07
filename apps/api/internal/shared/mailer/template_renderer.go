@@ -61,6 +61,8 @@ type TemplateData struct {
 	LoginURL          string
 	OrgName           string
 	OrgType           string
+	Role              string
+	RoleTitle         string
 	LogoURL           string
 	AppURL            string
 	Theme             TemplateTheme
@@ -161,6 +163,33 @@ func renderFallbackHTML(data TemplateData) string {
 		logoURL = "https://cdn.curexal.space/email/full_logo.png"
 	}
 
+	codeHTML := ""
+	codeVal := data.VerificationCode
+	if codeVal == "" {
+		codeVal = data.Code
+	}
+	if codeVal != "" {
+		codeHTML = fmt.Sprintf(`
+    <div style="text-align: center; margin: 24px 0;">
+      <div style="background-color: #f0fdfa; border: 2px dashed #0f766e; color: #0f766e; font-family: monospace; font-size: 28px; font-weight: 800; letter-spacing: 6px; text-align: center; padding: 14px 20px; border-radius: 12px; display: inline-block;">
+        %s
+      </div>
+      <p style="color: #64748b; font-size: 12px; margin-top: 8px;">Code valid for 7 days</p>
+    </div>`, codeVal)
+	}
+
+	actionBtnHTML := ""
+	if actionURL != "" {
+		btnText := data.ActionText
+		if btnText == "" {
+			btnText = "View in Portal"
+		}
+		actionBtnHTML = fmt.Sprintf(`
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="%s" style="display: inline-block; background-color: #0F766E; color: #ffffff; font-weight: 600; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">%s</a>
+    </div>`, actionURL, btnText)
+	}
+
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -174,14 +203,13 @@ func renderFallbackHTML(data TemplateData) string {
     </div>
     <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">%s</h1>
     <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px;">Hello %s,</p>
-    <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">%s</p>
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="%s" style="display: inline-block; background-color: #0F766E; color: #ffffff; font-weight: 600; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">View in Portal</a>
-    </div>
+    <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px;">%s</p>
+    %s
+    %s
     <div style="margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px;">
       This notification was generated automatically by Curexal.
     </div>
   </div>
 </body>
-</html>`, appURL, logoURL, title, userName, data.Message, actionURL)
+</html>`, appURL, logoURL, title, userName, data.Message, codeHTML, actionBtnHTML)
 }

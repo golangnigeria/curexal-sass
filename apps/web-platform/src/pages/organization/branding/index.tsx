@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useBootstrap } from "@/api/hooks/use-bootstrap";
 import { useBrandTheme } from "@/lib/theme/brand-theme-provider";
+import { organizationService } from "@/api/services/organization.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,15 +70,23 @@ export default function OrganizationBrandingPage() {
     setIsSaving(true);
 
     try {
-      // In production: PUT /api/v1/organization/branding
       // Live apply to current DOM document
       const root = document.documentElement;
       root.style.setProperty("--brand-primary", primaryColor);
       root.style.setProperty("--font-sans", `'${fontFamily}', sans-serif`);
       root.style.setProperty("--radius", borderRadius);
 
-      // Simulate API latency
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await organizationService.updateBranding({
+        primaryColor,
+        secondaryColor,
+        fontFamily,
+        borderRadius,
+        logoUrl,
+        faviconUrl,
+        customDomain,
+        headerText,
+        footerDisclaimer,
+      });
 
       toast.success("Organization Branding Updated Successfully!", {
         description: "Your custom brand colors, typography, and assets are now live.",

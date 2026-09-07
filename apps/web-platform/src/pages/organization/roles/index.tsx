@@ -227,12 +227,12 @@ export default function OrganizationRolesPage() {
       {/* Role Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
-          { code: "owner", name: "Organization Owner", desc: "Full executive control over billing, branches, and staff.", count: 1, system: true },
-          { code: "org_admin", name: "Organization Administrator", desc: "Administrative access across all operational branches.", count: 3, system: true },
-          { code: "pathologist", name: "Chief / Consultant Pathologist", desc: "Two-step laboratory result validation and QC authorization.", count: 2, system: false },
-          { code: "radiologist", name: "Consultant Radiologist", desc: "DICOM PACS review and diagnostic imaging reports.", count: 1, system: false },
-          { code: "lab_scientist", name: "Medical Laboratory Scientist", desc: "Accessioning, worklist execution, and analyzer review.", count: 8, system: false },
-          { code: "cashier", name: "Billing & Cashier Officer", desc: "Patient invoicing, POS receipts, and HMO claims.", count: 4, system: false },
+          { code: "owner", name: "Organization Owner", desc: "Full executive control over billing, branches, and staff memberships.", count: 1, system: true },
+          { code: "org_admin", name: "Organization Administrator", desc: "Administrative governance across all clinic branches and facilities.", count: 3, system: true },
+          { code: "doctor", name: "Attending Physician / Doctor", desc: "Patient clinical consultations, electronic SOAP notes, and e-prescriptions.", count: 6, system: true },
+          { code: "nurse", name: "Triage Nurse / Clinical Officer", desc: "Patient vital signs intake, acuity scoring, and care desk handoffs.", count: 8, system: true },
+          { code: "receptionist", name: "Front Desk & Receptionist", desc: "Walk-in patient registration, MPI lookup, and appointment check-in.", count: 4, system: true },
+          { code: "cashier", name: "Billing & Cashier Officer", desc: "Point-of-sale invoice settlement, split receipts, and financial records.", count: 3, system: true },
         ].map((r) => (
           <Card key={r.code} className="border-border shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
             <CardHeader className="pb-3">

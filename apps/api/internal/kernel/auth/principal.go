@@ -56,6 +56,7 @@ type AuthenticatedPrincipal struct {
 	SessionID      string                `json:"sessionId,omitempty"`
 	TenantID       string                `json:"tenantId,omitempty"`
 	OrganizationID string                `json:"organizationId,omitempty"`
+	ActiveBranchID string                `json:"activeBranchId,omitempty"`
 	Role           string                `json:"role,omitempty"`
 	Identity       IdentityVector        `json:"identity"`
 	Platform       PlatformVector        `json:"platform"`

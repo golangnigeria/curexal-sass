@@ -123,11 +123,11 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Root: ({ className, rootRef, ...props }) => {
+        Root: ({ className, rootRef, ...props }: any) => {
           return (
             <div
               data-slot="calendar"
-              ref={rootRef}
+              ref={rootRef as any}
               className={cn(className)}
               {...props}
             />
@@ -154,7 +154,7 @@ function Calendar({
           )
         },
         DayButton: CalendarDayButton,
-        WeekNumber: ({ children, ...props }) => {
+        WeekNumber: ({ children, ...props }: any) => {
           return (
             <td {...props}>
               <div className="flex size-(--cell-size) items-center justify-center text-center">
@@ -175,25 +175,24 @@ function CalendarDayButton({
   day,
   modifiers,
   ...props
-}: React.ComponentProps<typeof DayButton>) {
+}: any) {
   const defaultClassNames = getDefaultClassNames()
 
   const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
-  }, [modifiers.focused])
+    if (modifiers?.focused) ref.current?.focus()
+  }, [modifiers?.focused])
 
   return (
     <Button
-      ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day?.date ? day.date.toLocaleDateString() : undefined}
       data-selected-single={
-        modifiers.selected &&
-        !modifiers.range_start &&
-        !modifiers.range_end &&
-        !modifiers.range_middle
+        modifiers?.selected &&
+        !modifiers?.range_start &&
+        !modifiers?.range_end &&
+        !modifiers?.range_middle
       }
       data-range-start={modifiers.range_start}
       data-range-end={modifiers.range_end}

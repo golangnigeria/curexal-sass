@@ -12,16 +12,36 @@ import {
 } from "lucide-react";
 import { WaitlistModal } from "@/components/waitlist-modal";
 
-interface NavDropdownItem {
-  label: string;
-  href: string;
-  description: string;
+interface NavDropdownSection {
+  title: string;
+  badge?: string;
+  items: {
+    label: string;
+    href: string;
+    description: string;
+    isLive?: boolean;
+  }[];
 }
 
-const solutionsItems: NavDropdownItem[] = [
-  { label: "Laboratory LIMS", href: "/solutions#lims", description: "Specimen tracking & automated results delivery" },
-  { label: "Clinic EMR", href: "/solutions#emr", description: "Clinical ordering & patient electronic records" },
-  { label: "Healthcare Marketplace", href: "/marketplace", description: "Public search for labs, clinics, pharmacies & supply vendors" },
+const solutionSections: NavDropdownSection[] = [
+  {
+    title: "Facility Operating Suites",
+    badge: "Specialized Software",
+    items: [
+      { label: "Clinic Outpatient OS", href: "/solutions#clinic-os", description: "Paperless patient intake, nursing triage, doctor SOAP notes & POS billing", isLive: true },
+      { label: "Diagnostic Laboratory LIS", href: "/solutions#lims", description: "Phlebotomy accessioning, barcode tracking, analyzer telemetry & WhatsApp reports", isLive: true },
+      { label: "Radiology RIS & PACS", href: "/solutions#ris-pacs", description: "Modality queue scheduling, web DICOM viewing & structured radiologist reporting", isLive: true },
+    ],
+  },
+  {
+    title: "Network & Continuity",
+    badge: "Connected Care",
+    items: [
+      { label: "Diagnostic Referral Highway", href: "/marketplace", description: "B2B electronic requisitions between clinics, pathology labs & imaging centers", isLive: true },
+      { label: "Patient Health Portal", href: "/solutions#patient-portal", description: "Self-service booking, digital prescriptions & encrypted records vault", isLive: true },
+      { label: "Cashier POS & Billing", href: "/solutions#billing-pos", description: "Multi-tender revenue reconciliation (Cash, Card, Transfer) with zero leakage", isLive: true },
+    ],
+  },
 ];
 
 export function MarketingNavbar() {
@@ -94,7 +114,7 @@ export function MarketingNavbar() {
               Home
             </Link>
 
-            {/* Desktop Solutions Dropdown */}
+            {/* Desktop Solutions Mega-Dropdown */}
             <div
               className="relative"
               onMouseEnter={() => setSolutionsOpen(true)}
@@ -112,21 +132,45 @@ export function MarketingNavbar() {
               </Link>
 
               {solutionsOpen && (
-                <div className="absolute top-full left-0 w-80 p-2 rounded-2xl bg-white dark:bg-[#0B1120] border border-slate-200/80 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150 z-[99999]">
-                  {solutionsItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      onClick={() => setSolutionsOpen(false)}
-                      className="block p-3 rounded-xl hover:bg-teal-50/60 dark:hover:bg-teal-950/40 transition-colors group"
-                    >
-                      <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#0F766E]">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {item.description}
-                      </p>
-                    </Link>
+                <div className="absolute top-full -left-20 w-[640px] p-4 rounded-3xl bg-white dark:bg-[#0B1120] border border-slate-200/80 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150 z-[99999] grid grid-cols-2 gap-4">
+                  {solutionSections.map((section) => (
+                    <div key={section.title} className="space-y-1.5">
+                      <div className="flex items-center justify-between px-2.5 pb-1 border-b border-slate-100 dark:border-slate-800/80">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          {section.title}
+                        </span>
+                        {section.badge && (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                            section.badge.includes("Now")
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          }`}>
+                            {section.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {section.items.map((item) => (
+                        <Link
+                          key={item.label}
+                          to={item.href}
+                          onClick={() => setSolutionsOpen(false)}
+                          className="block p-2.5 rounded-xl hover:bg-teal-50/60 dark:hover:bg-teal-950/40 transition-colors group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0F766E]">
+                              {item.label}
+                            </p>
+                            {item.isLive && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
                   ))}
                 </div>
               )}
@@ -135,11 +179,14 @@ export function MarketingNavbar() {
             <Link
               to="/marketplace"
               className={cn(
-                "text-sm font-medium transition-colors hover:text-[#0F766E]",
+                "text-sm font-medium transition-colors hover:text-[#0F766E] inline-flex items-center gap-1.5",
                 pathname.startsWith("/marketplace") ? "text-[#0F766E] font-bold" : "text-slate-600 dark:text-slate-300"
               )}
             >
-              Marketplace
+              <span>Referral Network</span>
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-teal-500/15 text-teal-700 dark:text-teal-400 rounded-full">
+                B2B
+              </span>
             </Link>
 
             <Link
@@ -215,7 +262,7 @@ export function MarketingNavbar() {
             {[
               { to: "/", label: "Home" },
               { to: "/solutions", label: "Solutions" },
-              { to: "/marketplace", label: "Marketplace" },
+              { to: "/marketplace", label: "Referral Network" },
               { to: "/pricing", label: "Pricing" },
               { to: "/about", label: "About" },
             ].map((link) => {

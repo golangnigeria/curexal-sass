@@ -42,6 +42,11 @@ tasks:
       - go run ./cmd/clean_db
       - go run ./cmd/seed_admin
 
+  reset-db:
+    desc: alias for db:reset
+    cmds:
+      - task: db:reset
+
 
   build:
     desc: build all applications (native Go API + static Vite SPAs)
@@ -49,6 +54,7 @@ tasks:
       - task: build:api
       - task: build:web-public
       - task: build:web-platform
+      - task: build:web-patient
 
   build:api:
     desc: build native Go backend executable
@@ -71,6 +77,13 @@ tasks:
       - echo "==> Building Curexal Platform Portal (Static Vite SPA)..."
       - bun run build
 
+  build:web-patient:
+    desc: build static patient portal SPA
+    dir: apps/web-patient
+    cmds:
+      - echo "==> Building Curexal Patient Portal (Static Vite SPA)..."
+      - bun run build
+
   test:
     desc: run all backend unit and storage/cache tests
     dir: apps/api
@@ -79,11 +92,12 @@ tasks:
       - go test -v ./internal/kernel/...
 
   dev:
-    desc: run all applications concurrently (Go API on 8080 + Public Web on 5001 + Platform Portal on 5002)
+    desc: run all applications concurrently (Go API on 8080 + Public Web on 5001 + Platform Portal on 5002 + Patient Portal on 5003)
     deps:
       - dev:api
       - dev:web-public
       - dev:web-platform
+      - dev:web-patient
 
   run:
     desc: alias for task dev (runs all applications concurrently)
@@ -109,6 +123,12 @@ tasks:
     cmds:
       - bun run dev
 
+  dev:web-patient:
+    desc: start Patient Portal development server (Port 5003)
+    dir: apps/web-patient
+    cmds:
+      - bun run dev
+
   tidy:
     desc: format and tidy Go module dependencies
     dir: apps/api
@@ -120,7 +140,7 @@ tasks:
   clean:
     desc: clean all built binaries and dist bundles
     cmds:
-      - cmd: powershell -Command "Remove-Item -Recurse -Force apps\api\bin, apps\web-public\dist, apps\web-platform\dist -ErrorAction SilentlyContinue"
+      - cmd: powershell -Command "Remove-Item -Recurse -Force apps\api\bin, apps\web-public\dist, apps\web-platform\dist, apps\web-patient\dist -ErrorAction SilentlyContinue"
         platforms: [windows]
-      - cmd: rm -rf apps/api/bin apps/web-public/dist apps/web-platform/dist
+      - cmd: rm -rf apps/api/bin apps/web-public/dist apps/web-platform/dist apps/web-patient/dist
         platforms: [linux, darwin]

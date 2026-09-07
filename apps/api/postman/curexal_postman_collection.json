@@ -362,6 +362,14 @@
 					}
 				},
 				{
+					"name": "Get Database-Driven Navigation (SSOT)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"] }
+					}
+				},
+				{
 					"name": "Get Platform Diagnostics",
 					"request": {
 						"method": "GET",
@@ -1603,6 +1611,160 @@
 						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }, { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }],
 						"url": { "raw": "{{base_url}}/api/v1/settings/branch/reset", "host": ["{{base_url}}"], "path": ["api", "v1", "settings", "branch", "reset"] }
 					}
+				}
+			]
+		},
+		{
+			"name": "17. Navigation & Context Engine",
+			"item": [
+				{
+					"name": "Get Bootstrap Contract",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/bootstrap", "host": ["{{base_url}}"], "path": ["api", "v1", "bootstrap"] },
+						"description": "Fetches authoritative bootstrap contract containing session, identity, organization, permissions, capabilities, and structured navigation."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Contains navigation payload', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('identity');",
+									"    pm.expect(json).to.have.property('navigation');",
+									"    pm.expect(json).to.have.property('structuredNavigation');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Platform Navigation (Platform Staff)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation?scope=platform", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"], "query": [{ "key": "scope", "value": "platform" }] },
+						"description": "Fetches platform control plane navigation items. Only authorized for platform staff."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Scope is platform', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.context.type).to.eql('platform');",
+									"    pm.expect(json.items.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Unauthorized Platform Navigation Escalation Attempt",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation?scope=platform", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"], "query": [{ "key": "scope", "value": "platform" }] },
+						"description": "Ensures horizontal/vertical privilege escalation is rejected with HTTP 403 Forbidden."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rejected with 403 Forbidden', function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Organization Navigation",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation?scope=organization", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"], "query": [{ "key": "scope", "value": "organization" }] },
+						"description": "Fetches organization executive HQ navigation items."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Scope is organization', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.context.type).to.eql('organization');",
+									"    pm.expect(json.items.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Workspace Navigation (LIS / Branch)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation?scope=workspace&branch=owerri", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"], "query": [{ "key": "scope", "value": "workspace" }, { "key": "branch", "value": "owerri" }] },
+						"description": "Fetches branch healthcare workspace navigation items with route interpolation."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Workspace branch interpolated', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.context.type).to.eql('workspace');",
+									"    pm.expect(json.context.branchSlug).to.eql('owerri');",
+									"    pm.expect(json.items[0].path).to.include('/owerri/');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Patient Portal Navigation",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+						"url": { "raw": "{{base_url}}/api/v1/navigation?scope=patient", "host": ["{{base_url}}"], "path": ["api", "v1", "navigation"], "query": [{ "key": "scope", "value": "patient" }] },
+						"description": "Fetches patient care journey portal navigation."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Scope is patient', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.context.type).to.eql('patient');",
+									"    pm.expect(json.items.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		}

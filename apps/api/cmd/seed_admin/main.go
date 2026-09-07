@@ -15,7 +15,9 @@ import (
 
 func main() {
 	// Load .env configuration
-	_ = godotenv.Load("../../.env", "../.env", ".env")
+	for _, envPath := range []string{".env", "../.env", "../../.env"} {
+		_ = godotenv.Overload(envPath)
+	}
 
 	dsn := os.Getenv("CUREXAL_DB_DSN")
 	if dsn == "" {
@@ -37,6 +39,9 @@ func main() {
 		name         string
 		email        string
 		platformRole string
+		orgRole      string
+		orgSlug      string
+		orgName      string
 	}
 
 	usersToSeed := []seedUser{
@@ -70,6 +75,24 @@ func main() {
 			email:        "compliance@curexal.internal",
 			platformRole: "super_compliance_officer",
 		},
+		{
+			id:           "user_org_owner_curexal_clinic",
+			name:         "Dr. Alexander Vance (Owner)",
+			email:        "owner@curexal.space",
+			platformRole: "",
+			orgRole:      "owner",
+			orgSlug:      "curexal-clinic",
+			orgName:      "Curexal Premier Medical Center",
+		},
+		{
+			id:           "user_org_owner_everight",
+			name:         "Dr. Everett Right (Owner)",
+			email:        "owner@everight.com",
+			platformRole: "",
+			orgRole:      "owner",
+			orgSlug:      "everight",
+			orgName:      "Everight Diagnostic & Speciality Hospital",
+		},
 	}
 
 	password := "password"
@@ -79,39 +102,44 @@ func main() {
 		log.Fatalf("Failed to hash password: %v\n", err)
 	}
 
-	fmt.Println("Seeding platform users...")
+	fmt.Println("Seeding platform and organization users...")
 
 	for _, u := range usersToSeed {
-		// Parse string ID to UUID format or generate predictable UUID
 		userUUID := uuid.NewMD5(uuid.NameSpaceDNS, []byte(u.id)).String()
+		isPAdmin := u.platformRole == "super_admin"
 
-		// Ensure user exists and is configured with the correct platform role
 		var exists bool
 		err = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM identity.users WHERE email = $1)`, u.email).Scan(&exists)
 		if err != nil {
 			log.Fatalf("Failed to check if user %s exists: %v\n", u.email, err)
 		}
 
-		isPAdmin := u.platformRole == "super_admin"
-
 		if !exists {
+			var pRole *string
+			if u.platformRole != "" {
+				pRole = &u.platformRole
+			}
 			err = conn.QueryRow(ctx, `
 				INSERT INTO identity.users (id, name, email, email_verified, is_platform_admin, platform_role)
 				VALUES ($1, $2, $3, TRUE, $4, $5)
 				RETURNING id
-			`, userUUID, u.name, u.email, isPAdmin, u.platformRole).Scan(&userUUID)
+			`, userUUID, u.name, u.email, isPAdmin, pRole).Scan(&userUUID)
 			if err != nil {
 				log.Fatalf("Failed to insert user %s: %v\n", u.email, err)
 			}
-			fmt.Printf("Created %s user record (%s)\n", u.name, u.email)
+			fmt.Printf("Created user record (%s - %s)\n", u.name, u.email)
 		} else {
+			var pRole *string
+			if u.platformRole != "" {
+				pRole = &u.platformRole
+			}
 			err = conn.QueryRow(ctx, `
 				UPDATE identity.users SET is_platform_admin = $2, platform_role = $3, name = $4 WHERE email = $1 RETURNING id
-			`, u.email, isPAdmin, u.platformRole, u.name).Scan(&userUUID)
+			`, u.email, isPAdmin, pRole, u.name).Scan(&userUUID)
 			if err != nil {
-				log.Fatalf("Failed to update user %s to platform role %s: %v\n", u.email, u.platformRole, err)
+				log.Fatalf("Failed to update user %s: %v\n", u.email, err)
 			}
-			fmt.Printf("Ensured user record role is set to %s for %s\n", u.platformRole, u.email)
+			fmt.Printf("Ensured user record for %s\n", u.email)
 		}
 
 		// Insert or update credential record in identity.credentials table
@@ -141,9 +169,43 @@ func main() {
 			}
 			fmt.Printf("Updated local credential account password for %s\n", u.email)
 		}
+
+		// If user belongs to an organization as Owner/Admin, seed organization and membership
+		if u.orgSlug != "" && u.orgRole != "" {
+			var orgID string
+			errOrg := conn.QueryRow(ctx, `
+				INSERT INTO organization.organizations (name, slug, status, plan, setup_state)
+				VALUES ($1, $2, 'active', 'enterprise', 'VERIFIED')
+				ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, status = 'active', setup_state = 'VERIFIED'
+				RETURNING id::text
+			`, u.orgName, u.orgSlug).Scan(&orgID)
+			if errOrg != nil {
+				log.Fatalf("Failed to upsert organization %s: %v\n", u.orgSlug, errOrg)
+			}
+
+			// Ensure facility branch exists
+			var branchID string
+			_ = conn.QueryRow(ctx, `
+				INSERT INTO organization.facility_branches (organization_id, name, code, slug, is_headquarters, status)
+				VALUES ($1, $2, 'main', 'main', TRUE, 'ACTIVE')
+				ON CONFLICT (organization_id, code) DO UPDATE SET is_headquarters = TRUE, status = 'ACTIVE'
+				RETURNING id::text
+			`, orgID, u.orgName+" (Main Branch)").Scan(&branchID)
+
+			// Ensure organization membership exists
+			_, errMem := conn.Exec(ctx, `
+				INSERT INTO organization.organization_memberships (user_id, organization_id, role, role_title, is_active)
+				VALUES ($1, $2, $3, $3, TRUE)
+				ON CONFLICT (organization_id, user_id) DO UPDATE SET role = EXCLUDED.role, role_title = EXCLUDED.role_title, is_active = TRUE
+			`, userUUID, orgID, u.orgRole)
+			if errMem != nil {
+				log.Fatalf("Failed to upsert organization membership for %s in %s: %v\n", u.email, u.orgSlug, errMem)
+			}
+			fmt.Printf("Configured %s as %s of %s (%s)\n", u.email, u.orgRole, u.orgName, u.orgSlug)
+		}
 	}
 
 	fmt.Println("--------------------------------------------------")
-	fmt.Printf("Successfully set platform users' password to: %s\n", password)
+	fmt.Printf("All users configured. Default password: %s\n", password)
 	fmt.Println("--------------------------------------------------")
 }

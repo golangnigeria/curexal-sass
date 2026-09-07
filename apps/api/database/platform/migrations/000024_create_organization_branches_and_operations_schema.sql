@@ -26,10 +26,6 @@ CREATE TABLE IF NOT EXISTS organization.facility_branches (
     CONSTRAINT uk_facility_org_code UNIQUE (organization_id, code)
 );
 
--- Database-Level Single Headquarters Guarantee per Organization
-CREATE UNIQUE INDEX IF NOT EXISTS uk_facility_single_headquarters
-ON organization.facility_branches (organization_id)
-WHERE is_headquarters = TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_facility_branches_org_id ON organization.facility_branches(organization_id);
 CREATE INDEX IF NOT EXISTS idx_facility_branches_type ON organization.facility_branches(facility_type_id);

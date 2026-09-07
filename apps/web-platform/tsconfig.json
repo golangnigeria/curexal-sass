@@ -17,8 +17,20 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@curexal/contracts": ["../../packages/contracts/src/index.ts"],
+      "@curexal/utils": ["../../packages/utils/src/index.ts"],
+      "@curexal/design-system": ["../../packages/design-system/src/index.ts"],
+      "@curexal/api-client": ["../../packages/api-client/src/index.ts"],
+      "@curexal/auth": ["../../packages/auth/src/index.ts"],
+      "@curexal/permissions": ["../../packages/permissions/src/index.ts"],
+      "@curexal/tenant-context": ["../../packages/tenant-context/src/index.ts"],
+      "@curexal/tenant-context/*": ["../../packages/tenant-context/src/*"],
+      "@curexal/documents": ["../../packages/documents/src/index.ts"],
+      "@curexal/patient": ["../../packages/patient/src/index.ts"],
+      "@curexal/validation": ["../../packages/validation/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

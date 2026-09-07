@@ -42,6 +42,14 @@ func (m *MockBranchRepo) GetBranchByCode(ctx context.Context, orgID uuid.UUID, c
 	return args.Get(0).(*domain.FacilityBranch), args.Error(1)
 }
 
+func (m *MockBranchRepo) GetBranchBySlug(ctx context.Context, orgID uuid.UUID, slug string) (*domain.FacilityBranch, error) {
+	args := m.Called(ctx, orgID, slug)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.FacilityBranch), args.Error(1)
+}
+
 func (m *MockBranchRepo) CreateBranch(ctx context.Context, branch *domain.FacilityBranch, actorID uuid.UUID) (*domain.FacilityBranch, error) {
 	args := m.Called(ctx, branch, actorID)
 	if args.Get(0) == nil {
@@ -78,6 +86,37 @@ func (m *MockBranchRepo) CheckFacilityTypeActive(ctx context.Context, facilityTy
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockBranchRepo) SetHeadquarters(ctx context.Context, orgID, branchID, actorID uuid.UUID) error {
+	args := m.Called(ctx, orgID, branchID, actorID)
+	return args.Error(0)
+}
+
+func (m *MockBranchRepo) GetFacilityTypeByCode(ctx context.Context, code string) (*domain.FacilityType, error) {
+	args := m.Called(ctx, code)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.FacilityType), args.Error(1)
+}
+
+func (m *MockBranchRepo) ListFacilityTypes(ctx context.Context) ([]domain.FacilityType, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.FacilityType), args.Error(1)
+}
+
+func (m *MockBranchRepo) VerifyUserFacilityAccess(ctx context.Context, orgID, branchID uuid.UUID, userID string, isOrgAdmin bool) (bool, error) {
+	args := m.Called(ctx, orgID, branchID, userID, isOrgAdmin)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockBranchRepo) IsUserAssignedToBranch(ctx context.Context, userID, orgID, branchID uuid.UUID) (bool, error) {
+	args := m.Called(ctx, userID, orgID, branchID)
+	return args.Bool(0), args.Error(1)
+}
+
 func TestFacilityBranchService_CreateBranch_Success(t *testing.T) {
 	mockBranchRepo := new(MockBranchRepo)
 	mockOrgRepo := new(MockOrgRepo)
@@ -94,6 +133,8 @@ func TestFacilityBranchService_CreateBranch_Success(t *testing.T) {
 			ActiveOrganizationID: orgID.String(),
 		},
 	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, actorID.String()).Return(true, nil)
 
 	payload := &domain.CreateFacilityBranchPayload{
 		FacilityTypeID: facilityTypeID,
@@ -145,17 +186,21 @@ func TestFacilityBranchService_CreateBranch_Success(t *testing.T) {
 
 func TestFacilityBranchService_CreateBranch_InactiveFacilityType_Fails(t *testing.T) {
 	mockBranchRepo := new(MockBranchRepo)
-	svc := application.NewFacilityBranchService(mockBranchRepo, nil, nil)
+	mockOrgRepo := new(MockOrgRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, nil)
 
 	orgID := uuid.New()
 	facilityTypeID := uuid.New()
+	userID := uuid.New().String()
 
 	principal := &middleware.AuthenticatedPrincipal{
-		UserID: uuid.New().String(),
+		UserID: userID,
 		Organization: platformAuth.OrganizationVector{
 			ActiveOrganizationID: orgID.String(),
 		},
 	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, userID).Return(true, nil)
 
 	payload := &domain.CreateFacilityBranchPayload{
 		FacilityTypeID: facilityTypeID,
@@ -181,13 +226,16 @@ func TestFacilityBranchService_CreateBranch_SingleHeadquartersConflict(t *testin
 
 	orgID := uuid.New()
 	facilityTypeID := uuid.New()
+	userID := uuid.New().String()
 
 	principal := &middleware.AuthenticatedPrincipal{
-		UserID: uuid.New().String(),
+		UserID: userID,
 		Organization: platformAuth.OrganizationVector{
 			ActiveOrganizationID: orgID.String(),
 		},
 	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, userID).Return(true, nil)
 
 	payload := &domain.CreateFacilityBranchPayload{
 		FacilityTypeID: facilityTypeID,
@@ -218,13 +266,16 @@ func TestFacilityBranchService_CreateBranch_MaxBranchesExceeded(t *testing.T) {
 
 	orgID := uuid.New()
 	facilityTypeID := uuid.New()
+	userID := uuid.New().String()
 
 	principal := &middleware.AuthenticatedPrincipal{
-		UserID: uuid.New().String(),
+		UserID: userID,
 		Organization: platformAuth.OrganizationVector{
 			ActiveOrganizationID: orgID.String(),
 		},
 	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, userID).Return(true, nil)
 
 	payload := &domain.CreateFacilityBranchPayload{
 		FacilityTypeID: facilityTypeID,
@@ -243,4 +294,184 @@ func TestFacilityBranchService_CreateBranch_MaxBranchesExceeded(t *testing.T) {
 	assert.Nil(t, res)
 
 	mockBranchRepo.AssertNotCalled(t, "CreateBranch", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestTenantIsolation_CrossOrgIDOR_Rejected(t *testing.T) {
+	mockBranchRepo := new(MockBranchRepo)
+	mockOrgRepo := new(MockOrgRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, nil)
+
+	victimOrgID := uuid.New()
+	attackerUserID := uuid.New().String()
+
+	// Attacker provides victim's organization ID in request header
+	principal := &middleware.AuthenticatedPrincipal{
+		UserID: attackerUserID,
+		Organization: platformAuth.OrganizationVector{
+			ActiveOrganizationID: victimOrgID.String(),
+		},
+		Platform: platformAuth.PlatformVector{
+			IsPlatformStaff: false,
+		},
+	}
+
+	// Membership check fails for attacker in victim org
+	mockOrgRepo.On("VerifyMembership", mock.Anything, victimOrgID, attackerUserID).Return(false, nil)
+	mockOrgRepo.On("List", mock.Anything, attackerUserID, false).Return([]domain.Organization{}, nil)
+
+	res, err := svc.ListBranches(context.Background(), principal)
+
+	assert.ErrorIs(t, err, domain.ErrUnauthorizedTenantAccess)
+	assert.Nil(t, res)
+	mockBranchRepo.AssertNotCalled(t, "ListBranches", mock.Anything, mock.Anything)
+}
+
+func TestTenantIsolation_PlatformAdmin_Allowed(t *testing.T) {
+	mockBranchRepo := new(MockBranchRepo)
+	mockOrgRepo := new(MockOrgRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, nil)
+
+	targetOrgID := uuid.New()
+	adminUserID := uuid.New().String()
+
+	// Platform Super Admin accesses target organization
+	principal := &middleware.AuthenticatedPrincipal{
+		UserID: adminUserID,
+		Organization: platformAuth.OrganizationVector{
+			ActiveOrganizationID: targetOrgID.String(),
+		},
+		Platform: platformAuth.PlatformVector{
+			IsPlatformAdmin: true,
+			IsSuperAdmin:    true,
+		},
+	}
+
+	mockBranchRepo.On("ListBranches", mock.Anything, targetOrgID).Return([]domain.FacilityBranch{
+		{ID: uuid.New(), Name: "Main Branch", Code: "MAIN"},
+	}, nil)
+
+	res, err := svc.ListBranches(context.Background(), principal)
+
+	assert.NoError(t, err)
+	assert.Len(t, res, 1)
+	assert.Equal(t, "Main Branch", res[0].Name)
+}
+
+func TestFacilityIsolation_UserBranchAccess_Enforced(t *testing.T) {
+	mockBranchRepo := new(MockBranchRepo)
+	mockOrgRepo := new(MockOrgRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, nil)
+
+	orgID := uuid.New()
+	branchID := uuid.New()
+	userID := uuid.New().String()
+
+	principal := &middleware.AuthenticatedPrincipal{
+		UserID: userID,
+		Role:   "receptionist",
+		Organization: platformAuth.OrganizationVector{
+			ActiveOrganizationID: orgID.String(),
+			OrganizationRole:     "receptionist",
+		},
+	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, userID).Return(true, nil)
+	// User is not assigned to this branch
+	mockBranchRepo.On("VerifyUserFacilityAccess", mock.Anything, orgID, branchID, userID, false).Return(false, nil)
+
+	res, err := svc.GetBranchByID(context.Background(), principal, branchID)
+
+	assert.ErrorIs(t, err, domain.ErrUnauthorizedTenantAccess)
+	assert.Nil(t, res)
+}
+
+func TestFacilityBranchService_SetHeadquarters_Success(t *testing.T) {
+	mockBranchRepo := new(MockBranchRepo)
+	mockOrgRepo := new(MockOrgRepo)
+	mockAuditRepo := new(MockAuditRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, mockAuditRepo)
+
+	orgID := uuid.New()
+	branchID := uuid.New()
+	adminID := uuid.New()
+
+	principal := &middleware.AuthenticatedPrincipal{
+		UserID: adminID.String(),
+		Role:   "owner",
+		Organization: platformAuth.OrganizationVector{
+			ActiveOrganizationID: orgID.String(),
+			OrganizationRole:     "owner",
+		},
+	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, adminID.String()).Return(true, nil)
+	mockBranchRepo.On("GetBranchByID", mock.Anything, orgID, branchID).Return(&domain.FacilityBranch{
+		ID:             branchID,
+		OrganizationID: orgID,
+		Name:           "Ikeja Branch",
+		Status:         "ACTIVE",
+		IsHeadquarters: false,
+	}, nil).Once()
+
+	mockBranchRepo.On("SetHeadquarters", mock.Anything, orgID, branchID, adminID).Return(nil)
+	mockAuditRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *auditDomain.CreateAuditLogPayload) bool {
+		return p.Action == "HEADQUARTERS_CHANGED"
+	})).Return(&auditDomain.AuditLog{}, nil)
+
+	mockBranchRepo.On("GetBranchByID", mock.Anything, orgID, branchID).Return(&domain.FacilityBranch{
+		ID:             branchID,
+		OrganizationID: orgID,
+		Name:           "Ikeja Branch",
+		Status:         "ACTIVE",
+		IsHeadquarters: true,
+	}, nil).Once()
+
+	res, err := svc.SetHeadquarters(context.Background(), principal, branchID)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.True(t, res.IsHeadquarters)
+}
+
+func TestFacilityBranchService_UpdateBranch_OptimisticConcurrencyConflict(t *testing.T) {
+	mockBranchRepo := new(MockBranchRepo)
+	mockOrgRepo := new(MockOrgRepo)
+	svc := application.NewFacilityBranchService(mockBranchRepo, mockOrgRepo, nil)
+
+	orgID := uuid.New()
+	branchID := uuid.New()
+	actorID := uuid.New()
+
+	principal := &middleware.AuthenticatedPrincipal{
+		UserID: actorID.String(),
+		Role:   "admin",
+		Organization: platformAuth.OrganizationVector{
+			ActiveOrganizationID: orgID.String(),
+		},
+	}
+
+	mockOrgRepo.On("VerifyMembership", mock.Anything, orgID, actorID.String()).Return(true, nil)
+	mockBranchRepo.On("GetBranchByID", mock.Anything, orgID, branchID).Return(&domain.FacilityBranch{
+		ID:             branchID,
+		OrganizationID: orgID,
+		Name:           "Main Branch",
+		Status:         "ACTIVE",
+		Version:        2,
+	}, nil)
+
+	// Stale client sends version 1 while DB is at version 2
+	staleName := "Updated Name by User B"
+	payload := &domain.UpdateFacilityBranchPayload{
+		Name:    &staleName,
+		Version: 1,
+	}
+
+	mockBranchRepo.On("UpdateBranch", mock.Anything, mock.MatchedBy(func(b *domain.FacilityBranch) bool {
+		return b.Version == 1
+	}), actorID).Return(nil, domain.ErrOptimisticLockingConflict)
+
+	res, err := svc.UpdateBranch(context.Background(), principal, branchID, payload)
+
+	assert.ErrorIs(t, err, domain.ErrOptimisticLockingConflict)
+	assert.Nil(t, res)
 }

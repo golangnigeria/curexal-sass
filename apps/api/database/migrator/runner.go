@@ -83,3 +83,17 @@ func (r *Runner) RunTenant(ctx context.Context, dsn string) error {
 	r.logger.Info().Msg("tenant database migration pipeline completed successfully")
 	return nil
 }
+
+// RunTenantSchema executes tenant migrations inside a specific isolated PostgreSQL schema.
+func (r *Runner) RunTenantSchema(ctx context.Context, dsn string, schema string) error {
+	r.logger.Info().Str("schema", schema).Msg("starting tenant schema migration pipeline")
+
+	for _, bundle := range r.registry.TenantBundles() {
+		if err := r.goose.RunUpInSchema(dsn, schema, bundle.MigrationsFS, bundle.MigrationsDir, bundle.TableName); err != nil {
+			return fmt.Errorf("failed to run tenant migration bundle %s on schema %s: %w", bundle.Name, schema, err)
+		}
+	}
+
+	r.logger.Info().Str("schema", schema).Msg("tenant schema migration pipeline completed successfully")
+	return nil
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -245,6 +246,40 @@ func (s *OrganizationDocumentApplicationService) ReviewDocument(
 	`
 	_, _ = s.server.DB.Pool.Exec(ctx, stmtAudit, uuid.New().String(), docID.String(), reviewerID, doc.OrganizationID.String(), string(status), reasonStr)
 
+	// 6. Auto-Activate Organization if all mandatory regulatory documents are approved
+	if status == domain.DocumentStatusApproved {
+		approvedTypes, errTypes := s.docRepo.GetApprovedDocumentTypes(ctx, doc.OrganizationID)
+		if errTypes == nil && len(approvedTypes) > 0 {
+			hasReg := false
+			hasOp := false
+			hasMed := false
+			for _, t := range approvedTypes {
+				switch t {
+				case "registration_certificate":
+					hasReg = true
+				case "operating_license":
+					hasOp = true
+				case "medical_license":
+					hasMed = true
+				}
+			}
+
+			if hasReg && hasOp && hasMed {
+				_, _ = s.server.DB.Pool.Exec(ctx, `
+					UPDATE organization.organizations 
+					SET status = 'active', setup_state = 'VERIFIED', updated_at = CURRENT_TIMESTAMP 
+					WHERE id = $1::uuid AND status != 'active'
+				`, doc.OrganizationID.String())
+
+				stmtAuditAuto := `
+					INSERT INTO audit.audit_events (id, action, resource_type, resource_id, actor_id, organization_id, payload)
+					VALUES ($1, 'ORGANIZATION_AUTO_ACTIVATED_UPON_COMPLIANCE', 'ORGANIZATION', $2, $3, $2, jsonb_build_object('reason', 'all_mandatory_documents_approved'))
+				`
+				_, _ = s.server.DB.Pool.Exec(ctx, stmtAuditAuto, uuid.New().String(), doc.OrganizationID.String(), reviewerID)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -315,6 +350,87 @@ func (s *OrganizationDocumentApplicationService) RejectOrganization(ctx context.
 	_, _ = s.server.DB.Pool.Exec(ctx, stmtAudit, uuid.New().String(), orgID.String(), reviewerID, reason)
 
 	return nil
+}
+
+// GetDocumentForViewing verifies caller permissions and returns the document metadata and raw storage object stream.
+func (s *OrganizationDocumentApplicationService) GetDocumentForViewing(
+	ctx context.Context,
+	callerID string,
+	orgID uuid.UUID,
+	docID uuid.UUID,
+	isDownload bool,
+) (*domain.OrganizationDocument, io.ReadCloser, int64, string, error) {
+	if callerID == "" {
+		return nil, nil, 0, "", errs.NewUnauthorizedError("authentication required")
+	}
+
+	doc, err := s.docRepo.GetDocumentByID(ctx, docID)
+	if err != nil {
+		return nil, nil, 0, "", errs.NewNotFoundError("document not found")
+	}
+
+	// Verify organization ownership if orgID is specified
+	if orgID != uuid.Nil && doc.OrganizationID != orgID {
+		return nil, nil, 0, "", errs.NewForbiddenError("Document does not belong to the requested organization")
+	}
+
+	// Verify caller membership in target organization or platform staff
+	var isMember bool
+	_ = s.server.DB.Pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM organization.organization_memberships 
+			WHERE user_id = $1::uuid AND organization_id = $2::uuid AND is_active = TRUE
+		)
+	`, callerID, doc.OrganizationID.String()).Scan(&isMember)
+
+	if !isMember {
+		var isPAdmin bool
+		_ = s.server.DB.Pool.QueryRow(ctx, `SELECT COALESCE(is_platform_admin, FALSE) FROM identity.users WHERE id = $1::uuid`, callerID).Scan(&isPAdmin)
+		if !isPAdmin {
+			// Log audit denial
+			stmtAudit := `
+				INSERT INTO audit.audit_events (id, action, resource_type, resource_id, actor_id, organization_id, payload)
+				VALUES ($1, 'ORGANIZATION_DOCUMENT_ACCESS_DENIED', 'ORGANIZATION_DOCUMENT', $2, $3, $4, jsonb_build_object('reason', 'non_member'))
+			`
+			_, _ = s.server.DB.Pool.Exec(ctx, stmtAudit, uuid.New().String(), docID.String(), callerID, doc.OrganizationID.String())
+			return nil, nil, 0, "", errs.NewForbiddenError("Access denied to organization document")
+		}
+	}
+
+	rc, errGet := s.storageService.GetObject(ctx, doc.StorageKey)
+	if errGet != nil {
+		s.server.Logger.Error().Err(errGet).Str("storage_key", doc.StorageKey).Msg("failed to read storage object")
+		return nil, nil, 0, "", errs.NewNotFoundError("storage object not available")
+	}
+
+	// Derive MIME type
+	mimeType := doc.MIMEType
+	if mimeType == "" {
+		ext := strings.ToLower(filepath.Ext(doc.OriginalFilename))
+		switch ext {
+		case ".pdf":
+			mimeType = "application/pdf"
+		case ".png":
+			mimeType = "image/png"
+		case ".jpg", ".jpeg":
+			mimeType = "image/jpeg"
+		default:
+			mimeType = "application/octet-stream"
+		}
+	}
+
+	// Log audit access event
+	action := "ORGANIZATION_DOCUMENT_PREVIEWED"
+	if isDownload {
+		action = "ORGANIZATION_DOCUMENT_DOWNLOADED"
+	}
+	stmtAudit := `
+		INSERT INTO audit.audit_events (id, action, resource_type, resource_id, actor_id, organization_id, payload)
+		VALUES ($1, $2, 'ORGANIZATION_DOCUMENT', $3, $4, $5, jsonb_build_object('filename', $6, 'mime_type', $7, 'version', $8))
+	`
+	_, _ = s.server.DB.Pool.Exec(ctx, stmtAudit, uuid.New().String(), action, docID.String(), callerID, doc.OrganizationID.String(), doc.OriginalFilename, mimeType, doc.Version)
+
+	return doc, rc, doc.FileSizeBytes, mimeType, nil
 }
 
 // DownloadDocumentStream retrieves object binary stream for downloading.

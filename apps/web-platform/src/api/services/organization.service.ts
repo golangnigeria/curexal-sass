@@ -1,16 +1,34 @@
-import { authClient } from "@/lib/auth-client";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/api/client";
+import type {
+  Organization,
+  OrganizationSettings,
+  UpdateOrganizationProfilePayload,
+} from "@/api/contracts";
 
 export interface BranchPayload {
   id: string;
   organizationId: string;
   name: string;
   code: string;
-  facilityType: string;
-  address?: string;
+  slug?: string;
+  facilityType?: string;
+  facilityTypeCode?: string;
+  facilityTypeName?: string;
+  facilityTypeCategory?: string;
+  isHeadquarters: boolean;
+  email?: string;
   phone?: string;
-  currency: string;
-  isActive: boolean;
-  enabledModules: string[];
+  address?: string;
+  city?: string;
+  state?: string;
+  lga?: string;
+  country?: string;
+  currency?: string;
+  status: "ACTIVE" | "INACTIVE" | "SUSPENDED" | string;
+  operatingHours?: Record<string, any>;
+  isActive?: boolean;
+  enabledModules?: string[];
+  version?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -18,96 +36,112 @@ export interface BranchPayload {
 export interface CreateBranchRequest {
   name: string;
   code: string;
+  slug?: string;
   facilityType: string;
-  currency: string;
-  address?: string;
+  facilityTypeId?: string;
+  isHeadquarters?: boolean;
+  currency?: string;
+  email?: string;
   phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  lga?: string;
+  country?: string;
+  operatingHours?: Record<string, any>;
   enabledModules?: string[];
 }
 
 export interface MemberPayload {
   id: string;
   userId: string;
-  fullName: string;
+  organizationId: string;
+  name: string;
   email: string;
   role: string;
-  roleTitle: string;
-  tenantId?: string;
-  tenantName?: string;
-  isActive: boolean;
-  joinedAt: string;
-  assignedBranches?: string[];
+  branches: string[];
+  status: "ACTIVE" | "SUSPENDED" | "INVITED";
+  lastLogin?: string;
+  createdAt: string;
 }
 
 export interface InviteMemberRequest {
+  fullName?: string;
   email: string;
-  fullName: string;
   role: string;
   tenantId?: string;
-  assignedBranches?: string[];
+  branchIds?: string[];
+}
+
+export interface DirectCreateMemberRequest {
+  fullName: string;
+  email: string;
+  password?: string;
+  role: string;
+  roleTitle?: string;
+  facilityBranchId?: string;
+  branchIds?: string[];
 }
 
 export interface RolePayload {
   id: string;
-  code: string;
+  organizationId: string;
+  code?: string;
   name: string;
-  description?: string;
-  isSystem: boolean;
+  description: string;
   permissions: string[];
+  isCustom: boolean;
   memberCount: number;
+  createdAt: string;
 }
 
 export interface CreateRoleRequest {
-  code: string;
   name: string;
-  description?: string;
+  code?: string;
+  description: string;
   permissions: string[];
 }
 
 export interface CatalogItemPayload {
   id: string;
+  organizationId: string;
   code: string;
   name: string;
-  category: string;
-  moduleCode: string;
-  standardPrice: number;
-  customPrice: number;
+  category: "SERVICE" | "LAB" | "RADIOLOGY" | "PHARMACY" | string;
+  defaultPrice: number;
+  standardPrice?: number;
+  customPrice?: number;
   currency: string;
-  taxRate: number;
-  isActive: boolean;
+  status: "ACTIVE" | "INACTIVE" | string;
+  branchOverrides?: Record<string, number>;
 }
 
 export interface ApiKeyPayload {
   id: string;
+  organizationId: string;
   name: string;
-  keyPrefix: string;
+  maskedKey: string;
   scopes: string[];
+  createdAt: string;
   lastUsedAt?: string;
   expiresAt?: string;
-  createdAt: string;
-}
-
-export interface WebhookPayload {
-  id: string;
-  url: string;
-  events: string[];
-  secret: string;
-  isActive: boolean;
-  createdAt: string;
+  status: "ACTIVE" | "REVOKED";
 }
 
 export interface AuditLogPayload {
   id: string;
+  organizationId: string;
   actorId: string;
   actorName: string;
+  actorRole: string;
   action: string;
-  resourceType: string;
-  resourceId?: string;
-  tenantId?: string;
+  resource: string;
   tenantName?: string;
-  ipAddress?: string;
-  createdAt: string;
   payload?: Record<string, any>;
+  details?: Record<string, any>;
+  ipAddress?: string;
+  occurredAt?: string;
+  createdAt?: string;
 }
 
 export interface DashboardMetricsPayload {
@@ -120,11 +154,15 @@ export interface DashboardMetricsPayload {
   activeBranchesCount: number;
   activeStaffCount: number;
   currency: string;
-  recentAuditEvents: AuditLogPayload[];
+  recentAuditEvents: Array<{
+    id: string;
+    action: string;
+    actor: string;
+    timestamp: string;
+  }>;
   branchPerformance: Array<{
     branchId: string;
     branchName: string;
-    facilityType: string;
     visitsCount: number;
     revenue: number;
     status: string;
@@ -132,19 +170,11 @@ export interface DashboardMetricsPayload {
 }
 
 class OrganizationService {
-  private async getCsrfHeader(): Promise<Record<string, string>> {
-    const csrfToken = authClient.getCsrfToken?.() || "";
-    return csrfToken ? { "X-CSRF-Token": csrfToken } : {};
-  }
-
   // Dashboard Metrics
-  async getDashboardMetrics(orgId: string): Promise<DashboardMetricsPayload> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/dashboard`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) {
-      // Return dynamic calculated metrics if endpoint in transit
+  async getDashboardMetrics(_orgId?: string): Promise<DashboardMetricsPayload> {
+    try {
+      return await apiGet<DashboardMetricsPayload>("/workspace/dashboard");
+    } catch {
       return {
         dailyPatientVisits: 384,
         dailyPatientVisitsTrend: 12.5,
@@ -159,160 +189,153 @@ class OrganizationService {
         branchPerformance: [],
       };
     }
-    return res.json();
   }
 
   // Branches
-  async getBranches(orgId: string): Promise<BranchPayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/branches`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const fallbackRes = await fetch(`/api/v1/workspaces`, { credentials: "include" });
-      if (fallbackRes.ok) return fallbackRes.json();
+  async getBranches(_orgId?: string): Promise<BranchPayload[]> {
+    try {
+      const res = await apiGet<any>("/organization/branches");
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
       return [];
     }
-    return res.json();
   }
 
-  async createBranch(orgId: string, req: CreateBranchRequest): Promise<BranchPayload> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/organizations/${orgId}/branches`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to create branch facility");
-    }
-    return res.json();
+  async getBranch(_orgId: string, branchId: string): Promise<BranchPayload> {
+    return apiGet<BranchPayload>(`/organization/branches/${branchId}`);
+  }
+
+  async createBranch(_orgId: string, req: CreateBranchRequest): Promise<BranchPayload> {
+    return apiPost<BranchPayload>("/organization/branches", req);
+  }
+
+  async updateBranch(_orgId: string, branchId: string, payload: Partial<BranchPayload>): Promise<BranchPayload> {
+    return apiPut<BranchPayload>(`/organization/branches/${branchId}`, payload);
+  }
+
+  async deactivateBranch(_orgId: string, branchId: string): Promise<{ message: string }> {
+    return apiDelete<{ message: string }>(`/organization/branches/${branchId}`);
+  }
+
+  async setHeadquarters(_orgId: string, branchId: string): Promise<BranchPayload> {
+    return apiPost<BranchPayload>(`/organization/branches/${branchId}/set-headquarters`);
   }
 
   // Staff Members
-  async getMembers(orgId: string): Promise<MemberPayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/members`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+  async getMembers(_orgId?: string): Promise<MemberPayload[]> {
+    try {
+      const res = await apiGet<any>("/organization/members");
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
+      return [];
+    }
   }
 
-  async inviteMember(orgId: string, req: InviteMemberRequest): Promise<MemberPayload> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/organizations/${orgId}/members/invite`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to invite staff member");
-    }
-    return res.json();
+  async inviteMember(_orgId: string, req: InviteMemberRequest): Promise<MemberPayload> {
+    return apiPost<MemberPayload>("/organization/invitations", req);
+  }
+
+  async createMember(_orgId: string, req: DirectCreateMemberRequest): Promise<MemberPayload> {
+    return apiPost<MemberPayload>("/organization/members", req);
   }
 
   // Roles & Permissions
-  async getRoles(orgId: string): Promise<RolePayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/roles`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+  async getRoles(_orgId?: string): Promise<RolePayload[]> {
+    try {
+      const res = await apiGet<any>("/roles");
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
+      return [];
+    }
   }
 
-  async createRole(orgId: string, req: CreateRoleRequest): Promise<RolePayload> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/organizations/${orgId}/roles`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to create role");
-    }
-    return res.json();
+  async createRole(_orgId: string, req: CreateRoleRequest): Promise<RolePayload> {
+    return apiPost<RolePayload>("/organization/roles", req);
   }
 
   // Service Catalogs & Custom Pricing
-  async getCatalogs(orgId: string): Promise<CatalogItemPayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/catalogs`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+  async getCatalogs(_orgId?: string): Promise<CatalogItemPayload[]> {
+    try {
+      const res = await apiGet<any>("/organization/catalogs");
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
+      return [];
+    }
   }
 
-  async updateCatalogPrice(orgId: string, itemId: string, customPrice: number): Promise<void> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/organizations/${orgId}/catalogs/${itemId}/price`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify({ customPrice }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to update catalog tariff");
-    }
+  async updateCatalogPrice(_orgId: string, itemId: string, customPrice: number): Promise<void> {
+    await apiPost(`/organization/catalogs/${itemId}/branch-prices`, { customPrice });
   }
 
   // Integrations & API Keys
-  async getApiKeys(orgId: string): Promise<ApiKeyPayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/integrations/keys`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+  async getApiKeys(_orgId?: string): Promise<ApiKeyPayload[]> {
+    try {
+      const res = await apiGet<any>("/organization/api-keys");
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
+      return [];
+    }
   }
 
-  async createApiKey(orgId: string, name: string, scopes: string[]): Promise<{ key: string; payload: ApiKeyPayload }> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/organizations/${orgId}/integrations/keys`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify({ name, scopes }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to generate API key");
-    }
-    return res.json();
+  async createApiKey(_orgId: string, name: string, scopes: string[]): Promise<{ key: string; payload: ApiKeyPayload }> {
+    return apiPost<{ key: string; payload: ApiKeyPayload }>("/organization/api-keys", { name, scopes });
   }
 
   // Audit Logs
-  async getAuditLogs(orgId: string, limit = 50): Promise<AuditLogPayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/audit?limit=${limit}`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+  async getAuditLogs(_orgId?: string, limit = 50): Promise<AuditLogPayload[]> {
+    try {
+      const res = await apiGet<any>(`/audit-logs/tenant?limit=${limit}`);
+      return Array.isArray(res) ? res : res?.data || [];
+    } catch {
+      return [];
+    }
   }
 
-  // Subscribe Capability Add-on
-  async subscribeCapability(orgId: string, capabilityCode: string, currency = "NGN"): Promise<void> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/subscription/capabilities/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify({ organizationId: orgId, capabilityCode, currency }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to activate capability subscription");
+  // Branding
+  async updateBranding(payload: any): Promise<any> {
+    return apiPut("/organization/branding", payload);
+  }
+
+  // Organization Corporate Profile & Tax Metadata
+  async getProfile(): Promise<Organization> {
+    return apiGet<Organization>("/organization/profile");
+  }
+
+  async updateProfile(payload: Partial<UpdateOrganizationProfilePayload>): Promise<Organization> {
+    return apiPut<Organization>("/organization/profile", payload);
+  }
+
+  async getSettings(orgId?: string): Promise<OrganizationSettings> {
+    if (orgId) {
+      return apiGet<OrganizationSettings>(`/organizations/${orgId}/settings`);
     }
+    return apiGet<OrganizationSettings>("/organization/profile");
+  }
+
+  async updateSettings(orgId: string, payload: Partial<OrganizationSettings>): Promise<OrganizationSettings> {
+    return apiPut<OrganizationSettings>(`/organizations/${orgId}/settings`, payload);
+  }
+
+  // Capability Subscriptions
+  async subscribeCapability(orgId: string, capabilityCode: string, currency?: string): Promise<any> {
+    return apiPost(`/organizations/${orgId}/capabilities`, { capabilityCode, currency });
+  }
+
+  // Notification Configs
+  async getNotificationConfigs(_orgId?: string): Promise<any> {
+    try {
+      const res = await apiGet<any>("/organization/notifications");
+      return res?.data || res || {};
+    } catch {
+      return {};
+    }
+  }
+
+  async saveNotificationConfig(orgIdOrConfig: any, maybeConfig?: any): Promise<any> {
+    if (typeof orgIdOrConfig === "string" && maybeConfig) {
+      return apiPost(`/organizations/${orgIdOrConfig}/notifications`, maybeConfig);
+    }
+    return apiPost("/organization/notifications", orgIdOrConfig);
   }
 }
 

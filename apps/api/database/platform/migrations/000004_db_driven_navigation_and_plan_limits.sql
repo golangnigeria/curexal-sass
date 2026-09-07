@@ -30,10 +30,9 @@ VALUES
 
     ('nav_wsp_dashboard', 'workspace', NULL, 'Workspace Dashboard', 'LayoutDashboard', '/workspace/dashboard', 1, NULL),
     ('nav_wsp_patients', 'workspace', 'customer_care', 'Patient Reception', 'UserPlus', '/workspace/patients', 2, 'workspace:patient:read'),
-    ('nav_wsp_laboratory', 'workspace', 'laboratory', 'Laboratory LIS', 'Activity', '/workspace/laboratory/accessioning', 3, 'workspace:sample:receive'),
-    ('nav_wsp_clinical', 'workspace', 'clinical', 'Clinical & EMR', 'Stethoscope', '/workspace/clinical/tests', 4, 'workspace:clinical:read'),
-    ('nav_wsp_billing', 'workspace', 'billing', 'Billing POS', 'CreditCard', '/workspace/billing', 5, 'workspace:billing:create'),
-    ('nav_wsp_settings', 'workspace', NULL, 'Facility Settings', 'Settings', '/workspace/settings', 6, 'workspace:settings:manage')
+    ('nav_wsp_clinical', 'workspace', 'clinical', 'Clinical & EMR', 'Stethoscope', '/workspace/clinical', 3, 'workspace:clinical:read'),
+    ('nav_wsp_billing', 'workspace', 'billing', 'Billing POS', 'CreditCard', '/workspace/billing', 4, 'workspace:billing:create'),
+    ('nav_wsp_settings', 'workspace', NULL, 'Facility Settings', 'Settings', '/workspace/settings', 5, 'workspace:settings:manage')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Baseline Subscription Plans

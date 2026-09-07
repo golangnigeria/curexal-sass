@@ -22,6 +22,14 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+function resolveDefaultWorkspaceModule(facilityType?: string): string {
+  const norm = (facilityType || "").toLowerCase();
+  if (norm.includes("clinic") || norm.includes("outpatient") || norm.includes("emr")) {
+    return "clinical";
+  }
+  return "clinical";
+}
+
 export default function OrganizationDashboardPage() {
   const { data: bootstrap } = useBootstrap();
   const { data: metrics, isLoading: metricsLoading } = useOrgDashboardMetrics();
@@ -64,6 +72,12 @@ export default function OrganizationDashboardPage() {
 
         <div className="flex items-center gap-2.5">
           <Button asChild variant="outline" size="sm" className="text-xs h-9 gap-1.5">
+            <Link to="/organization/compliance">
+              <Shield className="w-3.5 h-3.5" />
+              Accreditation & Compliance
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" className="text-xs h-9 gap-1.5">
             <Link to="/organization/branches">
               <Building2 className="w-3.5 h-3.5" />
               Manage Branches
@@ -77,6 +91,90 @@ export default function OrganizationDashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Onboarding & Regulatory Verification Progress Stepper */}
+      <Card className="border-border shadow-sm bg-gradient-to-r from-card via-card to-primary/5">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Healthcare Organization Activation Roadmap
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Complete these regulatory and operational steps to achieve full clinical and diagnostic clearance.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="w-fit text-[10px] font-mono uppercase bg-primary/10 text-primary border-primary/20">
+              {bootstrap?.organization?.status === "active" ? "100% Operational" : "Setup In Progress"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              {
+                step: 1,
+                title: "Entity Profile",
+                desc: "Legal name & corporate tax ID",
+                done: Boolean(bootstrap?.organization?.name),
+                link: "/organization/settings",
+              },
+              {
+                step: 2,
+                title: "Accreditation Docs",
+                desc: "Operating license & CAC",
+                done: bootstrap?.organization?.status === "active",
+                link: "/organization/compliance",
+              },
+              {
+                step: 3,
+                title: "Branch Network",
+                desc: "Facility address & departments",
+                done: branchesCount >= 1,
+                link: "/organization/branches",
+              },
+              {
+                step: 4,
+                title: "Staff Roster",
+                desc: "Physicians, MLS & receptionists",
+                done: (bootstrap?.limits?.maxMembers || 5) > 0,
+                link: "/organization/members",
+              },
+              {
+                step: 5,
+                title: "Diagnostic Add-Ons",
+                desc: "Analyzer middleware & PACS",
+                done: (bootstrap?.capabilities || []).length > 0,
+                link: "/organization/billing",
+              },
+            ].map((s) => (
+              <Link
+                key={s.step}
+                to={s.link}
+                className="p-3 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 transition-all flex flex-col justify-between group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                    STEP 0{s.step}
+                  </span>
+                  {s.done ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                    {s.title}
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{s.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -229,7 +327,7 @@ export default function OrganizationDashboardPage() {
                         </p>
                       </div>
                       <Button asChild size="sm" variant="outline" className="text-xs h-8">
-                        <Link to="/workspace/dashboard">
+                        <Link to={`/${branch.slug || branch.code?.toLowerCase() || branch.id}/${resolveDefaultWorkspaceModule(branch.facilityTypeName || branch.facilityTypeCode || branch.facilityType)}`}>
                           Open Facility
                         </Link>
                       </Button>

@@ -17,6 +17,9 @@ bin/
 *.so
 *.dylib
 build/
+.turbo/
+.gocache/
+apps/api/.gocache/
 
 # Go test / coverage binaries
 *.test

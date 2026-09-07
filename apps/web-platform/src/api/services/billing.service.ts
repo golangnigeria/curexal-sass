@@ -1,65 +1,116 @@
 import { authClient } from "@/lib/auth-client";
+import { apiGet, apiPost } from "@/api/client";
 
 export interface CapabilityPricePayload {
   id: string;
-  capabilityId: string;
-  capabilityCode: string;
+  code: string;
   name: string;
-  module: string;
+  description: string;
+  category: string;
+  monthlyPrice: number;
+  annualPrice: number;
   currency: string;
-  billingPeriod: string;
-  price: number;
+  isAddOn: boolean;
   isActive: boolean;
 }
 
 export interface InvoicePayload {
   id: string;
-  invoiceNumber: string;
+  invoiceNumber?: string;
+  orderNumber?: string;
   organizationId: string;
-  planCode: string;
-  amount: number;
+  planCode?: string;
+  total?: number;
+  amount?: number;
   currency: string;
-  status: "paid" | "pending" | "overdue";
-  billingDate: string;
-  dueDate: string;
+  status: "paid" | "pending" | "overdue" | "failed";
+  createdAt?: string;
+  billingDate?: string;
+  dueDate?: string;
   paidAt?: string;
   pdfUrl?: string;
 }
 
-class BillingService {
-  private async getCsrfHeader(): Promise<Record<string, string>> {
-    const csrfToken = authClient.getCsrfToken?.() || "";
-    return csrfToken ? { "X-CSRF-Token": csrfToken } : {};
-  }
+export interface CreateOrderPayload {
+  billingCycle: "monthly" | "annual";
+  currency: string;
+  items: Array<{
+    capabilityId?: string;
+    capabilityCode: string;
+    billingCycle: "monthly" | "annual";
+    quantity?: number;
+  }>;
+}
 
+export interface CommercialOrderResponse {
+  id: string;
+  orderNumber: string;
+  status: string;
+  currency: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentUrl?: string;
+  providerReference?: string;
+}
+
+class BillingService {
   async getCapabilityPrices(currency = "NGN"): Promise<CapabilityPricePayload[]> {
-    const res = await fetch(`/api/v1/subscription/capabilities/prices?currency=${currency}`, {
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+    try {
+      const res = await apiGet<any[]>("/marketplace/capabilities");
+      return (res || []).map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        description: c.description,
+        category: c.category || "addon",
+        monthlyPrice: c.monthlyPrice || c.basePrice || 0,
+        annualPrice: c.annualPrice || (c.monthlyPrice ? c.monthlyPrice * 10 : 0),
+        currency: c.currency || currency,
+        isAddOn: c.isAddOn ?? true,
+        isActive: c.isActive ?? true,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async getInvoices(orgId: string): Promise<InvoicePayload[]> {
-    const res = await fetch(`/api/v1/organizations/${orgId}/invoices`, {
-      credentials: "include",
-    });
-    if (!res.ok) return [];
-    return res.json();
+    try {
+      const res = await apiGet<any[]>(`/organizations/${orgId}/marketplace/orders`);
+      return (res || []).map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber || inv.orderNumber || `INV-${inv.id.substring(0, 8).toUpperCase()}`,
+        organizationId: inv.organizationId || orgId,
+        planCode: inv.planCode || "Add-On Capability",
+        amount: inv.total || inv.amount || 0,
+        currency: inv.currency || "NGN",
+        status: inv.status || "paid",
+        billingDate: inv.createdAt || new Date().toISOString(),
+        dueDate: inv.dueAt || inv.createdAt || new Date().toISOString(),
+        paidAt: inv.paidAt,
+        pdfUrl: inv.pdfUrl,
+      }));
+    } catch {
+      return [];
+    }
   }
 
-  async subscribeCapability(orgId: string, capabilityCode: string, currency = "NGN"): Promise<void> {
-    const csrf = await this.getCsrfHeader();
-    const res = await fetch(`/api/v1/subscription/capabilities/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrf },
-      credentials: "include",
-      body: JSON.stringify({ organizationId: orgId, capabilityCode, currency }),
+  async subscribeCapability(orgId: string, capabilityCode: string): Promise<void> {
+    await apiPost<void>(`/organizations/${orgId}/marketplace/subscribe`, {
+      capabilityCode,
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to activate capability subscription");
-    }
+  }
+
+  async createCommercialOrder(
+    orgId: string,
+    payload: CreateOrderPayload,
+    provider = "mock"
+  ): Promise<CommercialOrderResponse> {
+    return apiPost<CommercialOrderResponse>(
+      `/organizations/${orgId}/marketplace/orders?provider=${encodeURIComponent(provider)}`,
+      payload
+    );
   }
 }
 

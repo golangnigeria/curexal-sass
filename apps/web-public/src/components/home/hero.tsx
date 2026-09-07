@@ -5,11 +5,11 @@ import {
   ShieldCheck,
   Stethoscope,
   FlaskConical,
+  Radio,
   Pill,
   User,
   Network,
   RefreshCw,
-  ShoppingBag,
   CheckCircle2,
   Lock,
   Clock,
@@ -18,14 +18,17 @@ import {
   Send,
   Building2,
   ChevronRight,
-  Database
+  Database,
+  Sparkles,
+  Barcode,
+  Layers,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WaitlistModal } from "@/components/waitlist-modal";
 
 export function Hero() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"clinic" | "lab" | "patient">("lab");
+  const [activeTab, setActiveTab] = useState<"clinic" | "lab" | "radiology">("clinic");
 
   return (
     <>
@@ -47,43 +50,67 @@ export function Hero() {
         <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-16 lg:py-20 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
-            {/* Left: Coordination Content */}
+            {/* Left: Positioning & Value Proposition */}
             <div className="lg:col-span-6 flex flex-col items-start text-left">
-              <p className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-[#0F766E] dark:text-teal-400 mb-3 sm:mb-4">
-                The Connection layer of healthcare
-              </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-[#0F766E] dark:text-teal-400 text-xs font-bold uppercase tracking-wider mb-4">
+                <Layers className="w-3.5 h-3.5" />
+                <span>Unified Cloud Platform for Clinics, Labs & Imaging</span>
+              </div>
 
               {/* Main Headline */}
-              <h1 className="text-3xl xs:text-4xl sm:text-[48px] lg:text-[54px] font-black leading-[1.08] tracking-tight text-slate-900 dark:text-white mb-4 sm:mb-6">
-                Healthcare shouldn't work in{" "}
-                <span
-                  className="bg-clip-text text-transparent bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#14B8A6]"
-                >
-                  silos.
+              <h1 className="text-3xl xs:text-4xl sm:text-[46px] lg:text-[52px] font-black leading-[1.1] tracking-tight text-slate-900 dark:text-white mb-4 sm:mb-6">
+                The Operating System for{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#14B8A6]">
+                  Modern Healthcare Facilities.
                 </span>
               </h1>
 
               {/* Supporting Line */}
               <p className="text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl mb-6 sm:mb-8 font-normal">
-                Curexal connects patients, clinics, laboratories, pharmacies and healthcare partners so referrals, diagnostics, results and healthcare transactions can move together.
+                Purpose-built workspaces for outpatient clinics, diagnostic laboratories, and radiology centers. Eliminate lost paper records, automate cashier billing, and connect referrals without friction.
               </p>
+
+              {/* Facility Quick Switcher Pills */}
+              <div className="flex flex-wrap items-center gap-2 mb-6 w-full">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block w-full sm:w-auto mr-1">
+                  Preview Facility:
+                </span>
+                {[
+                  { id: "clinic", label: "Clinic EMR", icon: Stethoscope },
+                  { id: "lab", label: "Diagnostic LIS", icon: FlaskConical },
+                  { id: "radiology", label: "Radiology RIS", icon: Radio },
+                ].map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                      activeTab === id
+                        ? "bg-[#0F766E] text-white border-[#0F766E] shadow-sm"
+                        : "bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500/50"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => setWaitlistOpen(true)}
+                <Link
+                  to="/book-demo"
                   id="hero-primary-cta"
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white text-sm font-bold transition-all shadow-md cursor-pointer border-0"
                 >
-                  <span>Join Early Access</span>
+                  <span>Book Facility Demo</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Link>
 
                 <a
-                  href="#problem"
+                  href="#facility-workspaces"
                   className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
                 >
-                  <span>Help Shape Curexal</span>
+                  <span>Explore Workspaces</span>
                 </a>
               </div>
 
@@ -96,12 +123,12 @@ export function Hero() {
                 <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                 <div className="flex items-center gap-1.5">
                   <RefreshCw className="w-4 h-4 text-[#0F766E]" />
-                  <span>Cross-Org Coordination</span>
+                  <span>Cross-Facility Referrals</span>
                 </div>
                 <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                 <div className="flex items-center gap-1.5">
                   <Network className="w-4 h-4 text-[#0F766E]" />
-                  <span>Single Connected Network</span>
+                  <span>Zero-Paper Diagnostic Loop</span>
                 </div>
               </div>
 
@@ -120,13 +147,13 @@ export function Hero() {
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                     </div>
                     <span className="text-[11px] font-mono text-slate-400 pl-1">
-                      curexal-control-plane // v2.4
+                      curexal-facility-os // v2.6
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-bold">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>SYNCED</span>
+                    <span>TENANT ISOLATED</span>
                   </div>
                 </div>
 
@@ -153,19 +180,19 @@ export function Hero() {
                     }`}
                   >
                     <FlaskConical className="w-3.5 h-3.5" />
-                    <span className="truncate">2. Lab LIMS</span>
+                    <span className="truncate">2. Lab LIS</span>
                   </button>
 
                   <button
-                    onClick={() => setActiveTab("patient")}
+                    onClick={() => setActiveTab("radiology")}
                     className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border-0 ${
-                      activeTab === "patient"
+                      activeTab === "radiology"
                         ? "bg-[#0F766E] text-white shadow-sm font-bold"
                         : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
                     }`}
                   >
-                    <User className="w-3.5 h-3.5" />
-                    <span className="truncate">3. Patient Vault</span>
+                    <Radio className="w-3.5 h-3.5" />
+                    <span className="truncate">3. Radiology RIS</span>
                   </button>
                 </div>
 
@@ -182,29 +209,28 @@ export function Hero() {
                         className="space-y-3"
                       >
                         <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
-                          <span className="font-semibold text-white">St. Nicholas Outpatient Clinic</span>
+                          <span className="font-semibold text-white">Curexal Outpatient Clinic EMR</span>
                           <span className="font-mono text-[11px] text-teal-400">Dr. M. Adebayo, MD</span>
                         </div>
 
                         <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400">Electronic Requisition</span>
-                            <span className="font-mono text-teal-300 font-bold">REQ-2026-8891</span>
+                            <span className="text-slate-400">Encounter SOAP Canvas</span>
+                            <span className="font-mono text-teal-300 font-bold">MRN-2026-8891</span>
                           </div>
-                          <p className="text-xs font-bold text-white">Patient: Amara Eze (34y, Female)</p>
+                          <p className="text-xs font-bold text-white">Patient: Amara Eze (34y, Female) • BP 124/82</p>
                           <div className="flex flex-wrap gap-1.5 pt-1">
-                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">Fasting Blood Sugar</span>
-                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">Lipid Profile</span>
-                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">HbA1c</span>
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">ICD-10: E11.9 (Type 2 Diabetes)</span>
+                            <span className="px-2 py-0.5 rounded bg-teal-900/60 text-teal-300 text-[10px] font-mono">Metformin 500mg PO</span>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal-950/40 border border-teal-800/50 text-[11px]">
                           <span className="text-teal-300 flex items-center gap-1.5">
                             <Send className="w-3.5 h-3.5 text-teal-400" />
-                            Routed to Everight Pathology Lab
+                            Electronic Lab Order Routed to Partner LIS
                           </span>
-                          <span className="text-emerald-400 font-mono font-bold">Direct Dispatch</span>
+                          <span className="text-emerald-400 font-mono font-bold">Instant Dispatch</span>
                         </div>
                       </motion.div>
                     )}
@@ -219,26 +245,26 @@ export function Hero() {
                         className="space-y-3"
                       >
                         <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
-                          <span className="font-semibold text-white">Everight Diagnostic & Pathology</span>
-                          <span className="font-mono text-[11px] text-teal-400">LIS Auto-Ingest Node</span>
+                          <span className="font-semibold text-white">Curexal Laboratory LIS</span>
+                          <span className="font-mono text-[11px] text-teal-400">Accessioning Desk</span>
                         </div>
 
                         <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 font-mono">SPECIMEN #SP-9941</span>
+                            <span className="text-slate-400 font-mono">BARCODE #LAB-9941</span>
                             <span className="flex items-center gap-1 text-emerald-400 font-bold text-[10px]">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              VERIFIED
+                              VERIFIED & SIGNED
                             </span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2 text-[11px]">
                             <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
                               <p className="text-[10px] text-slate-400">Analyzer Link</p>
-                              <p className="font-mono font-bold text-white text-xs mt-0.5">Mindray BS-800</p>
+                              <p className="font-mono font-bold text-white text-xs mt-0.5">Mindray BS-800 Telemetry</p>
                             </div>
                             <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                              <p className="text-[10px] text-slate-400">Validation Signer</p>
+                              <p className="text-[10px] text-slate-400">Pathologist Sign-off</p>
                               <p className="font-mono font-bold text-teal-300 text-xs mt-0.5">Dr. C. Okonjo, FRCPath</p>
                             </div>
                           </div>
@@ -247,16 +273,16 @@ export function Hero() {
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-[11px]">
                           <span className="text-emerald-300 flex items-center gap-1.5">
                             <FileText className="w-3.5 h-3.5 text-emerald-400" />
-                            Digital PDF Signed & Ready
+                            Auto-dispatched via WhatsApp & Chart Sync
                           </span>
-                          <span className="text-emerald-400 font-mono font-bold">Turnaround: 38 mins</span>
+                          <span className="text-emerald-400 font-mono font-bold">TAT: 32 mins</span>
                         </div>
                       </motion.div>
                     )}
 
-                    {activeTab === "patient" && (
+                    {activeTab === "radiology" && (
                       <motion.div
-                        key="patient"
+                        key="radiology"
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
@@ -264,28 +290,37 @@ export function Hero() {
                         className="space-y-3"
                       >
                         <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
-                          <span className="font-semibold text-white">Patient Unified Health Vault</span>
-                          <span className="font-mono text-[11px] text-teal-400">Encrypted Delivery</span>
+                          <span className="font-semibold text-white">Curexal Radiology RIS & PACS</span>
+                          <span className="font-mono text-[11px] text-teal-400">Modality Review</span>
                         </div>
 
-                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400">Latest Diagnostic Record</span>
-                            <span className="font-mono text-teal-300 font-bold">Today, 11:42 AM</span>
+                            <span className="text-slate-400 font-mono">SCAN #RAD-3042</span>
+                            <span className="flex items-center gap-1 text-teal-400 font-bold text-[10px]">
+                              <Activity className="w-3.5 h-3.5" />
+                              DICOM INGESTED
+                            </span>
                           </div>
-                          <p className="text-xs font-bold text-white">Complete Metabolic Panel (CMP)</p>
-                          <div className="flex items-center gap-2 pt-1">
-                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">WhatsApp PDF Sent</span>
-                            <span className="px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 text-[10px] font-bold">Clinic Chart Updated</span>
+
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                              <p className="text-[10px] text-slate-400">Modality Type</p>
+                              <p className="font-mono font-bold text-white text-xs mt-0.5">High-Res Digital X-Ray</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                              <p className="text-[10px] text-slate-400">Reporting Radiologist</p>
+                              <p className="font-mono font-bold text-teal-300 text-xs mt-0.5">Dr. T. Danladi, FWACS</p>
+                            </div>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal-950/40 border border-teal-800/50 text-[11px]">
                           <span className="text-teal-300 flex items-center gap-1.5">
-                            <Pill className="w-3.5 h-3.5 text-teal-400" />
-                            E-Prescription Routed to Pharmacy
+                            <Radio className="w-3.5 h-3.5 text-teal-400" />
+                            Zero-Film Web DICOM Link Ready
                           </span>
-                          <span className="text-teal-300 font-mono font-bold">Zero Paper</span>
+                          <span className="text-teal-300 font-mono font-bold">Signed in 24m</span>
                         </div>
                       </motion.div>
                     )}
@@ -299,7 +334,7 @@ export function Hero() {
                     </div>
                     <div className="flex items-center gap-1.5 text-teal-400">
                       <Activity className="w-3 h-3" />
-                      <span>FHIR HL7 Endpoints Live</span>
+                      <span>FHIR & DICOM Ready</span>
                     </div>
                   </div>
                 </div>

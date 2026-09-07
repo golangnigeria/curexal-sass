@@ -1,0 +1,150 @@
+/**
+ * Curexal Enterprise Themes & Semantic Status Tokens
+ * Calm, precise, trustworthy, dense, and professional (Linear + Stripe EHR aesthetics).
+ */
+
+:root {
+  /* ── Light Mode Base Palette (Default) ────────────────── */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  /* Primary Brand (Curexal Clinical Teal) */
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-foreground: #FFFFFF;
+  --primary-subtle: #F0FDFA;
+  --primary-border: #CCFBF1;
+
+  /* Neutral Surfaces & Borders */
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0F766E;
+
+  /* Sidebar Tokens */
+  --sidebar-background: #FFFFFF;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #0F766E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0FDFA;
+  --sidebar-accent-foreground: #0F766E;
+  --sidebar-border: #E2E8F0;
+
+  /* ── Healthcare Semantic Status Tokens ────────────────── */
+  /* Clinical Acuity */
+  --status-routine-bg: #F0FDFA;
+  --status-routine-text: #0F766E;
+  --status-routine-border: #CCFBF1;
+
+  --status-urgent-bg: #FFFBEB;
+  --status-urgent-text: #B45309;
+  --status-urgent-border: #FDE68A;
+
+  --status-emergency-bg: #FEF2F2;
+  --status-emergency-text: #B91C1C;
+  --status-emergency-border: #FECACA;
+
+  --status-critical-bg: #450A0A;
+  --status-critical-text: #FEE2E2;
+  --status-critical-border: #7F1D1D;
+
+  /* Workflow & Lifecycle */
+  --status-pending-bg: #F8FAFC;
+  --status-pending-text: #475569;
+  --status-pending-border: #E2E8F0;
+
+  --status-in-progress-bg: #EFF6FF;
+  --status-in-progress-text: #1D4ED8;
+  --status-in-progress-border: #BFDBFE;
+
+  --status-completed-bg: #ECFDF5;
+  --status-completed-text: #047857;
+  --status-completed-border: #A7F3D0;
+
+  --status-cancelled-bg: #F1F5F9;
+  --status-cancelled-text: #64748B;
+  --status-cancelled-border: #CBD5E1;
+
+  --status-rejected-bg: #FEF2F2;
+  --status-rejected-text: #DC2626;
+  --status-rejected-border: #FCA5A5;
+}
+
+/* ── Dark Mode Enterprise Palette ──────────────────────── */
+.dark {
+  --background: #0B1120;
+  --foreground: #F8FAFC;
+  --card: #111827;
+  --card-foreground: #F8FAFC;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+
+  /* Primary Brand Teal (High Contrast in Dark Mode) */
+  --primary: #14B8A6;
+  --primary-hover: #2DD4BF;
+  --primary-foreground: #042F2E;
+  --primary-subtle: #042F2E;
+  --primary-border: #134E4A;
+
+  /* Surfaces & Borders */
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #14B8A6;
+
+  /* Sidebar Tokens */
+  --sidebar-background: #0B1120;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #14B8A6;
+  --sidebar-primary-foreground: #042F2E;
+  --sidebar-accent: #042F2E;
+  --sidebar-accent-foreground: #14B8A6;
+  --sidebar-border: #1E293B;
+
+  /* Healthcare Status Tokens (Dark Mode Adjusted) */
+  --status-routine-bg: rgba(20, 184, 166, 0.12);
+  --status-routine-text: #2DD4BF;
+  --status-routine-border: rgba(20, 184, 166, 0.3);
+
+  --status-urgent-bg: rgba(245, 158, 11, 0.12);
+  --status-urgent-text: #FBBF24;
+  --status-urgent-border: rgba(245, 158, 11, 0.3);
+
+  --status-emergency-bg: rgba(239, 68, 68, 0.14);
+  --status-emergency-text: #F87171;
+  --status-emergency-border: rgba(239, 68, 68, 0.35);
+
+  --status-critical-bg: rgba(225, 29, 72, 0.2);
+  --status-critical-text: #FDA4AF;
+  --status-critical-border: rgba(225, 29, 72, 0.45);
+
+  --status-pending-bg: rgba(148, 163, 184, 0.1);
+  --status-pending-text: #94A3B8;
+  --status-pending-border: rgba(148, 163, 184, 0.25);
+
+  --status-in-progress-bg: rgba(59, 130, 246, 0.12);
+  --status-in-progress-text: #60A5FA;
+  --status-in-progress-border: rgba(59, 130, 246, 0.3);
+
+  --status-completed-bg: rgba(16, 185, 129, 0.12);
+  --status-completed-text: #34D399;
+  --status-completed-border: rgba(16, 185, 129, 0.3);
+
+  --status-cancelled-bg: rgba(100, 116, 139, 0.12);
+  --status-cancelled-text: #94A3B8;
+  --status-cancelled-border: rgba(100, 116, 139, 0.25);
+
+  --status-rejected-bg: rgba(239, 68, 68, 0.12);
+  --status-rejected-text: #F87171;
+  --status-rejected-border: rgba(239, 68, 68, 0.3);
+}

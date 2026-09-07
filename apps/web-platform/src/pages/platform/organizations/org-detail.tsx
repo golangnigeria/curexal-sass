@@ -16,12 +16,17 @@ import {
   Upload,
   AlertTriangle,
   Mail,
+  Eye,
+  Download,
+  Pencil,
 } from "lucide-react";
+import { DocumentPreviewViewer } from "@/components/document/document-preview-viewer";
 import {
   useOrganization,
   useOrganizationSettings,
   useOrganizationDocuments,
   useUpdateOrganization,
+  useUpdateOrganizationSettings,
   useApproveOrganization,
   useRejectOrganization,
   useReviewDocument,
@@ -57,6 +62,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -72,6 +78,7 @@ export default function OrganizationDetailPage() {
   const { data: catalog } = useCapabilityCatalog();
 
   const updateOrgMutation = useUpdateOrganization(orgId);
+  const updateSettingsMutation = useUpdateOrganizationSettings(orgId);
   const approveMutation = useApproveOrganization(orgId);
   const rejectMutation = useRejectOrganization(orgId);
   const grantCapMutation = useGrantCapability(orgId);
@@ -83,6 +90,48 @@ export default function OrganizationDetailPage() {
   const [editName, setEditName] = useState("");
   const [editPlan, setEditPlan] = useState("");
   const [editCustomDomain, setEditCustomDomain] = useState("");
+
+  // Edit Corporate Profile & Tax Metadata State
+  const [openEditMetadata, setOpenEditMetadata] = useState(false);
+  const [editCacNumber, setEditCacNumber] = useState("");
+  const [editTinNumber, setEditTinNumber] = useState("");
+  const [editBusinessType, setEditBusinessType] = useState("");
+  const [editSupportEmail, setEditSupportEmail] = useState("");
+  const [editSupportPhone, setEditSupportPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editCurrency, setEditCurrency] = useState("NGN");
+
+  const handleOpenEditMetadata = () => {
+    setEditCacNumber(settings?.cacNumber || org?.registrationNumber || "");
+    setEditTinNumber(settings?.tinNumber || settings?.taxNumber || org?.taxId || "");
+    setEditBusinessType(settings?.businessType || "Healthcare Provider");
+    setEditSupportEmail(settings?.supportEmail || org?.email || "");
+    setEditSupportPhone(settings?.supportPhone || org?.phone || "");
+    setEditAddress(settings?.address || org?.address || "");
+    setEditCurrency(settings?.currency || "NGN");
+    setOpenEditMetadata(true);
+  };
+
+  const handleUpdateMetadata = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateSettingsMutation.mutateAsync({
+        cacNumber: editCacNumber,
+        tinNumber: editTinNumber,
+        taxNumber: editTinNumber,
+        businessType: editBusinessType,
+        supportEmail: editSupportEmail,
+        supportPhone: editSupportPhone,
+        address: editAddress,
+        currency: editCurrency,
+      });
+      toast.success("Corporate profile & tax metadata updated successfully!");
+      setOpenEditMetadata(false);
+      refetchOrg();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update corporate metadata");
+    }
+  };
 
   // Reject Modal State
   const [rejectReason, setRejectReason] = useState("");
@@ -98,6 +147,15 @@ export default function OrganizationDetailPage() {
   const [docRejectReason, setDocRejectReason] = useState("");
   const [docReviewStatus, setDocReviewStatus] = useState<"approved" | "rejected">("approved");
   const reviewDocMutation = useReviewDocument(reviewDocId || "", orgId);
+
+  // Preview Modal State
+  const [previewDoc, setPreviewDoc] = useState<any | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const handleOpenPreview = (doc: any) => {
+    setPreviewDoc(doc);
+    setIsPreviewOpen(true);
+  };
 
   const handleUpdateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -402,19 +460,32 @@ export default function OrganizationDetailPage() {
 
             <Card className="card-enterprise">
               <CardHeader>
-                <CardTitle className="text-sm font-semibold">Corporate Profile & Tax Metadata</CardTitle>
-                <CardDescription className="text-xs">
-                  Business credentials extracted from organization profile.
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Corporate Profile & Tax Metadata</CardTitle>
+                    <CardDescription className="text-xs">
+                      Business credentials, legal registration, and tax filings.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenEditMetadata}
+                    className="text-xs h-7 gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shadow-xs"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    Edit Metadata
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2.5 text-xs">
                 <div className="flex justify-between border-b border-border/50 pb-2">
                   <span className="text-muted-foreground">CAC Registration:</span>
-                  <span className="font-mono font-medium">{settings?.cacNumber || "—"}</span>
+                  <span className="font-mono font-medium">{settings?.cacNumber || org?.registrationNumber || "—"}</span>
                 </div>
                 <div className="flex justify-between border-b border-border/50 pb-2">
                   <span className="text-muted-foreground">TIN / Tax ID:</span>
-                  <span className="font-mono font-medium">{settings?.tinNumber || settings?.taxNumber || "—"}</span>
+                  <span className="font-mono font-medium">{settings?.tinNumber || settings?.taxNumber || org?.taxId || "—"}</span>
                 </div>
                 <div className="flex justify-between border-b border-border/50 pb-2">
                   <span className="text-muted-foreground">Business Type:</span>
@@ -422,11 +493,17 @@ export default function OrganizationDetailPage() {
                 </div>
                 <div className="flex justify-between border-b border-border/50 pb-2">
                   <span className="text-muted-foreground">Support Email:</span>
-                  <span className="font-medium">{settings?.supportEmail || "—"}</span>
+                  <span className="font-medium">{settings?.supportEmail || org?.email || "—"}</span>
                 </div>
                 <div className="flex justify-between border-b border-border/50 pb-2">
                   <span className="text-muted-foreground">Support Phone:</span>
-                  <span className="font-medium">{settings?.supportPhone || "—"}</span>
+                  <span className="font-medium">{settings?.supportPhone || org?.phone || "—"}</span>
+                </div>
+                <div className="flex justify-between border-b border-border/50 pb-2">
+                  <span className="text-muted-foreground">Headquarters Address:</span>
+                  <span className="font-medium text-right max-w-[200px] truncate" title={settings?.address || org?.address || ""}>
+                    {settings?.address || org?.address || "—"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Base Currency:</span>
@@ -434,6 +511,156 @@ export default function OrganizationDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Edit Corporate Profile & Tax Metadata Dialog */}
+            <Dialog open={openEditMetadata} onOpenChange={setOpenEditMetadata}>
+              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-bold flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    Edit Corporate Profile & Tax Metadata
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">
+                    Update legal entity registration, tax identification numbers, and contact channels for {org.name}.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleUpdateMetadata} className="space-y-3.5 py-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="cacNumber" className="text-xs font-semibold">
+                        CAC Registration Number
+                      </Label>
+                      <Input
+                        id="cacNumber"
+                        placeholder="e.g. RC-1928374 or BN-982374"
+                        value={editCacNumber}
+                        onChange={(e) => setEditCacNumber(e.target.value)}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="tinNumber" className="text-xs font-semibold">
+                        TIN / Tax Identification ID
+                      </Label>
+                      <Input
+                        id="tinNumber"
+                        placeholder="e.g. 23891048-0001"
+                        value={editTinNumber}
+                        onChange={(e) => setEditTinNumber(e.target.value)}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="businessType" className="text-xs font-semibold">
+                        Business Entity Type
+                      </Label>
+                      <Select value={editBusinessType} onValueChange={setEditBusinessType}>
+                        <SelectTrigger id="businessType" className="text-xs">
+                          <SelectValue placeholder="Select business type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Hospital & Medical Center">Hospital & Medical Center</SelectItem>
+                          <SelectItem value="Diagnostic & Laboratory Center">Diagnostic & Laboratory Center</SelectItem>
+                          <SelectItem value="Pharmacy Network">Pharmacy Network</SelectItem>
+                          <SelectItem value="Specialist Clinic">Specialist Clinic</SelectItem>
+                          <SelectItem value="Healthcare Provider">Healthcare Provider</SelectItem>
+                          <SelectItem value="Research & Pathology Institute">Research & Pathology Institute</SelectItem>
+                          <SelectItem value="Public Health Facility">Public Health Facility</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="currency" className="text-xs font-semibold">
+                        Operating Currency
+                      </Label>
+                      <Select value={editCurrency} onValueChange={setEditCurrency}>
+                        <SelectTrigger id="currency" className="text-xs">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NGN">NGN - Nigerian Naira (₦)</SelectItem>
+                          <SelectItem value="USD">USD - US Dollar ($)</SelectItem>
+                          <SelectItem value="GBP">GBP - British Pound (£)</SelectItem>
+                          <SelectItem value="EUR">EUR - Euro (€)</SelectItem>
+                          <SelectItem value="GHS">GHS - Ghanaian Cedi (₵)</SelectItem>
+                          <SelectItem value="KES">KES - Kenyan Shilling (KSh)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="supportEmail" className="text-xs font-semibold">
+                        Official Support Email
+                      </Label>
+                      <Input
+                        id="supportEmail"
+                        type="email"
+                        placeholder="support@organization.com"
+                        value={editSupportEmail}
+                        onChange={(e) => setEditSupportEmail(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="supportPhone" className="text-xs font-semibold">
+                        Official Support Phone
+                      </Label>
+                      <Input
+                        id="supportPhone"
+                        type="tel"
+                        placeholder="+234 800 000 0000"
+                        value={editSupportPhone}
+                        onChange={(e) => setEditSupportPhone(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="address" className="text-xs font-semibold">
+                      Headquarters Physical Address
+                    </Label>
+                    <Textarea
+                      id="address"
+                      placeholder="e.g. Plot 12, Medical District Boulevard, Victoria Island, Lagos"
+                      value={editAddress}
+                      onChange={(e) => setEditAddress(e.target.value)}
+                      rows={2}
+                      className="text-xs resize-none"
+                    />
+                  </div>
+
+                  <DialogFooter className="pt-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOpenEditMetadata(false)}
+                      className="text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={updateSettingsMutation.isPending}
+                      className="bg-primary text-primary-foreground text-xs shadow-xs"
+                    >
+                      {updateSettingsMutation.isPending ? "Saving..." : "Save Corporate Metadata"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </TabsContent>
 
@@ -565,45 +792,76 @@ export default function OrganizationDetailPage() {
                       </td>
                     </tr>
                   ) : (
-                    documents.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-muted/20">
-                        <td className="py-3 px-4 font-semibold capitalize">
-                          {doc.documentType.replace(/_/g, " ")}
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground font-mono">
-                          {doc.fileName} ({formatFileSize(doc.fileSize || 0)})
-                        </td>
-                        <td className="py-3 px-4">
-                          {doc.status === "approved" ? (
-                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 bg-emerald-500/5 text-[10px]">
-                              Approved
-                            </Badge>
-                          ) : doc.status === "rejected" ? (
-                            <Badge variant="outline" className="border-destructive/30 text-destructive bg-destructive/5 text-[10px]">
-                              Rejected
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="border-amber-500/30 text-amber-600 bg-amber-500/5 text-[10px]">
-                              Pending Review
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {formatDate(doc.createdAt)}
-                        </td>
+                    documents.map((doc) => {
+                      const displayFilename = doc.originalFilename || doc.fileName || "Document File";
+                      const displaySize = doc.fileSizeBytes ?? doc.fileSize ?? 0;
+                      return (
+                        <tr key={doc.id} className="hover:bg-muted/20">
+                          <td className="py-3 px-4 font-semibold capitalize">
+                            {doc.documentType.replace(/_/g, " ")}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground font-mono">
+                            <span className="truncate max-w-[220px] inline-block align-bottom font-medium text-foreground">{displayFilename}</span>{" "}
+                            <span className="text-[11px] text-muted-foreground">({formatFileSize(displaySize)})</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {doc.status === "approved" ? (
+                              <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 bg-emerald-500/5 text-[10px]">
+                                Approved
+                              </Badge>
+                            ) : doc.status === "rejected" ? (
+                              <Badge variant="outline" className="border-destructive/30 text-destructive bg-destructive/5 text-[10px]">
+                                Rejected
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-500/30 text-amber-600 bg-amber-500/5 text-[10px]">
+                                Pending Review
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {formatDate(doc.uploadedAt || doc.createdAt)}
+                          </td>
                         <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setReviewDocId(doc.id)}
-                            className="h-7 text-xs"
-                          >
-                            Review Document
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenPreview(doc)}
+                              className="h-7 text-xs gap-1 text-primary hover:bg-primary/10"
+                              title="Preview document in-app"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Preview
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              title="Download original file"
+                            >
+                              <a
+                                href={`/api/v1/organizations/${orgId}/documents/${doc.id}/download`}
+                                download={doc.originalFilename || doc.fileName || "document"}
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setReviewDocId(doc.id)}
+                              className="h-7 text-xs"
+                            >
+                              Review
+                            </Button>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  )}
+                    );
+                  })
+                )}
                 </tbody>
               </table>
             </CardContent>
@@ -660,6 +918,22 @@ export default function OrganizationDetailPage() {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* In-App Document Previewer */}
+          <DocumentPreviewViewer
+            open={isPreviewOpen}
+            onClose={() => {
+              setIsPreviewOpen(false);
+              setPreviewDoc(null);
+            }}
+            documentId={previewDoc?.id}
+            organizationId={orgId}
+            title={previewDoc?.documentType?.replace(/_/g, " ")}
+            fileName={previewDoc?.originalFilename || previewDoc?.fileName}
+            mimeType={previewDoc?.mimeType}
+            fileSizeBytes={previewDoc?.fileSizeBytes || previewDoc?.fileSize}
+            version={previewDoc?.version}
+          />
         </TabsContent>
       </Tabs>
     </div>

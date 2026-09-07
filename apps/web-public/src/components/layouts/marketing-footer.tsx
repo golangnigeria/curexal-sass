@@ -3,14 +3,14 @@ import { Activity, Twitter, Linkedin, Github, Mail } from "lucide-react";
 
 const footerNav = {
   Solutions: [
-    { label: "Laboratory LIMS", href: "/solutions#lims" },
-    { label: "Clinic EMR", href: "/solutions#emr" },
-    { label: "Patient Portal", href: "/solutions#patient" },
-    { label: "Diagnostic Marketplace", href: "/marketplace" },
+    { label: "Clinic Outpatient OS", href: "/solutions#clinic-os" },
+    { label: "Diagnostic Lab LIS", href: "/solutions#lims" },
+    { label: "Radiology RIS & PACS", href: "/solutions#ris-pacs" },
+    { label: "Diagnostic Referral Highway", href: "/marketplace" },
   ],
   Platform: [
-    { label: "Specimen Tracking", href: "/solutions#lims" },
-    { label: "Pathologist Validation", href: "/solutions#lims" },
+    { label: "Master Patient Index (MPI)", href: "/solutions#platform" },
+    { label: "E-Prescriptions Engine", href: "/solutions#prescriptions" },
     { label: "Audit Logs & RBAC", href: "/solutions#security" },
     { label: "Multi-Tenant Architecture", href: "/solutions#platform" },
   ],

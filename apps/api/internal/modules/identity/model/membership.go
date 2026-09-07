@@ -120,14 +120,22 @@ type TenantSelectorItem struct {
 	Slug string `json:"slug"`
 }
 
-// Session represents a user login session (with revocation support).
+// Session represents a user login session conforming to Day 1 Specification.
 type Session struct {
 	ID                  string               `json:"id"                  db:"id"`
 	UserID              string               `json:"userId"              db:"user_id"`
-	Token               string               `json:"token"               db:"token"`
-	ExpiresAt           time.Time            `json:"expiresAt"           db:"expires_at"`
+	OrganizationID      string               `json:"organizationId"      db:"organization_id"`
+	ActiveBranchID      *string              `json:"activeBranchId"      db:"active_branch_id"`
+	RefreshTokenHash    string               `json:"refreshTokenHash"    db:"refresh_token_hash"`
+	TokenFamilyID       string               `json:"tokenFamilyId"       db:"token_family_id"`
+	Token               string               `json:"token,omitempty"     db:"token"`
 	IPAddress           *string              `json:"ipAddress"           db:"ip_address"`
 	UserAgent           *string              `json:"userAgent"           db:"user_agent"`
+	DeviceFingerprint   *string              `json:"deviceFingerprint"   db:"device_fingerprint"`
+	IsRevoked           bool                 `json:"isRevoked"           db:"is_revoked"`
+	RevocationReason    *string              `json:"revocationReason"    db:"revocation_reason"`
+	ExpiresAt           time.Time            `json:"expiresAt"           db:"expires_at"`
+	LastActiveAt        time.Time            `json:"lastActiveAt"        db:"last_active_at"`
 	RevokedAt           *time.Time           `json:"revokedAt"           db:"revoked_at"`
 	MfaVerified         bool                 `json:"mfaVerified"         db:"mfa_verified"`
 	ActiveTenantContext *ActiveTenantContext `json:"activeTenantContext" db:"active_tenant_context"`

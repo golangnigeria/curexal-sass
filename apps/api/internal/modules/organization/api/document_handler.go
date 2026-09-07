@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
@@ -29,12 +31,38 @@ func NewDocumentHandler(
 	}
 }
 
-func (h *DocumentHandler) UploadDocument(c echo.Context) error {
+func resolveOrgUUID(c echo.Context) (uuid.UUID, error) {
 	orgIDParam := c.Param("id")
-	orgID, errParse := uuid.Parse(orgIDParam)
-	if errParse != nil {
-		return errs.NewBadRequestError("invalid organization ID format")
+	if orgIDParam != "" && orgIDParam != "org_default" {
+		if parsed, err := uuid.Parse(orgIDParam); err == nil {
+			return parsed, nil
+		}
 	}
+
+	if orgContextID := middleware.GetOrganizationID(c); orgContextID != "" && orgContextID != "org_default" {
+		if parsed, err := uuid.Parse(orgContextID); err == nil {
+			return parsed, nil
+		}
+	}
+
+	if p := middleware.GetPrincipal(c); p != nil {
+		if p.Organization.ActiveOrganizationID != "" && p.Organization.ActiveOrganizationID != "org_default" {
+			if parsed, err := uuid.Parse(p.Organization.ActiveOrganizationID); err == nil {
+				return parsed, nil
+			}
+		}
+		if p.OrganizationID != "" && p.OrganizationID != "org_default" {
+			if parsed, err := uuid.Parse(p.OrganizationID); err == nil {
+				return parsed, nil
+			}
+		}
+	}
+
+	return uuid.MustParse("00000000-0000-0000-0000-000000000001"), nil
+}
+
+func (h *DocumentHandler) UploadDocument(c echo.Context) error {
+	orgID, _ := resolveOrgUUID(c)
 
 	docType := c.FormValue("document_type")
 	if docType == "" {
@@ -70,11 +98,7 @@ func (h *DocumentHandler) UploadDocument(c echo.Context) error {
 }
 
 func (h *DocumentHandler) ListDocuments(c echo.Context) error {
-	orgIDParam := c.Param("id")
-	orgID, errParse := uuid.Parse(orgIDParam)
-	if errParse != nil {
-		return errs.NewBadRequestError("invalid organization ID format")
-	}
+	orgID, _ := resolveOrgUUID(c)
 
 	callerID := middleware.GetUserID(c)
 	docs, errList := h.docAppService.ListDocuments(c.Request().Context(), callerID, orgID)
@@ -83,6 +107,69 @@ func (h *DocumentHandler) ListDocuments(c echo.Context) error {
 	}
 
 	return response.SuccessEcho(c, http.StatusOK, docs)
+}
+
+func (h *DocumentHandler) PreviewDocument(c echo.Context) error {
+	return h.streamDocument(c, false)
+}
+
+func (h *DocumentHandler) DownloadDocument(c echo.Context) error {
+	return h.streamDocument(c, true)
+}
+
+func (h *DocumentHandler) streamDocument(c echo.Context, isDownload bool) error {
+	docIDParam := c.Param("docID")
+	if docIDParam == "" {
+		docIDParam = c.Param("id")
+	}
+	docID, errParse := uuid.Parse(docIDParam)
+	if errParse != nil {
+		return errs.NewBadRequestError("invalid document ID format")
+	}
+
+	orgIDParam := c.Param("id")
+	var orgID uuid.UUID
+	if orgIDParam != "" && orgIDParam != docIDParam {
+		orgID, _ = uuid.Parse(orgIDParam)
+	}
+	if orgID == uuid.Nil {
+		if orgContextID := middleware.GetOrganizationID(c); orgContextID != "" {
+			orgID, _ = uuid.Parse(orgContextID)
+		}
+	}
+	if orgID == uuid.Nil {
+		if p := middleware.GetPrincipal(c); p != nil && p.Organization.ActiveOrganizationID != "" {
+			orgID, _ = uuid.Parse(p.Organization.ActiveOrganizationID)
+		}
+	}
+
+	callerID := middleware.GetUserID(c)
+	doc, rc, fileSize, mimeType, err := h.docAppService.GetDocumentForViewing(c.Request().Context(), callerID, orgID, docID, isDownload)
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	filename := doc.OriginalFilename
+	if filename == "" {
+		filename = "document"
+	}
+
+	disposition := "inline"
+	if isDownload {
+		disposition = "attachment"
+	}
+
+	c.Response().Header().Set("Content-Type", mimeType)
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%q", disposition, filename))
+	c.Response().Header().Set("Cache-Control", "private, no-store")
+	c.Response().Header().Set("Accept-Ranges", "bytes")
+	c.Response().Header().Set("X-Content-Type-Options", "nosniff")
+	if fileSize > 0 {
+		c.Response().Header().Set("Content-Length", strconv.FormatInt(fileSize, 10))
+	}
+
+	return c.Stream(http.StatusOK, mimeType, rc)
 }
 
 func (h *DocumentHandler) ReviewDocument(c echo.Context) error {

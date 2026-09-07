@@ -42,3 +42,8 @@ func (s *AuditApplicationService) ListPlatformLogs(ctx context.Context, orgID *u
 func (s *AuditApplicationService) GetAdminStats(ctx context.Context, tenantID *uuid.UUID, orgID *uuid.UUID) (*domain.AdminStats, error) {
 	return s.auditRepo.GetStats(ctx, tenantID, orgID)
 }
+
+func (s *AuditApplicationService) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]domain.AuditLog, error) {
+	return s.auditRepo.ListPatientDisclosures(ctx, patientID, limit, offset)
+}
+

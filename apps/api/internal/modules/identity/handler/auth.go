@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -34,12 +35,13 @@ type PatientRepository interface {
 }
 
 type AuthHandler struct {
-	server         *server.Server
-	authService    *service.AuthService
-	userRepo       *repository.UserRepository
-	tenantRepo     *orgRepo.TenantRepository
-	patientService PatientService
-	patientRepo    PatientRepository
+	server             *server.Server
+	authService        *service.AuthService
+	loginResolutionSvc *service.LoginResolutionService
+	userRepo           *repository.UserRepository
+	tenantRepo         *orgRepo.TenantRepository
+	patientService     PatientService
+	patientRepo        PatientRepository
 }
 
 func NewAuthHandler(
@@ -49,13 +51,15 @@ func NewAuthHandler(
 	patientService PatientService,
 	patientRepo PatientRepository,
 ) *AuthHandler {
+	loginResolutionSvc := service.NewLoginResolutionService(s, authService, userRepo)
 	return &AuthHandler{
-		server:         s,
-		authService:    authService,
-		userRepo:       userRepo,
-		tenantRepo:     orgRepo.NewTenantRepository(s),
-		patientService: patientService,
-		patientRepo:    patientRepo,
+		server:             s,
+		authService:        authService,
+		loginResolutionSvc: loginResolutionSvc,
+		userRepo:           userRepo,
+		tenantRepo:         orgRepo.NewTenantRepository(s),
+		patientService:     patientService,
+		patientRepo:        patientRepo,
 	}
 }
 
@@ -93,10 +97,6 @@ func (h *AuthHandler) SignIn(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	if err = h.enforceLoginGuards(c, user); err != nil {
-		return err
-	}
-
 	if !user.IsPlatformAdmin {
 		var totalMemberships, activeMemberships int
 		err = h.server.DB.Pool.QueryRow(ctx, `
@@ -113,44 +113,303 @@ func (h *AuthHandler) SignIn(c echo.Context) error {
 		}
 	}
 
-	// 3. Directly establish a session and issue tokens (bypassing OTP code verification)
-	sess, refreshToken, err := h.authService.CreateSession(ctx, user.ID, ip, ua, true)
+	reqHost := c.Request().Header.Get("X-Forwarded-Host")
+	if reqHost == "" {
+		reqHost = c.Request().Host
+	}
+
+	res, err := h.loginResolutionSvc.ResolveDestination(ctx, user, reqHost, payload.OrganizationSlug, payload.BranchID, payload.BranchCode)
+	if err != nil {
+		if errors.Is(err, domain.ErrUnauthorizedBranchAccess) {
+			return echo.NewHTTPError(http.StatusForbidden, "Unauthorized facility branch access")
+		}
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if res.Status == service.StatusRedirectRequired {
+		h.authService.LogAuthEvent(ctx, nil, &user.ID, "login:redirect_required", fmt.Sprintf(`{"target_host":"%s"}`, res.TargetHost), ip, ua, "info")
+		return c.JSON(http.StatusOK, res)
+	}
+
+	if res.Status == service.StatusBranchSelectionRequired || res.Status == service.StatusOrgSelectionRequired || res.Status == service.StatusUnassignedFacilityBranch || res.Status == service.StatusOrgAccessRequired {
+		return c.JSON(http.StatusOK, res)
+	}
+
+	// Status == StatusAuthenticated: User's session is created on this host
+	var orgID, branchID string
+	if res.Organization != nil {
+		orgID = res.Organization.ID
+	}
+	if res.ActiveBranch != nil {
+		branchID = res.ActiveBranch.ID
+	}
+
+	sess, refreshToken, err := h.authService.CreateSession(ctx, user.ID, ip, ua, true, orgID, branchID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create session: %v", err))
 	}
 
-	var orgRolePtr *string
-	if user.PlatformRole == nil || *user.PlatformRole == "" || *user.PlatformRole == "member" {
-		var orgRole string
-		errOrg := h.server.DB.Pool.QueryRow(ctx, `
-			SELECT role_title
-			FROM organization.organization_memberships
-			WHERE user_id = $1 AND role_title IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager')
-			ORDER BY created_at ASC
-			LIMIT 1
-		`, user.ID).Scan(&orgRole)
-		if errOrg == nil && orgRole != "" {
-			orgRolePtr = &orgRole
-		}
+	var accessToken string
+	if user.IsPlatformAdmin || (user.PlatformRole != nil && (*user.PlatformRole == "super_admin" || *user.PlatformRole == "super_sales_staff")) {
+		accessToken, err = platformAuth.GenerateAccessJWT(h.server.Config, user.ID, sess.ID, user.PlatformRole, true)
+	} else {
+		accessToken, err = h.authService.GenerateTokenForSession(ctx, user.ID, sess.ID, orgID, branchID)
 	}
-
-	accessToken, err := platformAuth.GenerateAccessJWT(h.server.Config, user.ID, sess.ID, user.PlatformRole, user.IsPlatformAdmin, orgRolePtr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate access token: %v", err))
 	}
 
-	// Set HttpOnly JWT and Refresh cookies via platform auth service
 	platformAuth.SetSessionCookies(c, h.server.Config, accessToken, refreshToken)
 
-	// Resolve full AuthenticatedPrincipal details for frontend response
 	principal, err := h.resolvePrincipalPayload(c, user.ID, sess.ID)
 	if err != nil {
 		return err
 	}
 
-	h.authService.LogAuthEvent(ctx, nil, &user.ID, "login:success", fmt.Sprintf(`{"session_id":"%s"}`, sess.ID), ip, ua, "info")
+	h.authService.LogAuthEvent(ctx, service.ParseUUIDPtr(orgID), &user.ID, "login:success", fmt.Sprintf(`{"session_id":"%s","branch_id":"%s"}`, sess.ID, branchID), ip, ua, "info")
 
-	return c.JSON(http.StatusOK, principal)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":          service.StatusAuthenticated,
+		"destinationPath": res.DestinationPath,
+		"principal":       principal,
+		"identity":        principal.Identity,
+		"context":         principal.Context,
+		"permissions":     principal.Permissions,
+		"metadata":        principal.Metadata,
+	})
+}
+
+// SelectWorkspaceBranch handles branch selection and generates a cross-host redirect or authenticates directly.
+func (h *AuthHandler) SelectWorkspaceBranch(c echo.Context) error {
+	ip := c.RealIP()
+	ua := c.Request().UserAgent()
+
+	var payload auth.SelectBranchPayload
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload: "+err.Error())
+	}
+	if err := payload.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims, err := platformAuth.ParseBranchSelectionToken(h.server.Config, payload.SelectionToken)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Branch selection token has expired or is invalid. Please log in again.")
+	}
+
+	allowed := false
+	for _, id := range claims.AllowedBranchIDs {
+		if id == payload.BranchID {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return echo.NewHTTPError(http.StatusForbidden, "You are not authorized to access this facility branch.")
+	}
+
+	ctx := c.Request().Context()
+	user, err := h.userRepo.GetByID(ctx, claims.UserID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "User not found")
+	}
+
+	reqHost := c.Request().Header.Get("X-Forwarded-Host")
+	if reqHost == "" {
+		reqHost = c.Request().Host
+	}
+
+	res, err := h.loginResolutionSvc.ResolveDestination(ctx, user, reqHost, nil, &payload.BranchID, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if res.Status == service.StatusRedirectRequired {
+		return c.JSON(http.StatusOK, res)
+	}
+
+	// Host matches current host: complete login directly
+	sess, refreshToken, err := h.authService.CreateSession(ctx, user.ID, ip, ua, true, claims.OrganizationID, payload.BranchID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create session: %v", err))
+	}
+
+	accessToken, err := h.authService.GenerateTokenForSession(ctx, user.ID, sess.ID, claims.OrganizationID, payload.BranchID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate access token: %v", err))
+	}
+
+	platformAuth.SetSessionCookies(c, h.server.Config, accessToken, refreshToken)
+	principal, err := h.resolvePrincipalPayload(c, user.ID, sess.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":          service.StatusAuthenticated,
+		"destinationPath": res.DestinationPath,
+		"principal":       principal,
+	})
+}
+
+// SelectBranch delegates to SelectWorkspaceBranch for full backwards compatibility
+func (h *AuthHandler) SelectBranch(c echo.Context) error {
+	return h.SelectWorkspaceBranch(c)
+}
+
+type ExchangeTokenRequest struct {
+	Token string `json:"token"`
+}
+
+// ExchangeWorkspaceToken redeems a single-use exchange token and establishes a host-only session.
+func (h *AuthHandler) ExchangeWorkspaceToken(c echo.Context) error {
+	ip := c.RealIP()
+	ua := c.Request().UserAgent()
+
+	var req ExchangeTokenRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid exchange payload: "+err.Error())
+	}
+	if strings.TrimSpace(req.Token) == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Exchange token is required")
+	}
+
+	ctx := c.Request().Context()
+	payload, err := h.loginResolutionSvc.RedeemExchangeToken(ctx, req.Token)
+	if err != nil {
+		h.authService.LogAuthEvent(ctx, nil, nil, "exchange:failed", fmt.Sprintf(`{"error":"%s"}`, err.Error()), ip, ua, "warn")
+		return echo.NewHTTPError(http.StatusUnauthorized, "Exchange token expired or already used")
+	}
+
+	reqHost := c.Request().Header.Get("X-Forwarded-Host")
+	if reqHost == "" {
+		reqHost = c.Request().Host
+	}
+	cleanReqHost, _ := h.loginResolutionSvc.ExtractCleanHost(reqHost)
+	cleanTargetHost, _ := h.loginResolutionSvc.ExtractCleanHost(payload.TargetHost)
+
+	if !strings.EqualFold(cleanReqHost, cleanTargetHost) && cleanReqHost != "localhost" && cleanReqHost != "127.0.0.1" {
+		h.authService.LogAuthEvent(ctx, nil, &payload.UserID, "exchange:host_mismatch", fmt.Sprintf(`{"target":"%s","received":"%s"}`, payload.TargetHost, reqHost), ip, ua, "warn")
+		return echo.NewHTTPError(http.StatusForbidden, "Exchange token host mismatch")
+	}
+
+	sess, refreshToken, err := h.authService.CreateSession(ctx, payload.UserID, ip, ua, true, payload.OrganizationID, payload.BranchID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create session: %v", err))
+	}
+
+	var accessToken string
+	if payload.Role == "super_admin" || payload.Role == "super_sales_staff" {
+		rolePtr := &payload.Role
+		accessToken, err = platformAuth.GenerateAccessJWT(h.server.Config, payload.UserID, sess.ID, rolePtr, true)
+	} else {
+		accessToken, err = h.authService.GenerateTokenForSession(ctx, payload.UserID, sess.ID, payload.OrganizationID, payload.BranchID)
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate access token: %v", err))
+	}
+
+	platformAuth.SetSessionCookies(c, h.server.Config, accessToken, refreshToken)
+
+	principal, err := h.resolvePrincipalPayload(c, payload.UserID, sess.ID)
+	if err != nil {
+		return err
+	}
+
+	h.authService.LogAuthEvent(ctx, service.ParseUUIDPtr(payload.OrganizationID), &payload.UserID, "exchange:success", fmt.Sprintf(`{"session_id":"%s","destination":"%s"}`, sess.ID, payload.DestinationPath), ip, ua, "info")
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":          service.StatusAuthenticated,
+		"destinationPath": payload.DestinationPath,
+		"principal":       principal,
+	})
+}
+
+// SwitchBranch switches active branch context for an active session
+func (h *AuthHandler) SwitchBranch(c echo.Context) error {
+	ip := c.RealIP()
+	ua := c.Request().UserAgent()
+
+	var payload auth.SwitchBranchPayload
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload: "+err.Error())
+	}
+	if err := payload.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	principal := platformAuth.GetPrincipal(c)
+	if principal == nil || principal.UserID == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User is not authenticated")
+	}
+
+	sessionID := platformAuth.GetSessionID(c)
+	if sessionID == "" {
+		sessionID = principal.SessionID
+	}
+
+	ctx := c.Request().Context()
+	accessToken, activeBranch, err := h.authService.SwitchBranch(ctx, sessionID, principal.UserID, payload.BranchID, ip, ua)
+	if err != nil {
+		if errors.Is(err, domain.ErrUnauthorizedBranchAccess) {
+			return echo.NewHTTPError(http.StatusForbidden, "You are not authorized to switch to this facility branch.")
+		}
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Update session cookie with new token
+	platformAuth.SetAccessJWTCookie(c, h.server.Config, accessToken)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"accessToken":  accessToken,
+			"activeBranch": activeBranch,
+		},
+		"meta": map[string]interface{}{
+			"timestamp": time.Now().Format(time.RFC3339),
+		},
+	})
+}
+
+// RefreshToken rotates the refresh token and issues a new access token
+func (h *AuthHandler) RefreshToken(c echo.Context) error {
+	ip := c.RealIP()
+	ua := c.Request().UserAgent()
+
+	var rawRefreshToken string
+	if cookie, err := c.Cookie("curexal_refresh_token"); err == nil && cookie.Value != "" {
+		rawRefreshToken = cookie.Value
+	}
+	if rawRefreshToken == "" {
+		if customRefresh := c.Request().Header.Get("X-Refresh-Token"); customRefresh != "" {
+			rawRefreshToken = customRefresh
+		}
+	}
+
+	if rawRefreshToken == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Missing refresh token")
+	}
+
+	ctx := c.Request().Context()
+	sess, accessToken, newRefreshToken, err := h.authService.RefreshTokenWithRotation(ctx, rawRefreshToken, ip, ua)
+	if err != nil {
+		platformAuth.ClearSessionCookies(c, h.server.Config)
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	platformAuth.SetSessionCookies(c, h.server.Config, accessToken, newRefreshToken)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"accessToken": accessToken,
+			"tokenType":   "Bearer",
+			"expiresIn":   int(h.server.Config.Auth.JWTExpiration.Seconds()),
+			"sessionId":   sess.ID,
+		},
+		"meta": map[string]interface{}{
+			"timestamp": time.Now().Format(time.RFC3339),
+		},
+	})
 }
 
 // VerifyOTP checks the submitted OTP code, creates a session, and returns the me profile object.
@@ -421,7 +680,7 @@ func (h *AuthHandler) SignOut(c echo.Context) error {
 
 	principal := platformAuth.GetPrincipal(c)
 	if principal != nil && principal.SessionID != "" {
-		_ = h.userRepo.RevokeSession(ctx, principal.SessionID)
+		_ = h.authService.Logout(ctx, principal.SessionID)
 		if h.server.Redis != nil {
 			_ = h.server.Redis.Del(ctx, "csrf:session:"+principal.SessionID)
 		}
@@ -555,13 +814,40 @@ func (h *AuthHandler) resolvePrincipalPayload(c echo.Context, userID, sessionID 
 		}
 	}
 
-	effectiveRole := "member"
-	if u.PlatformRole != nil && *u.PlatformRole != "" {
-		effectiveRole = *u.PlatformRole
-	} else if u.IsPlatformAdmin {
-		effectiveRole = "super_admin"
+	var orgSummaries []model.OrganizationSummary = []model.OrganizationSummary{}
+	rowsOrgs, errOrgs := h.server.DB.Pool.Query(ctx, `
+		SELECT o.id::text, o.name, o.slug, 
+		       COALESCE(NULLIF(m.role, 'member'), m.role, 'member')
+		FROM organization.organization_memberships m
+		JOIN organization.organizations o ON o.id = m.organization_id
+		WHERE m.user_id::text = $1 AND m.is_active = TRUE
+		ORDER BY (m.role IN ('owner', 'org_admin')) DESC, m.created_at ASC
+	`, userID)
+	if errOrgs == nil {
+		defer rowsOrgs.Close()
+		for rowsOrgs.Next() {
+			var os model.OrganizationSummary
+			if errScan := rowsOrgs.Scan(&os.ID, &os.Name, &os.Slug, &os.Role); errScan == nil {
+				orgSummaries = append(orgSummaries, os)
+			}
+		}
+	}
+
+	effectiveRole := ""
+	if u.IsPlatformAdmin || (u.PlatformRole != nil && (*u.PlatformRole == "super_admin" || *u.PlatformRole == "platform_admin" || *u.PlatformRole == "platform_staff")) {
+		if u.PlatformRole != nil && *u.PlatformRole != "" {
+			effectiveRole = *u.PlatformRole
+		} else {
+			effectiveRole = "super_admin"
+		}
+	} else if role != "" && role != "member" {
+		effectiveRole = role
+	} else if len(orgSummaries) > 0 && orgSummaries[0].Role != "" {
+		effectiveRole = orgSummaries[0].Role
 	} else if role != "" {
 		effectiveRole = role
+	} else {
+		effectiveRole = "member"
 	}
 
 	var permissions []string = []string{}
@@ -575,24 +861,6 @@ func (h *AuthHandler) resolvePrincipalPayload(c echo.Context, userID, sessionID 
 			permissions, err = h.userRepo.ListPermissionsByRole(ctx, effectiveRole, activeTenantID)
 			if err != nil {
 				h.server.Logger.Error().Err(err).Str("role", effectiveRole).Msg("failed to load permissions by role")
-			}
-		}
-	}
-
-	var orgSummaries []model.OrganizationSummary = []model.OrganizationSummary{}
-	rowsOrgs, errOrgs := h.server.DB.Pool.Query(ctx, `
-		SELECT o.id::text, o.name, o.slug, m.role_title
-		FROM organization.organization_memberships m
-		JOIN organization.organizations o ON o.id = m.organization_id
-		WHERE m.user_id = $1
-		ORDER BY m.created_at ASC
-	`, userID)
-	if errOrgs == nil {
-		defer rowsOrgs.Close()
-		for rowsOrgs.Next() {
-			var os model.OrganizationSummary
-			if errScan := rowsOrgs.Scan(&os.ID, &os.Name, &os.Slug, &os.Role); errScan == nil {
-				orgSummaries = append(orgSummaries, os)
 			}
 		}
 	}
@@ -710,85 +978,7 @@ func (h *AuthHandler) GetCSRFToken(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) enforceLoginGuards(c echo.Context, user *model.User) error {
-	ctx := c.Request().Context()
-	subdomain := middleware.GetSubdomainFromHeaders(c, h.server.Config.ResolveCookieDomain())
-
-	isPlatformStaff := user.IsPlatformAdmin
-	if !isPlatformStaff && user.PlatformRole != nil {
-		for _, role := range h.server.Config.Auth.PlatformStaffRoles {
-			if *user.PlatformRole == role {
-				isPlatformStaff = true
-				break
-			}
-		}
-	}
-
-	// Organization managers (owner, org_admin, etc.) are control-plane users, not branch users
-	isOrgOwner := !isPlatformStaff && user.PlatformRole != nil && (*user.PlatformRole == "owner" || *user.PlatformRole == "org_admin" || strings.HasPrefix(*user.PlatformRole, "org_"))
-	if !isOrgOwner && !isPlatformStaff {
-		// Also check organization memberships for Organization-level roles
-		var hasOrgMembership bool
-		_ = h.server.DB.Pool.QueryRow(ctx, `
-			SELECT EXISTS(
-				SELECT 1 FROM organization.organization_memberships m
-				LEFT JOIN "authorization".roles r ON (r.code = m.role_title OR r.name = m.role_title)
-				WHERE m.user_id = $1 AND (r.scope = 'organization' OR m.role_title IN ('owner', 'org_admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager'))
-			)
-		`, user.ID).Scan(&hasOrgMembership)
-		if hasOrgMembership {
-			isOrgOwner = true
-		}
-	}
-
-	if subdomain == "" {
-		// 1. Control Center / Platform Login (No Subdomain)
-		if isPlatformStaff || isOrgOwner {
-			return nil
-		}
-
-		// Check if the user is a pure patient (has patient.patient_profiles, no B2B memberships)
-		if h.patientRepo != nil {
-			if exists, _, err := h.patientRepo.ProfileExists(ctx, user.ID); err == nil && exists {
-				// Pure patient users bypass workspace subdomain requirement
-				return nil
-			}
-		}
-
-		// Check if the user is a branch-only user
-		isBranchOnlyUser, err := h.userRepo.IsBranchOnlyUser(ctx, user.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Database error verifying account role")
-		}
-
-		// Branch-only users must log in via their workspace subdomain slug
-		if isBranchOnlyUser {
-			slug, _ := h.userRepo.GetUserTenantSlugFallback(ctx, user.ID)
-
-			return echo.NewHTTPError(http.StatusForbidden, map[string]any{
-				"error":      "branch_user_redirect",
-				"message":    "Branch administrators and staff must log in via the workspace portal.",
-				"tenantSlug": slug,
-			})
-		}
-	} else {
-		// 2. Clinical Workspace Login (With Subdomain)
-		// Platform staff are NOT permitted to log into branch workspaces per security boundaries
-		if isPlatformStaff {
-			return echo.NewHTTPError(http.StatusForbidden, "Platform administrators must log in via the Platform Admin Control Center.")
-		}
-
-		// Verify user has active branch-level access to this workspace subdomain
-		hasAccess, err := h.userRepo.CheckUserWorkspaceAccess(ctx, user.ID, subdomain)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Database error verifying workspace access")
-		}
-
-		if !hasAccess {
-			return echo.NewHTTPError(http.StatusForbidden, "Access denied: you do not have an active membership for this branch workspace.")
-		}
-	}
-
+func (h *AuthHandler) enforceLoginGuards(_ echo.Context, _ *model.User) error {
 	return nil
 }
 

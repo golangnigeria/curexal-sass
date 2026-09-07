@@ -25,48 +25,194 @@ func NewMemoryPermissionResolver() *MemoryPermissionResolver {
 }
 
 func (r *MemoryPermissionResolver) bootstrapDefaults() {
+	// Canonical Platform Roles
 	r.rolePermissions["super_admin"] = GetAllPermissions()
+	r.rolePermissions["super_support_agent"] = []string{
+		PermPlatformView,
+		PermPlatformImpersonate,
+	}
+	r.rolePermissions["super_sales_staff"] = []string{
+		PermPlatformView,
+		PermDemoManage,
+	}
+
+	// Canonical Clinic Roles (Day 1 Section 2.2)
+	// 1. OWNER: Full authority across all 27 clinic workspace permissions
 	r.rolePermissions["owner"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionOrganizationSettingsWrite,
-		PermissionOrganizationCreate, PermissionUsersRead, PermissionUsersWrite, PermissionAuditRead,
-		PermissionOrganizationDocumentUpload, PermissionOrganizationDocumentRead,
+		PermOrganizationView,
+		PermOrganizationManage,
+		PermOrganizationBranchManage,
+		PermUsersRead,
+		PermUsersWrite,
+		PermAuditRead,
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientUpdate,
+		PermWorkspaceAppointmentRead,
+		PermWorkspaceAppointmentWrite,
+		PermWorkspaceQueueManage,
+		PermWorkspaceTriageCreate,
+		PermWorkspaceTriageRead,
+		PermWorkspaceClinicalRead,
+		PermWorkspaceClinicalWrite,
+		PermWorkspaceClinicalSign,
+		PermWorkspacePrescriptionWrite,
+		PermWorkspacePrescriptionRead,
+		PermWorkspaceDiagnosticOrder,
+		PermWorkspaceDiagnosticRead,
+		PermWorkspaceDocumentUpload,
+		PermWorkspaceDocumentRead,
+		PermWorkspaceBillingRead,
+		PermWorkspaceBillingCharge,
+		PermWorkspaceBillingRefund,
+		PermWorkspacePosSettle,
+		PermWorkspacePosShiftClose,
+
+		// Legacy aliases
+		PermissionPasswordWrite,
+		PermissionOrganizationRead,
+		PermissionOrganizationSettingsWrite,
+		PermissionOrganizationCreate,
+		PermissionOrganizationDocumentUpload,
+		PermissionOrganizationDocumentRead,
 	}
+
+	// 2. ORG_ADMIN: Practice Manager / Clinic Administrator
 	r.rolePermissions["org_admin"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionOrganizationSettingsWrite,
-		PermissionUsersRead, PermissionUsersWrite, PermissionAuditRead,
-		PermissionOrganizationDocumentUpload, PermissionOrganizationDocumentRead,
+		PermOrganizationView,
+		PermOrganizationManage,
+		PermOrganizationBranchManage,
+		PermUsersRead,
+		PermUsersWrite,
+		PermAuditRead,
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientUpdate,
+		PermWorkspaceAppointmentRead,
+		PermWorkspaceAppointmentWrite,
+		PermWorkspaceQueueManage,
+		PermWorkspaceBillingRead,
+		PermWorkspaceBillingCharge,
+		PermWorkspaceBillingRefund,
+
+		// Legacy aliases
+		PermissionPasswordWrite,
+		PermissionOrganizationRead,
+		PermissionOrganizationSettingsWrite,
+		PermissionOrganizationDocumentUpload,
+		PermissionOrganizationDocumentRead,
 	}
-	r.rolePermissions["org_regional_manager"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionUsersRead, PermissionAuditRead,
-		PermissionOrganizationDocumentUpload, PermissionOrganizationDocumentRead,
+
+	// 3. DOCTOR: Attending Medical Doctor / Specialist
+	r.rolePermissions["doctor"] = []string{
+		PermUsersRead,
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientUpdate,
+		PermWorkspaceAppointmentRead,
+		PermWorkspaceAppointmentWrite,
+		PermWorkspaceQueueManage,
+		PermWorkspaceTriageCreate,
+		PermWorkspaceTriageRead,
+		PermWorkspaceClinicalRead,
+		PermWorkspaceClinicalWrite,
+		PermWorkspaceClinicalSign,
+		PermWorkspacePrescriptionWrite,
+		PermWorkspacePrescriptionRead,
+		PermWorkspaceDiagnosticOrder,
+		PermWorkspaceDiagnosticRead,
+		PermWorkspaceDocumentUpload,
+		PermWorkspaceDocumentRead,
+
+		// Legacy aliases
+		PermissionPatientView,
+		PermissionPatientCreate,
+		PermissionPatientUpdate,
+		"consultation:write",
+		"prescription:write",
 	}
-	r.rolePermissions["org_quality_manager"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionUsersRead, PermissionAuditRead,
-		PermissionOrganizationDocumentUpload, PermissionOrganizationDocumentRead,
+
+	// 4. NURSE: Triage Nurse / Clinical Assistant
+	r.rolePermissions["nurse"] = []string{
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientUpdate,
+		PermWorkspaceAppointmentRead,
+		PermWorkspaceAppointmentWrite,
+		PermWorkspaceQueueManage,
+		PermWorkspaceTriageCreate,
+		PermWorkspaceTriageRead,
+		PermWorkspaceClinicalRead,
+		PermWorkspacePrescriptionRead,
+		PermWorkspaceDiagnosticRead,
+		PermWorkspaceDocumentUpload,
+		PermWorkspaceDocumentRead,
+
+		// Legacy aliases
+		PermissionPatientView,
+		PermissionPatientCreate,
+		PermissionPatientUpdate,
 	}
-	r.rolePermissions["org_finance_manager"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionBillingRead, PermissionBillingWrite,
+
+	// 5. RECEPTIONIST: Front Desk Officer
+	r.rolePermissions["receptionist"] = []string{
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientUpdate,
+		PermWorkspaceAppointmentRead,
+		PermWorkspaceAppointmentWrite,
+		PermWorkspaceQueueManage,
+		PermWorkspaceDocumentUpload,
+		PermWorkspaceDocumentRead,
+
+		// Legacy aliases
+		PermissionPatientView,
+		PermissionPatientCreate,
+		PermissionPatientUpdate,
 	}
-	r.rolePermissions["org_hr_manager"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionUsersRead, PermissionUsersWrite,
-	}
-	r.rolePermissions["branch_admin"] = []string{
-		PermissionPasswordWrite, PermissionOrganizationRead, PermissionOrganizationSettingsWrite,
-		PermissionUsersRead, PermissionUsersWrite, PermissionPatientView, PermissionPatientCreate, PermissionPatientUpdate, PermissionLabCreateOrder,
-		PermissionOrganizationDocumentUpload, PermissionOrganizationDocumentRead,
-	}
-	r.rolePermissions["clinician"] = []string{
-		PermissionPasswordWrite, PermissionPatientView, PermissionPatientCreate, PermissionPatientUpdate,
-		"consultation:write", "prescription:write",
-	}
-	r.rolePermissions["technician"] = []string{
-		PermissionPasswordWrite, PermissionPatientView, PermissionLabAccession, PermissionLabEnterResult, PermissionLabAuthorizeResult,
-	}
-	r.rolePermissions["customer_care"] = []string{
-		PermissionPasswordWrite, PermissionPatientView, PermissionPatientCreate, PermissionPatientUpdate,
-	}
+
+	// 6. CASHIER: Billing & Accounts Officer
 	r.rolePermissions["cashier"] = []string{
-		PermissionPasswordWrite, PermissionPatientView, PermissionBillingInvoice, PermissionBillingPayment,
+		PermWorkspacePatientRead,
+		PermWorkspacePrescriptionRead,
+		PermWorkspaceDiagnosticRead,
+		PermWorkspaceBillingRead,
+		PermWorkspaceBillingCharge,
+		PermWorkspacePosSettle,
+		PermWorkspacePosShiftClose,
+
+		// Legacy aliases
+		PermissionPatientView,
+		PermissionBillingInvoice,
+		PermissionBillingPayment,
+	}
+
+	// Legacy / Compatibility role mappings
+	r.rolePermissions["branch_admin"] = []string{
+		PermissionPasswordWrite,
+		PermissionOrganizationRead,
+		PermissionOrganizationSettingsWrite,
+		PermissionUsersRead,
+		PermissionUsersWrite,
+		PermissionPatientView,
+		PermissionPatientCreate,
+		PermissionPatientUpdate,
+		PermWorkspacePatientRead,
+		PermWorkspacePatientCreate,
+		PermWorkspacePatientUpdate,
+		PermissionLabCreateOrder,
+		PermissionOrganizationDocumentUpload,
+		PermissionOrganizationDocumentRead,
+	}
+	r.rolePermissions["clinician"] = r.rolePermissions["doctor"]
+	r.rolePermissions["customer_care"] = r.rolePermissions["receptionist"]
+	r.rolePermissions["technician"] = []string{
+		PermWorkspacePatientRead,
+		PermWorkspaceDiagnosticRead,
+		PermissionPatientView,
+		PermissionLabAccession,
+		PermissionLabEnterResult,
+		PermissionLabAuthorizeResult,
 	}
 	r.rolePermissions["member"] = []string{
 		PermissionPasswordWrite,

@@ -123,26 +123,135 @@ func (r *UserRepository) CreateVerificationToken(ctx context.Context, token, ema
 func (r *UserRepository) CreateSession(ctx context.Context, sess *model.Session) error {
 	db := r.server.DB.Conn(ctx)
 	_, err := db.Exec(ctx, `
-		INSERT INTO identity.sessions (id, user_id, token, expires_at)
-		VALUES (@id, @userID, @token, @expiresAt)
-	`, pgx.NamedArgs{
-		"id":        sess.ID,
-		"userID":    sess.UserID,
-		"token":     sess.Token,
-		"expiresAt": sess.ExpiresAt,
-	})
+		INSERT INTO identity.sessions (
+			id, user_id, organization_id, active_branch_id, refresh_token_hash,
+			token_family_id, ip_address, user_agent, device_fingerprint,
+			is_revoked, revocation_reason, expires_at, last_active_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9,
+			$10, $11, $12, CURRENT_TIMESTAMP
+		)
+	`, sess.ID, sess.UserID, sess.OrganizationID, sess.ActiveBranchID, sess.RefreshTokenHash,
+		sess.TokenFamilyID, sess.IPAddress, sess.UserAgent, sess.DeviceFingerprint,
+		sess.IsRevoked, sess.RevocationReason, sess.ExpiresAt)
+	return err
+}
+
+func (r *UserRepository) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*model.Session, error) {
+	db := r.server.DB.Conn(ctx)
+	sess := &model.Session{}
+	var activeBranch *string
+	err := db.QueryRow(ctx, `
+		SELECT id, user_id::text, organization_id::text, active_branch_id::text, refresh_token_hash,
+		       token_family_id::text, ip_address, user_agent, device_fingerprint, is_revoked,
+		       revocation_reason, expires_at, last_active_at, created_at
+		FROM identity.sessions
+		WHERE refresh_token_hash = $1
+	`, tokenHash).Scan(
+		&sess.ID, &sess.UserID, &sess.OrganizationID, &activeBranch, &sess.RefreshTokenHash,
+		&sess.TokenFamilyID, &sess.IPAddress, &sess.UserAgent, &sess.DeviceFingerprint, &sess.IsRevoked,
+		&sess.RevocationReason, &sess.ExpiresAt, &sess.LastActiveAt, &sess.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	sess.ActiveBranchID = activeBranch
+	return sess, nil
+}
+
+func (r *UserRepository) GetSessionByID(ctx context.Context, sessionID string) (*model.Session, error) {
+	db := r.server.DB.Conn(ctx)
+	sess := &model.Session{}
+	var activeBranch *string
+	err := db.QueryRow(ctx, `
+		SELECT id, user_id::text, organization_id::text, active_branch_id::text, refresh_token_hash,
+		       token_family_id::text, ip_address, user_agent, device_fingerprint, is_revoked,
+		       revocation_reason, expires_at, last_active_at, created_at
+		FROM identity.sessions
+		WHERE id = $1
+	`, sessionID).Scan(
+		&sess.ID, &sess.UserID, &sess.OrganizationID, &activeBranch, &sess.RefreshTokenHash,
+		&sess.TokenFamilyID, &sess.IPAddress, &sess.UserAgent, &sess.DeviceFingerprint, &sess.IsRevoked,
+		&sess.RevocationReason, &sess.ExpiresAt, &sess.LastActiveAt, &sess.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	sess.ActiveBranchID = activeBranch
+	return sess, nil
+}
+
+func (r *UserRepository) RotateSessionRefreshToken(ctx context.Context, oldSessionID string, newSess *model.Session) error {
+	tx, err := r.server.DB.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Revoke previous session
+	_, err = tx.Exec(ctx, `
+		UPDATE identity.sessions
+		SET is_revoked = TRUE, revocation_reason = 'rotated', last_active_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`, oldSessionID)
+	if err != nil {
+		return fmt.Errorf("failed to revoke old session: %w", err)
+	}
+
+	// 2. Insert new session with same token_family_id
+	_, err = tx.Exec(ctx, `
+		INSERT INTO identity.sessions (
+			id, user_id, organization_id, active_branch_id, refresh_token_hash,
+			token_family_id, ip_address, user_agent, device_fingerprint,
+			is_revoked, expires_at, last_active_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9,
+			FALSE, $10, CURRENT_TIMESTAMP
+		)
+	`, newSess.ID, newSess.UserID, newSess.OrganizationID, newSess.ActiveBranchID, newSess.RefreshTokenHash,
+		newSess.TokenFamilyID, newSess.IPAddress, newSess.UserAgent, newSess.DeviceFingerprint, newSess.ExpiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to insert rotated session: %w", err)
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *UserRepository) RevokeTokenFamily(ctx context.Context, familyID string, reason string) error {
+	db := r.server.DB.Conn(ctx)
+	_, err := db.Exec(ctx, `
+		UPDATE identity.sessions
+		SET is_revoked = TRUE, revocation_reason = $1, last_active_at = CURRENT_TIMESTAMP
+		WHERE token_family_id = $2
+	`, reason, familyID)
+	return err
+}
+
+func (r *UserRepository) UpdateSessionActiveBranch(ctx context.Context, sessionID string, branchID string) error {
+	db := r.server.DB.Conn(ctx)
+	_, err := db.Exec(ctx, `
+		UPDATE identity.sessions
+		SET active_branch_id = $1, last_active_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`, branchID, sessionID)
+	return err
+}
+
+func (r *UserRepository) RevokeSession(ctx context.Context, sessionID string, reason string) error {
+	db := r.server.DB.Conn(ctx)
+	_, err := db.Exec(ctx, `
+		UPDATE identity.sessions
+		SET is_revoked = TRUE, revocation_reason = $1, last_active_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`, reason, sessionID)
 	return err
 }
 
 func (r *UserRepository) GetSessionByToken(ctx context.Context, token string) (*model.Session, error) {
-	db := r.server.DB.Conn(ctx)
-	sess := &model.Session{}
-	err := db.QueryRow(ctx, `SELECT id, user_id::text, token, expires_at FROM identity.sessions WHERE token = @token`, pgx.NamedArgs{"token": token}).
-		Scan(&sess.ID, &sess.UserID, &sess.Token, &sess.ExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-	return sess, nil
+	// Fallback to token hash or ID
+	return r.GetSessionByID(ctx, token)
 }
 
 func (r *UserRepository) GetVerificationTokenRecord(ctx context.Context, token string) (*VerificationTokenRecord, error) {
@@ -880,11 +989,6 @@ func (r *UserRepository) CreateProfessionalProfile(ctx context.Context, userID s
 	}, nil
 }
 
-func (r *UserRepository) RevokeSession(ctx context.Context, sessionID string) error {
-	dbExec := r.server.DB.Conn(ctx)
-	_, err := dbExec.Exec(ctx, `DELETE FROM identity.sessions WHERE id = @sessionID`, pgx.NamedArgs{"sessionID": sessionID})
-	return err
-}
 
 func (r *UserRepository) IsBranchOnlyUser(ctx context.Context, userID string) (bool, error) {
 	dbExec := r.server.DB.Conn(ctx)
@@ -894,7 +998,7 @@ func (r *UserRepository) IsBranchOnlyUser(ctx context.Context, userID string) (b
 			SELECT 1 FROM organization.organization_memberships m
 			WHERE m.user_id::text = @userID 
 			  AND m.is_active = TRUE
-			  AND m.role_title NOT IN ('owner', 'org_admin', 'super_admin')
+			  AND m.role NOT IN ('owner', 'org_admin', 'super_admin')
 		)
 	`
 	err := dbExec.QueryRow(ctx, stmt, pgx.NamedArgs{"userID": userID}).Scan(&isBranchOnly)
@@ -905,11 +1009,13 @@ func (r *UserRepository) GetUserTenantSlugFallback(ctx context.Context, userID s
 	dbExec := r.server.DB.Conn(ctx)
 	var slug string
 	stmt := `
-		SELECT w.slug
-		FROM organization.organization_memberships m
-		JOIN workspace.workspaces w ON w.organization_id = m.organization_id
-		WHERE m.user_id::text = @userID AND m.is_active = TRUE
-		ORDER BY m.created_at ASC
+		SELECT o.slug
+		FROM organization.organizations o
+		JOIN organization.organization_memberships m ON m.organization_id = o.id
+		WHERE m.user_id::text = @userID 
+		  AND m.is_active = TRUE 
+		  AND o.status = 'active'
+		ORDER BY (m.role = 'owner') DESC, m.created_at ASC
 		LIMIT 1
 	`
 	err := dbExec.QueryRow(ctx, stmt, pgx.NamedArgs{"userID": userID}).Scan(&slug)
@@ -925,26 +1031,18 @@ func (r *UserRepository) CheckUserWorkspaceAccess(ctx context.Context, userID st
 	stmt := `
 		SELECT EXISTS(
 			SELECT 1 FROM organization.organization_memberships m
-			JOIN workspace.workspaces w ON w.organization_id = m.organization_id
-			WHERE m.user_id::text = @userID AND (w.slug = @subdomain OR w.id::text = @subdomain) AND m.is_active = TRUE
+			JOIN organization.organizations o ON o.id = m.organization_id
+			LEFT JOIN organization.organization_domains od ON od.organization_id = o.id
+			LEFT JOIN organization.facility_branches b ON b.organization_id = o.id
+			WHERE m.user_id::text = @userID 
+			  AND (o.slug = @subdomain OR o.id::text = @subdomain OR od.hostname = @subdomain OR b.slug = @subdomain) 
+			  AND m.is_active = TRUE
 		)
 	`
 	err := dbExec.QueryRow(ctx, stmt, pgx.NamedArgs{"userID": userID, "subdomain": subdomain}).Scan(&hasAccess)
 	return hasAccess, err
 }
 
-func (r *UserRepository) GetSessionByID(ctx context.Context, sessionID string) (*model.Session, error) {
-	dbExec := r.server.DB.Conn(ctx)
-	sess := &model.Session{}
-	stmt := `SELECT id, user_id::text, token, expires_at FROM identity.sessions WHERE id = @sessionID`
-	err := dbExec.QueryRow(ctx, stmt, pgx.NamedArgs{"sessionID": sessionID}).Scan(
-		&sess.ID, &sess.UserID, &sess.Token, &sess.ExpiresAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return sess, nil
-}
 
 func (r *UserRepository) GetPermissionOverrides(ctx context.Context, userID, tenantID string) ([]map[string]interface{}, error) {
 	return []map[string]interface{}{}, nil

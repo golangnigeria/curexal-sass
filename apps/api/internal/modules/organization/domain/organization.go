@@ -76,6 +76,7 @@ type Organization struct {
 
 type UpdateOrganizationProfilePayload struct {
 	Name               *string `json:"name"`
+	LegalName          *string `json:"legalName,omitempty"`
 	RegistrationNumber *string `json:"registrationNumber"`
 	LicenseNumber      *string `json:"licenseNumber"`
 	TaxID              *string `json:"taxId"`
@@ -88,6 +89,8 @@ type UpdateOrganizationProfilePayload struct {
 	Country            *string `json:"country"`
 	LogoURL            *string `json:"logoUrl"`
 	CustomDomain       *string `json:"customDomain"`
+	Currency           *string `json:"currency,omitempty"`
+	Timezone           *string `json:"timezone,omitempty"`
 	Version            int     `json:"version"`
 }
 

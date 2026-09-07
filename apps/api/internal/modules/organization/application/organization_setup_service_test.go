@@ -74,6 +74,11 @@ func (m *MockOrgRepo) List(ctx context.Context, userID string, isPlatformAdmin b
 	return nil, nil
 }
 
+func (m *MockOrgRepo) VerifyMembership(ctx context.Context, orgID uuid.UUID, userID string) (bool, error) {
+	args := m.Called(ctx, orgID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
 type MockAuditRepo struct {
 	mock.Mock
 }

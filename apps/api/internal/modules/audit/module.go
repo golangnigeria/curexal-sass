@@ -32,6 +32,7 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 	if m.AuditHandler != nil {
 		apiGroup.GET("/audit-logs/platform", m.AuditHandler.ListPlatformLogs, middleware.RequirePermission("audit:read"))
 		apiGroup.GET("/audit-logs/tenant", m.AuditHandler.ListTenantLogs, middleware.RequirePermission("audit:read"))
+		apiGroup.GET("/audit-logs/patient/:patientId/disclosures", m.AuditHandler.GetPatientDisclosures, middleware.RequirePermission("audit:read"))
 		apiGroup.GET("/audit-logs/stats", m.AuditHandler.GetAdminStats)
 	}
 }

@@ -2,8 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBootstrap } from "./use-bootstrap";
 import {
   organizationService,
+  BranchPayload,
   CreateBranchRequest,
   InviteMemberRequest,
+  DirectCreateMemberRequest,
   CreateRoleRequest,
 } from "../services/organization.service";
 
@@ -46,6 +48,52 @@ export function useCreateBranch() {
   });
 }
 
+export function useUpdateBranch() {
+  const queryClient = useQueryClient();
+  const { data: bootstrap } = useBootstrap();
+  const orgId = bootstrap?.organization?.id;
+
+  return useMutation({
+    mutationFn: ({ branchId, data }: { branchId: string; data: Partial<BranchPayload> }) =>
+      organizationService.updateBranch(orgId!, branchId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "branches"] });
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
+    },
+  });
+}
+
+export function useDeactivateBranch() {
+  const queryClient = useQueryClient();
+  const { data: bootstrap } = useBootstrap();
+  const orgId = bootstrap?.organization?.id;
+
+  return useMutation({
+    mutationFn: (branchId: string) => organizationService.deactivateBranch(orgId!, branchId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "branches"] });
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
+    },
+  });
+}
+
+export function useSetHeadquarters() {
+  const queryClient = useQueryClient();
+  const { data: bootstrap } = useBootstrap();
+  const orgId = bootstrap?.organization?.id;
+
+  return useMutation({
+    mutationFn: (branchId: string) => organizationService.setHeadquarters(orgId!, branchId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "branches"] });
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
+    },
+  });
+}
+
 export function useOrgMembers() {
   const { data: bootstrap } = useBootstrap();
   const orgId = bootstrap?.organization?.id;
@@ -68,6 +116,21 @@ export function useInviteMember() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["organization", orgId, "members"] });
       queryClient.invalidateQueries({ queryKey: ["organization", orgId, "dashboard"] });
+    },
+  });
+}
+
+export function useCreateMember() {
+  const queryClient = useQueryClient();
+  const { data: bootstrap } = useBootstrap();
+  const orgId = bootstrap?.organization?.id;
+
+  return useMutation({
+    mutationFn: (data: DirectCreateMemberRequest) => organizationService.createMember(orgId!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
     },
   });
 }

@@ -8,6 +8,8 @@ import {
   Check,
   ChevronRight,
   FlaskConical,
+  Stethoscope,
+  Radio,
   ClipboardCheck,
   Users,
   History,
@@ -18,6 +20,8 @@ import {
   User,
   Phone,
   Clock,
+  Layers,
+  ShieldCheck,
 } from "lucide-react";
 import { useApiClient, getApiUrl } from "@/api";
 import { toast } from "sonner";
@@ -29,10 +33,11 @@ export function BookDemoPage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    labName: "",
+    facilityName: "",
+    facilityType: "clinic",
     email: "",
     phone: "",
-    specimenVolume: "100-500",
+    volume: "100-500",
     message: "",
   });
 
@@ -43,7 +48,7 @@ export function BookDemoPage() {
     e.preventDefault();
     const missing: string[] = [];
     if (!formData.name.trim()) missing.push("Full Name");
-    if (!formData.labName.trim()) missing.push("Facility / Organization Name");
+    if (!formData.facilityName.trim()) missing.push("Facility / Organization Name");
     if (!formData.email.trim()) missing.push("Work Email");
     if (!formData.phone.trim()) missing.push("Phone Number");
 
@@ -62,12 +67,12 @@ export function BookDemoPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            laboratoryName: formData.labName,
+            laboratoryName: formData.facilityName,
             contactName: formData.name,
             email: formData.email,
             phone: formData.phone,
-            dailyVolume: formData.specimenVolume,
-            notes: formData.message || "Live demo walkthrough request",
+            dailyVolume: formData.volume,
+            notes: `[Facility: ${formData.facilityType.toUpperCase()}] ${formData.message || "Live demo walkthrough request"}`,
           }),
         });
       } catch (apiErr) {
@@ -78,9 +83,9 @@ export function BookDemoPage() {
         fullName: formData.name,
         email: formData.email,
         phone: formData.phone,
-        organization: formData.labName,
-        persona: "Laboratory",
-        biggestPainPoint: formData.message || "Requesting live demo",
+        organization: formData.facilityName,
+        persona: formData.facilityType === "lab" ? "Laboratory" : formData.facilityType === "radiology" ? "Radiology" : "Clinic",
+        biggestPainPoint: formData.message || "Requesting live facility demo",
         timeline: "Immediately",
         shapingPreference: "Yes, Early Beta Tester",
       });
@@ -92,28 +97,28 @@ export function BookDemoPage() {
         if (result.status === "DUPLICATE") {
           toast.info("You're already registered on our priority demo list!");
         } else {
-          toast.success("Spot reserved on our priority demo waitlist!");
+          toast.success("Spot reserved on our priority demo schedule!");
         }
       } else {
         setSubmitted(true);
-        toast.success("Spot reserved on our priority demo waitlist!");
+        toast.success("Spot reserved on our priority demo schedule!");
       }
     } catch (err) {
       console.info("Demo request processed:", formData);
       setLoading(false);
       setSubmitted(true);
-      toast.success("Spot reserved on our priority demo waitlist!");
+      toast.success("Spot reserved on our priority demo schedule!");
     }
   };
 
   return (
     <div className="w-full min-h-screen lg:h-screen lg:max-h-screen overflow-x-hidden bg-slate-950 text-slate-50 flex flex-col lg:flex-row font-inter">
       <SEOHead
-        title="Book Demo (Coming Soon): Curexal Healthcare Network"
-        description="Book a live walkthrough of Curexal's LIMS and healthcare operating network."
+        title="Book Facility Demo: Curexal Clinic EMR, Lab LIS & Radiology RIS"
+        description="Schedule a 1-on-1 walkthrough of Curexal's specialized operating suites for outpatient clinics, diagnostic laboratories, and imaging centers."
       />
 
-      {/* ── Left Column (Brand & Value Highlights - No Overflow) ── */}
+      {/* ── Left Column (Brand & Value Highlights) ── */}
       <div className="lg:w-5/12 p-5 sm:p-8 lg:p-10 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/60 lg:overflow-y-auto">
         {/* Ambient glows */}
         <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-[#0F766E]/10 blur-[90px] pointer-events-none" />
@@ -129,54 +134,54 @@ export function BookDemoPage() {
             Back to homepage
           </Link>
 
-          {/* Logo & Coming Soon Badge */}
+          {/* Logo & Category Badge */}
           <div className="flex items-center gap-2 mb-4">
             <img src="/logo-symbol.svg" alt="Curexal Logo" className="w-8 h-8 rounded-xl shadow-sm" />
             <span className="font-extrabold text-xl tracking-tight text-white">Curexal</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Coming Soon
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              Facility Suites
             </span>
           </div>
 
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight mb-3 text-white">
-            Live Demos{" "}
-            <span className="text-[#14B8A6] font-bold">Opening Soon</span>
+            Schedule a{" "}
+            <span className="text-[#14B8A6] font-bold">Facility Demo</span>
           </h1>
 
-          <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-5">
-            1-on-1 walkthroughs with system architects are launching soon. Join our priority waitlist for early access.
+          <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+            Get a 1-on-1 walkthrough tailored to your exact facility type. See how Curexal eliminates paper friction and accelerates daily operations.
           </p>
 
-          {/* Core Features */}
-          <div className="space-y-3">
+          {/* Core Multi-Facility Features */}
+          <div className="space-y-3.5">
             {[
               {
+                icon: Stethoscope,
+                title: "For Outpatient Clinics (Clinic OS)",
+                desc: "Paperless patient intake, 60s triage vitals, doctor SOAP notes & POS cashier register.",
+              },
+              {
                 icon: FlaskConical,
-                title: "Specimen Chain of Custody",
-                desc: "Full tracking from extraction to analyst validation.",
+                title: "For Diagnostic Laboratories (Lab LIS)",
+                desc: "Phlebotomy barcode tags, analyzer telemetry, pathologist sign-off & WhatsApp PDF push.",
               },
               {
-                icon: ClipboardCheck,
-                title: "Biological Reference Intervals",
-                desc: "Custom analyte configurations and auto-flagging.",
+                icon: Radio,
+                title: "For Radiology Centers (Radiology RIS)",
+                desc: "Modality queue scheduling, zero-film web DICOM PACS viewer & signed structured reports.",
               },
               {
-                icon: Users,
-                title: "Pathology Validation Queues",
-                desc: "Secure laboratory director sign-offs.",
-              },
-              {
-                icon: History,
-                title: "ISO 15189 Audit Trail",
-                desc: "Tamper-proof diagnostic event logging & logs.",
+                icon: ShieldCheck,
+                title: "B2B Diagnostic Referral Loop",
+                desc: "Electronic orders flow directly between clinics and labs with automated chart updates.",
               },
             ].map((feature, i) => {
               const Icon = feature.icon;
               return (
-                <div key={i} className="flex gap-2.5 items-start">
-                  <div className="w-6 h-6 rounded-md bg-slate-800/80 border border-slate-700/80 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon className="h-3 w-3 text-[#14B8A6]" />
+                <div key={i} className="flex gap-3 items-start">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800/90 border border-slate-700/80 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon className="h-3.5 w-3.5 text-[#14B8A6]" />
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-200">{feature.title}</h3>
@@ -191,11 +196,11 @@ export function BookDemoPage() {
         {/* Footer stat block */}
         <div className="relative z-10 mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-slate-400">
           <Sparkles className="h-3.5 w-3.5 text-[#14B8A6] flex-shrink-0" />
-          <span>Deployed in isolated workspace cloud partitions with HIPAA & NDPR privacy.</span>
+          <span>Deployed in dedicated PostgreSQL database partitions with HIPAA & NDPR compliance.</span>
         </div>
       </div>
 
-      {/* ── Right Column (Compact Form - Required Validation & Phone) ── */}
+      {/* ── Right Column (Interactive Form) ── */}
       <div className="flex-1 flex flex-col justify-center p-5 sm:p-8 lg:p-10 relative overflow-hidden bg-slate-900/40 lg:overflow-y-auto">
         <div className="max-w-md w-full mx-auto relative z-10">
           {submitted ? (
@@ -204,10 +209,10 @@ export function BookDemoPage() {
                 <Check className="h-6 w-6" />
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#14B8A6]">Priority Registered</span>
-                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">You're on the Demo Waitlist!</h2>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#14B8A6]">Demo Scheduled</span>
+                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">We Received Your Request!</h2>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  Thank you, <strong className="text-slate-200">{formData.name}</strong>. Demos for <strong className="text-slate-200">{formData.labName}</strong> are opening soon. We will reach you at <strong className="text-teal-400">{formData.phone}</strong> or <strong className="text-teal-400">{formData.email}</strong> when early access slots open.
+                  Thank you, <strong className="text-slate-200">{formData.name}</strong>. A product specialist will contact you for <strong className="text-slate-200">{formData.facilityName}</strong> at <strong className="text-teal-400">{formData.phone}</strong> or <strong className="text-teal-400">{formData.email}</strong> to coordinate your live walkthrough.
                 </p>
               </div>
 
@@ -222,19 +227,36 @@ export function BookDemoPage() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-[10px] font-bold">
                   <Clock className="w-3 h-3" />
-                  <span>Demo Slots Opening Soon</span>
+                  <span>15-Minute Tailored Walkthrough</span>
                 </div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                  Join Priority Demo Waitlist
+                  Request a Personalized Demo
                 </h2>
                 <p className="text-slate-400 text-xs">
-                  Register your facility to receive early access demo invitations.
+                  See how Curexal powers your clinic, laboratory, or imaging facility.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+                {/* Facility Type Selector */}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    Facility Classification <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={formData.facilityType}
+                    onChange={(e) => setFormData({ ...formData, facilityType: e.target.value })}
+                    className="w-full h-9 px-2.5 bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg focus:border-[#0F766E] outline-none"
+                  >
+                    <option value="clinic">Outpatient Clinic / Medical Practice</option>
+                    <option value="lab">Diagnostic & Pathology Laboratory (LIS)</option>
+                    <option value="radiology">Radiology & Imaging Center (RIS)</option>
+                    <option value="hospital">Multi-Specialty Center / Hospital</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                     Your Full Name <span className="text-rose-400">*</span>
@@ -260,71 +282,73 @@ export function BookDemoPage() {
                     <Building className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
                     <Input
                       type="text"
-                      placeholder="Apex Diagnostic Laboratories"
-                      value={formData.labName}
-                      onChange={(e) => setFormData({ ...formData, labName: e.target.value })}
+                      placeholder="E.g., St. Jude Clinic & Diagnostics"
+                      value={formData.facilityName}
+                      onChange={(e) => setFormData({ ...formData, facilityName: e.target.value })}
                       required
                       className="pl-8 h-9 text-xs bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 rounded-lg focus:border-[#0F766E]"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Work Email Address <span className="text-rose-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
-                    <Input
-                      type="email"
-                      placeholder="sarah@apexlabs.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="pl-8 h-9 text-xs bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 rounded-lg focus:border-[#0F766E]"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Work Email <span className="text-rose-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                      <Input
+                        type="email"
+                        placeholder="sarah@clinic.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                        className="pl-8 h-9 text-xs bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 rounded-lg focus:border-[#0F766E]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Phone Number <span className="text-rose-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                      <Input
+                        type="tel"
+                        placeholder="+234 800 000 0000"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                        className="pl-8 h-9 text-xs bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 rounded-lg focus:border-[#0F766E]"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Phone Number <span className="text-rose-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
-                    <Input
-                      type="tel"
-                      placeholder="+234 800 000 0000"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                      className="pl-8 h-9 text-xs bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 rounded-lg focus:border-[#0F766E]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Monthly Specimen / Test Volume
+                    Monthly Patient / Test Volume
                   </label>
                   <select
-                    value={formData.specimenVolume}
-                    onChange={(e) => setFormData({ ...formData, specimenVolume: e.target.value })}
+                    value={formData.volume}
+                    onChange={(e) => setFormData({ ...formData, volume: e.target.value })}
                     className="w-full h-9 px-2.5 bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg focus:border-[#0F766E] outline-none"
                   >
-                    <option value="<100">&lt; 100 tests / month</option>
-                    <option value="100-500">100 - 500 tests / month</option>
-                    <option value="500-2000">500 - 2,000 tests / month</option>
-                    <option value="2000+">2,000+ tests / month (Enterprise)</option>
+                    <option value="<100">&lt; 100 patients or tests / month</option>
+                    <option value="100-500">100 - 500 patients or tests / month</option>
+                    <option value="500-2000">500 - 2,000 patients or tests / month</option>
+                    <option value="2000+">2,000+ patients or tests / month (High-Volume)</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Specific Workflow Needs (Optional)
+                    Primary Operational Goal (Optional)
                   </label>
                   <Textarea
-                    placeholder="E.g., Automated instrument interfaces, multi-location EMR referral sync..."
+                    placeholder="E.g., Automated analyzer links, paperless doctor SOAP charting, eliminate POS cashier leakage..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     rows={2}
@@ -335,11 +359,10 @@ export function BookDemoPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-lg shadow-lg transition-all flex items-center justify-center gap-1.5 mt-1"
+                  className="w-full bg-[#0F766E] hover:bg-[#115E59] text-white font-bold h-10 text-xs rounded-lg shadow-lg transition-all flex items-center justify-center gap-1.5 mt-1 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{loading ? "Registering..." : "Reserve Demo Waitlist Spot"}</span>
-                  <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  <span>{loading ? "Processing..." : "Schedule My Walkthrough"}</span>
                 </Button>
               </form>
             </div>

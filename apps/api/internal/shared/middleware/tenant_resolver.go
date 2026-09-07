@@ -15,53 +15,45 @@ const (
 
 var validSlugRegex = regexp.MustCompile(`^[a-z0-9_-]+$`)
 
-// HostAndSessionTenantResolver implements ADR 030: Host-Driven & Session-Based Tenant Resolution.
-// It derives the tenant context strictly from the HTTP Host header or session principal.
-// Spoofable client headers (like X-Tenant-Slug) are forbidden/ignored.
+// HostAndSessionTenantResolver implements organization-centric branch workspace resolution.
+// The Organization is resolved from the Host/domain by DomainResolverMiddleware.
+// The operational Branch context is resolved from the X-Branch-Slug header, ?branch query param, or session tenant ID.
 func HostAndSessionTenantResolver() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			req := c.Request()
-			host := req.Host
 
-			// Strip port if present
-			if colonIdx := strings.Index(host, ":"); colonIdx != -1 {
-				host = host[:colonIdx]
-			}
-
-			tenantSlug := ""
-
-			// 1. Resolve Tenant Slug from Subdomain (e.g. main-lab.curexal.com or main-lab.localhost)
-			parts := strings.Split(host, ".")
-			if len(parts) >= 3 || (len(parts) == 2 && parts[1] == "localhost") {
-				candidate := strings.ToLower(parts[0])
-				if candidate != "app" && candidate != "admin" && candidate != "hq" && candidate != "org font" && candidate != "api" && candidate != "www" {
-					tenantSlug = candidate
-				}
+			branchSlug := req.Header.Get("X-Branch-Slug")
+			if branchSlug == "" {
+				branchSlug = c.QueryParam("branch")
 			}
 
 			// 2. Fallback to Authenticated Session Principal Tenant ID / Slug
-			if tenantSlug == "" {
+			if branchSlug == "" {
 				principal := GetPrincipal(c)
-				if principal != nil && principal.TenantID != "" {
-					tenantSlug = principal.TenantID
+				if principal != nil {
+					if principal.Workspace.ActiveWorkspaceID != "" {
+						branchSlug = principal.Workspace.ActiveWorkspaceID
+					} else if principal.TenantID != "" {
+						branchSlug = principal.TenantID
+					}
 				}
 			}
 
-			// Default fallback for dev environment if unauthenticated
-			if tenantSlug == "" {
-				tenantSlug = "main-facility"
+			// 3. Default fallback for initial/unauthenticated baseline
+			if branchSlug == "" {
+				branchSlug = "main-facility"
 			}
 
-			// Sanitize tenant slug to prevent SQL/schema tampering
-			tenantSlug = strings.ToLower(strings.TrimSpace(tenantSlug))
-			if !validSlugRegex.MatchString(tenantSlug) {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid tenant host or identifier")
+			// Sanitize branch slug to prevent SQL/schema tampering
+			branchSlug = strings.ToLower(strings.TrimSpace(branchSlug))
+			if !validSlugRegex.MatchString(branchSlug) {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid branch identifier or slug")
 			}
 
-			tenantSchema := fmt.Sprintf("tenant_%s", strings.ReplaceAll(tenantSlug, "-", "_"))
+			tenantSchema := fmt.Sprintf("tenant_%s", strings.ReplaceAll(branchSlug, "-", "_"))
 
-			c.Set(TenantSlugKey, tenantSlug)
+			c.Set(TenantSlugKey, branchSlug)
 			c.Set(TenantSchemaKey, tenantSchema)
 
 			return next(c)

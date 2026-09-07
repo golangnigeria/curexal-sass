@@ -1,0 +1,106 @@
+name: CUREXAL Monorepo Production CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-test-and-build:
+    name: Backend API (Go)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: curexal
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: curexal_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Verify Go Modules
+        working-directory: apps/api
+        run: go mod verify
+
+      - name: Run Backend Tests
+        working-directory: apps/api
+        env:
+          CUREXAL_DB_DSN: "postgres://curexal:password123@localhost:5432/curexal_test?sslmode=disable"
+          DATABASE_URL: "postgres://curexal:password123@localhost:5432/curexal_test?sslmode=disable"
+          REDIS_ADDR: "localhost:6379"
+          CUREXAL_REDIS_ADDR: "localhost:6379"
+          APP_ENV: "test"
+        run: go test -v -race ./...
+
+      - name: Build Backend Binaries
+        working-directory: apps/api
+        run: go build -v ./cmd/CUREXAL
+
+  frontend-typecheck-and-build:
+    name: Frontend Applications (React 19 / Vite / Bun)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Workspace Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck Web Platform
+        working-directory: apps/web-platform
+        run: bun run typecheck
+
+      - name: Typecheck Web Public
+        working-directory: apps/web-public
+        run: bun run typecheck
+
+      - name: Typecheck Web Patient
+        working-directory: apps/web-patient
+        run: bun run typecheck
+
+      - name: Build Web Platform Bundle
+        working-directory: apps/web-platform
+        run: bun run build
+
+      - name: Build Web Public Bundle
+        working-directory: apps/web-public
+        run: bun run build
+
+      - name: Build Web Patient Bundle
+        working-directory: apps/web-patient
+        run: bun run build

@@ -39,6 +39,35 @@ func (h *StaffMembershipHandler) ListMembers(c echo.Context) error {
 	return response.SuccessEcho(c, http.StatusOK, members)
 }
 
+func (h *StaffMembershipHandler) CreateMember(c echo.Context) error {
+	principal := middleware.GetPrincipal(c)
+	if principal == nil {
+		return response.UnauthorizedEcho(c, "Authentication required")
+	}
+
+	var payload domain.DirectCreateStaffMemberPayload
+	if err := c.Bind(&payload); err != nil {
+		return response.BadRequestEcho(c, "Invalid staff member payload")
+	}
+
+	if payload.Email == "" || payload.FullName == "" {
+		return response.BadRequestEcho(c, "fullName and email are required")
+	}
+
+	res, err := h.staffService.DirectCreateMember(c.Request().Context(), principal, &payload)
+	if err != nil {
+		if errors.Is(err, domain.ErrUnauthorizedTenantAccess) {
+			return response.ForbiddenEcho(c, err.Error())
+		}
+		if errors.Is(err, domain.ErrMaxStaffExceeded) {
+			return response.ErrorEcho(c, http.StatusPaymentRequired, "STAFF_LIMIT_EXCEEDED", err.Error())
+		}
+		return response.InternalErrorEcho(c, "Failed to create staff member: "+err.Error())
+	}
+
+	return response.SuccessEcho(c, http.StatusCreated, res)
+}
+
 func (h *StaffMembershipHandler) CreateInvitation(c echo.Context) error {
 	principal := middleware.GetPrincipal(c)
 	if principal == nil {

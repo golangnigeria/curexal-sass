@@ -81,7 +81,7 @@ func (s *OrganizationApplicationService) authorizeOrgOwnerOrPlatformStaff(ctx ec
 	err = dbExec.QueryRow(ctx.Request().Context(), `
 		SELECT EXISTS(
 			SELECT 1 FROM organization.organization_memberships 
-			WHERE organization_id = $1 AND user_id = $2 AND (role IN ('owner', 'admin', 'org_admin') OR role_title = 'owner')
+			WHERE organization_id = $1 AND user_id = $2 AND role IN ('owner', 'admin', 'org_admin')
 		)
 	`, orgID.String(), userID).Scan(&isOwner)
 	if err != nil || !isOwner {
@@ -174,7 +174,7 @@ func (s *OrganizationApplicationService) CreateBranch(ctx echo.Context, orgID uu
 		err := dbExec.QueryRow(ctx.Request().Context(), `
 			SELECT EXISTS(
 				SELECT 1 FROM organization.organization_memberships 
-				WHERE organization_id = $1 AND user_id = $2 AND (role IN ('owner', 'admin', 'org_admin') OR role_title = 'owner')
+				WHERE organization_id = $1 AND user_id = $2 AND role IN ('owner', 'admin', 'org_admin')
 			)
 		`, orgID.String(), userID).Scan(&isOwner)
 		if err != nil || !isOwner {

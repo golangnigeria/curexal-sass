@@ -234,7 +234,7 @@ export default function AuditLogsPage() {
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-muted/20">
                     <td className="py-3 px-4 font-mono text-muted-foreground">
-                      {formatDate(log.createdAt)}
+                      {formatDate(log.occurredAt || log.createdAt)}
                     </td>
                     <td className="py-3 px-4 font-semibold text-foreground">
                       {log.action}
@@ -250,7 +250,7 @@ export default function AuditLogsPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px] text-muted-foreground">
-                      {log.category || "security"}
+                      {log.eventCategory || log.category || "security"}
                     </td>
                     <td className="py-3 px-4">
                       {getSeverityBadge(log.severity)}
@@ -300,26 +300,74 @@ export default function AuditLogsPage() {
           <div className="space-y-3 py-2 text-xs">
             <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-secondary/30 p-3">
               <div>
+                <span className="text-muted-foreground">Timestamp:</span>{" "}
+                <span className="font-mono text-foreground font-medium">
+                  {formatDate(inspectLog?.occurredAt || inspectLog?.createdAt)}
+                </span>
+              </div>
+              <div>
                 <span className="text-muted-foreground">Action:</span>{" "}
                 <span className="font-semibold text-foreground">{inspectLog?.action}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Category:</span>{" "}
-                <span className="font-mono">{inspectLog?.category}</span>
+                <span className="font-mono">{inspectLog?.eventCategory || inspectLog?.category || "—"}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Severity / Status:</span>{" "}
+                <span className="capitalize">{inspectLog?.severity} • {inspectLog?.status}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Actor:</span>{" "}
-                <span>{inspectLog?.actorEmail || "Platform"}</span>
+                <span className="font-medium">{inspectLog?.actorEmail || "Platform Service"}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">IP Address:</span>{" "}
                 <span className="font-mono">{inspectLog?.ipAddress || "—"}</span>
               </div>
+              {inspectLog?.facilityBranchId && (
+                <div className="col-span-2 sm:col-span-1">
+                  <span className="text-muted-foreground">Facility Branch:</span>{" "}
+                  <span className="font-mono text-[11px]">{inspectLog.facilityBranchId}</span>
+                </div>
+              )}
+              {inspectLog?.isBreakGlass && (
+                <div className="col-span-2 sm:col-span-1">
+                  <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-[10px]">
+                    🚨 Break-Glass Emergency Access
+                  </Badge>
+                </div>
+              )}
             </div>
+
+            {/* Cryptographic Hash Chain Proof */}
+            {inspectLog?.recordHash && (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" />
+                    Cryptographic Integrity Proof (SHA-256)
+                  </span>
+                  <Badge variant="outline" className="text-[9px] font-mono border-emerald-500/30 text-emerald-600">
+                    Verified Block
+                  </Badge>
+                </div>
+                <div className="space-y-1 font-mono text-[10px] text-muted-foreground">
+                  <div className="truncate">
+                    <span className="text-foreground/70">Record Hash:</span> {inspectLog.recordHash}
+                  </div>
+                  {inspectLog.prevRecordHash && (
+                    <div className="truncate">
+                      <span className="text-foreground/70">Prev Hash:</span> {inspectLog.prevRecordHash}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Structured Audit Payload</Label>
-              <div className="rounded-lg border border-border bg-muted/40 p-3 max-h-[250px] overflow-y-auto">
+              <div className="rounded-lg border border-border bg-muted/40 p-3 max-h-[200px] overflow-y-auto">
                 <pre className="text-[11px] font-mono text-foreground leading-relaxed whitespace-pre-wrap">
                   {JSON.stringify(inspectLog?.details || inspectLog, null, 2)}
                 </pre>

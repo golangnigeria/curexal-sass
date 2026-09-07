@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
@@ -45,7 +44,7 @@ func (s *OrganizationCatalogService) isPlatformAdmin(principal *middleware.Authe
 	return false
 }
 
-func (s *OrganizationCatalogService) resolveActiveOrgUUID(principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
+func (s *OrganizationCatalogService) resolveActiveOrgUUID(ctx context.Context, principal *middleware.AuthenticatedPrincipal) (uuid.UUID, error) {
 	if principal == nil {
 		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 	}
@@ -58,20 +57,25 @@ func (s *OrganizationCatalogService) resolveActiveOrgUUID(principal *middleware.
 		orgIDStr = principal.TenantID
 	}
 
-	if orgIDStr == "" {
-		return uuid.Nil, domain.ErrUnauthorizedTenantAccess
+	if orgIDStr != "" {
+		parsed, err := uuid.Parse(orgIDStr)
+		if err == nil {
+			return parsed, nil
+		}
 	}
 
-	parsed, err := uuid.Parse(orgIDStr)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid active organization ID: %w", err)
+	if s.orgRepo != nil && principal.UserID != "" {
+		orgs, err := s.orgRepo.List(ctx, principal.UserID, s.isPlatformAdmin(principal))
+		if err == nil && len(orgs) > 0 {
+			return orgs[0].ID, nil
+		}
 	}
 
-	return parsed, nil
+	return uuid.Nil, domain.ErrUnauthorizedTenantAccess
 }
 
 func (s *OrganizationCatalogService) ListCatalogItems(ctx context.Context, principal *middleware.AuthenticatedPrincipal, domainType string) ([]domain.OrganizationCatalogItem, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +84,7 @@ func (s *OrganizationCatalogService) ListCatalogItems(ctx context.Context, princ
 }
 
 func (s *OrganizationCatalogService) GetCatalogItemByID(ctx context.Context, principal *middleware.AuthenticatedPrincipal, itemID uuid.UUID) (*domain.OrganizationCatalogItem, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -93,14 +97,14 @@ func (s *OrganizationCatalogService) CreateCatalogItem(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.CreateCatalogItemPayload,
 ) (*domain.OrganizationCatalogItem, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	domainTypeUpper := strings.ToUpper(strings.TrimSpace(payload.DomainType))
@@ -162,14 +166,14 @@ func (s *OrganizationCatalogService) UpdateCatalogItem(
 	itemID uuid.UUID,
 	payload *domain.UpdateCatalogItemPayload,
 ) (*domain.OrganizationCatalogItem, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	existing, errGet := s.catalogRepo.GetCatalogItemByID(ctx, orgUUID, itemID)
@@ -232,14 +236,14 @@ func (s *OrganizationCatalogService) SetBranchPriceOverride(
 	itemID uuid.UUID,
 	payload *domain.SetBranchPricePayload,
 ) (*domain.BranchPriceOverride, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	// Verify branch belongs to org
@@ -298,14 +302,14 @@ func (s *OrganizationCatalogService) CreateInsuranceProvider(
 	principal *middleware.AuthenticatedPrincipal,
 	payload *domain.CreateInsuranceProviderPayload,
 ) (*domain.InsuranceProvider, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	actorUUID, errParse := uuid.Parse(principal.UserID)
-	if errParse != nil {
-		return nil, fmt.Errorf("invalid principal user ID: %w", errParse)
+	actorUUID := uuid.Nil
+	if parsed, err := uuid.Parse(principal.UserID); err == nil {
+		actorUUID = parsed
 	}
 
 	covVal := 100.00
@@ -353,7 +357,7 @@ func (s *OrganizationCatalogService) CreateInsuranceProvider(
 }
 
 func (s *OrganizationCatalogService) ListInsuranceProviders(ctx context.Context, principal *middleware.AuthenticatedPrincipal) ([]domain.InsuranceProvider, error) {
-	orgUUID, err := s.resolveActiveOrgUUID(principal)
+	orgUUID, err := s.resolveActiveOrgUUID(ctx, principal)
 	if err != nil {
 		return nil, err
 	}

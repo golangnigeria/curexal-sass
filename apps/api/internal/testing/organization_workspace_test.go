@@ -65,6 +65,11 @@ func (m *MockOrgRepo) UpdateSettings(ctx context.Context, orgID uuid.UUID, logoU
 	return args.Get(0).(*orgDomain.OrganizationSettings), args.Error(1)
 }
 
+func (m *MockOrgRepo) VerifyMembership(ctx context.Context, orgID uuid.UUID, userID string) (bool, error) {
+	args := m.Called(ctx, orgID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
 // Mock Tenant Repository
 type MockTenantRepo struct {
 	mock.Mock
@@ -166,7 +171,27 @@ func TestOrganizationBuildAndWorkspaceBootstrap(t *testing.T) {
 	assert.Equal(t, "organization", bootstrap.Contexts.Current)
 	assert.Equal(t, orgID.String(), bootstrap.Organization.ID)
 	assert.Equal(t, "Everight Healthcare Network", bootstrap.Organization.Name)
+	assert.Equal(t, "owner", bootstrap.Organization.Role)
 	assert.Equal(t, tenantID.String(), bootstrap.Workspace.ID)
 	assert.Equal(t, "main-facility", bootstrap.Workspace.Slug)
 	assert.True(t, len(bootstrap.Navigation) > 0)
+
+	// Ensure organization owner receives organization navigation routes (not workspace)
+	hasOrgDashboard := false
+	hasOrgBranches := false
+	hasWorkspaceRoutes := false
+	for _, item := range bootstrap.Navigation {
+		if item.Path == "/organization/dashboard" {
+			hasOrgDashboard = true
+		}
+		if item.Path == "/organization/branches" {
+			hasOrgBranches = true
+		}
+		if item.Path == "/workspace/laboratory/accessioning" || item.Path == "/workspace/patients" {
+			hasWorkspaceRoutes = true
+		}
+	}
+	assert.True(t, hasOrgDashboard, "Organization owner must have /organization/dashboard navigation item")
+	assert.True(t, hasOrgBranches, "Organization owner must have /organization/branches navigation item")
+	assert.False(t, hasWorkspaceRoutes, "Organization owner must not receive raw workspace navigation items in organization context")
 }

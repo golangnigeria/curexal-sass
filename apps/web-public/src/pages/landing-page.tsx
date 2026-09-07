@@ -2,11 +2,12 @@ import { MarketingNavbar } from "@/components/layouts/marketing-navbar";
 import { MarketingFooter } from "@/components/layouts/marketing-footer";
 import { SEOHead } from "@/components/seo/seo-head";
 
-// Locked Hero Component (Untouched)
+// Hero Component with Interactive Facility Switcher (Clinic, Lab, Radiology)
 import { Hero } from "@/components/home/hero";
 
-// Telemetry & Modern Sections below Hero
+// Telemetry & Modern Facility Sections
 import { WaitlistStats } from "@/components/home/waitlist-stats";
+import { FacilitySolutionsGrid } from "@/components/home/facility-solutions-grid";
 import { HealthcareFragmentationSection } from "@/components/home/healthcare-fragmentation";
 import { ConnectedStackedJourneySection } from "@/components/home/connected-stacked-journey";
 import { PatientJourneyFlowSection } from "@/components/home/patient-journey-flow";
@@ -21,21 +22,22 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white font-inter overflow-x-hidden">
       <SEOHead
-        title="Curexal: Connected Healthcare Operating Network for Africa"
-        description="Connecting patients, clinics, diagnostic laboratories, pharmacies and partners so referrals, diagnostics and healthcare transactions move together without friction."
+        title="Curexal: Operating System for Clinics, Diagnostic Labs & Radiology Centers"
+        description="Unified cloud operating system for healthcare facilities. Modular Clinic EMR, Pathology LIS, and Radiology RIS with an integrated B2B diagnostic referral network."
       />
       
       <MarketingNavbar />
       
-      {/* ── LOCKED HERO SECTION (UNTOUCHED) ── */}
+      {/* ── MULTI-FACILITY HERO SECTION ── */}
       <Hero />
-      
-      {/* ── SECTIONS BELOW HERO ── */}
       
       {/* Live Telemetry Banner */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
         <WaitlistStats />
       </div>
+
+      {/* ── CORE PRODUCT SUITES: CLINIC OS, LAB LIS, RADIOLOGY RIS ── */}
+      <FacilitySolutionsGrid />
 
       {/* Section 1: Healthcare is Fragmented */}
       <HealthcareFragmentationSection />
@@ -49,13 +51,13 @@ export function LandingPage() {
       {/* Section 4: For Healthcare Organizations (Central Facility Node) */}
       <OrganizationNetworkNodeSection />
 
-      {/* Section 5: Curexal Marketplace (Horizontal Asymmetric Preview) */}
+      {/* Section 5: Diagnostic & Referral Highway */}
       <MarketplacePreviewCarouselSection />
 
       {/* Section 6: Built for Africa */}
       <AfricaRealityInfrastructureSection />
 
-      {/* Section 7: Healthcare Operating System */}
+      {/* Section 7: Healthcare Operating System Architecture */}
       <HealthcareOperatingSystemSection />
 
       {/* Business Growth Platform */}

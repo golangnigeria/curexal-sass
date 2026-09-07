@@ -36,25 +36,66 @@ func (e *CasbinEnforcer) bootstrapDefaultPolicies() {
 	e.rolePermissions["super_support_agent"] = []string{"users:read", "audit:read", "settings:read", "support:impersonate"}
 	e.rolePermissions["super_sales_staff"] = []string{"demo:read", "orgs:read", "orgs:write"}
 
-	// Branch / Clinic Roles
-	e.rolePermissions["branch_admin"] = []string{
-		"users:read", "users:write", "settings:read", "settings:write",
-		"patient:view", "patient:create", "patient:update",
-		"laboratory:create_order", "laboratory:accession", "laboratory:enter_result", "laboratory:authorize_result",
-		"billing:invoice", "billing:refund",
+	// Canonical Clinic Roles (Day 1 Section 2.2)
+	e.rolePermissions["owner"] = []string{
+		"organization:view", "organization:manage", "organization:branch:manage",
+		"users:read", "users:write", "audit:read",
+		"workspace:patient:create", "workspace:patient:read", "workspace:patient:update",
+		"workspace:appointment:read", "workspace:appointment:write", "workspace:queue:manage",
+		"workspace:triage:create", "workspace:triage:read",
+		"workspace:clinical:read", "workspace:clinical:write", "workspace:clinical:sign",
+		"workspace:prescription:write", "workspace:prescription:read",
+		"workspace:diagnostic:order", "workspace:diagnostic:read",
+		"workspace:document:upload", "workspace:document:read",
+		"workspace:billing:read", "workspace:billing:charge", "workspace:billing:refund",
+		"workspace:pos:settle", "workspace:pos:shift_close",
 	}
-	e.rolePermissions["clinician"] = []string{
-		"patient:view", "patient:create", "patient:update",
-		"consultation:write", "prescription:write", "laboratory:create_order",
+	e.rolePermissions["org_admin"] = []string{
+		"organization:view", "organization:manage", "organization:branch:manage",
+		"users:read", "users:write", "audit:read",
+		"workspace:patient:create", "workspace:patient:read", "workspace:patient:update",
+		"workspace:appointment:read", "workspace:appointment:write", "workspace:queue:manage",
+		"workspace:billing:read", "workspace:billing:charge", "workspace:billing:refund",
 	}
-	e.rolePermissions["technician"] = []string{
-		"patient:view", "laboratory:accession", "laboratory:enter_result", "laboratory:authorize_result",
+	e.rolePermissions["doctor"] = []string{
+		"users:read",
+		"workspace:patient:create", "workspace:patient:read", "workspace:patient:update",
+		"workspace:appointment:read", "workspace:appointment:write", "workspace:queue:manage",
+		"workspace:triage:create", "workspace:triage:read",
+		"workspace:clinical:read", "workspace:clinical:write", "workspace:clinical:sign",
+		"workspace:prescription:write", "workspace:prescription:read",
+		"workspace:diagnostic:order", "workspace:diagnostic:read",
+		"workspace:document:upload", "workspace:document:read",
 	}
-	e.rolePermissions["customer_care"] = []string{
-		"patient:view", "patient:create", "patient:update", "appointments:write",
+	e.rolePermissions["nurse"] = []string{
+		"workspace:patient:create", "workspace:patient:read", "workspace:patient:update",
+		"workspace:appointment:read", "workspace:appointment:write", "workspace:queue:manage",
+		"workspace:triage:create", "workspace:triage:read",
+		"workspace:clinical:read",
+		"workspace:prescription:read",
+		"workspace:diagnostic:read",
+		"workspace:document:upload", "workspace:document:read",
+	}
+	e.rolePermissions["receptionist"] = []string{
+		"workspace:patient:create", "workspace:patient:read", "workspace:patient:update",
+		"workspace:appointment:read", "workspace:appointment:write", "workspace:queue:manage",
+		"workspace:document:upload", "workspace:document:read",
 	}
 	e.rolePermissions["cashier"] = []string{
-		"patient:view", "billing:invoice", "billing:payment",
+		"workspace:patient:read",
+		"workspace:prescription:read",
+		"workspace:diagnostic:read",
+		"workspace:billing:read", "workspace:billing:charge",
+		"workspace:pos:settle", "workspace:pos:shift_close",
+	}
+
+	// Legacy / Compatibility aliases
+	e.rolePermissions["clinician"] = e.rolePermissions["doctor"]
+	e.rolePermissions["customer_care"] = e.rolePermissions["receptionist"]
+	e.rolePermissions["branch_admin"] = e.rolePermissions["org_admin"]
+	e.rolePermissions["technician"] = []string{
+		"workspace:patient:read", "workspace:diagnostic:read",
+		"laboratory:accession", "laboratory:enter_result", "laboratory:authorize_result",
 	}
 }
 

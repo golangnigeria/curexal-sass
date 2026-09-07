@@ -92,6 +92,7 @@ type UserBaseline struct {
 	MiddleName    *string   `json:"middleName,omitempty"`
 	EmailVerified bool      `json:"emailVerified"`
 	AvatarURL     *string   `json:"avatarUrl"`
+	Role          *string   `json:"role,omitempty"`
 	CreatedAt     time.Time `json:"createdAt"`
 }
 

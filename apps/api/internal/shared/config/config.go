@@ -152,17 +152,29 @@ func getEnvBool(key string, defaultVal bool) bool {
 	return defaultVal
 }
 
+func getEnvInt(key string, defaultVal int) int {
+	if val := os.Getenv(key); val != "" {
+		var n int
+		if _, err := fmt.Sscanf(strings.Trim(strings.TrimSpace(val), "\"'"), "%d", &n); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultVal
+}
+
 func LoadConfig() (*Config, error) {
-	_ = godotenv.Load(".env", "../.env", "../../.env")
+	for _, envPath := range []string{".env", "../.env", "../../.env"} {
+		_ = godotenv.Overload(envPath)
+	}
 	fmt.Println("Config validation passed")
 	return &Config{
 		Primary: Primary{Env: getEnv("CUREXAL_PRIMARY_ENV", "local")},
 		Database: DatabaseConfig{
 			Host:         getEnv("CUREXAL_DATABASE_HOST", getEnv("CUREXAL_DATABASE.HOST", "localhost")),
-			Port:         5432,
+			Port:         getEnvInt("CUREXAL_DATABASE_PORT", 5432),
 			User:         getEnv("CUREXAL_DATABASE_USER", getEnv("CUREXAL_DATABASE.USER", "postgres")),
 			Password:     getEnv("CUREXAL_DATABASE_PASSWORD", getEnv("CUREXAL_DATABASE.PASSWORD", "postgres")),
-			Name:         getEnv("CUREXAL_DATABASE_NAME", getEnv("CUREXAL_DATABASE.NAME", "CUREXAL")),
+			Name:         getEnv("CUREXAL_DATABASE_NAME", getEnv("CUREXAL_DATABASE.NAME", "postgres")),
 			SSLMode:      getEnv("CUREXAL_DATABASE_SSL_MODE", getEnv("CUREXAL_DATABASE.SSL_MODE", "disable")),
 			MaxOpenConns: 25,
 			MaxIdleConns: 5,

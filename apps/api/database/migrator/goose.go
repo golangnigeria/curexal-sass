@@ -51,6 +51,47 @@ func (r *GooseRunner) RunUp(dsn string, targetFS embed.FS, dir string, tableName
 	return nil
 }
 
+// RunUpInSchema executes all pending Goose SQL migrations within a specific tenant schema.
+func (r *GooseRunner) RunUpInSchema(dsn string, schema string, targetFS embed.FS, dir string, tableName string) error {
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to open database connection for goose: %w", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("failed to ping database for goose migration: %w", err)
+	}
+
+	// Ensure target schema exists
+	if _, err := db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", schema)); err != nil {
+		return fmt.Errorf("failed to create schema %s: %w", schema, err)
+	}
+
+	// Set search path for this migration session
+	if _, err := db.Exec(fmt.Sprintf("SET search_path TO %s, public;", schema)); err != nil {
+		return fmt.Errorf("failed to set search_path to %s: %w", schema, err)
+	}
+
+	goose.SetLogger(goose.NopLogger())
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("failed to set goose dialect: %w", err)
+	}
+
+	if tableName != "" {
+		goose.SetTableName(fmt.Sprintf("%s.%s", schema, tableName))
+	}
+
+	goose.SetBaseFS(targetFS)
+
+	r.logger.Info().Str("schema", schema).Str("dir", dir).Str("table", tableName).Msg("executing tenant schema goose up migrations")
+	if err := goose.Up(db, dir); err != nil {
+		return fmt.Errorf("goose up failed in schema %s, dir %s: %w", schema, dir, err)
+	}
+
+	return nil
+}
+
 // RunSeeders executes non-goose SQL seeder files embedded inside an embed.FS directory.
 func (r *GooseRunner) RunSeeders(dsn string, targetFS embed.FS, dir string) error {
 	db, err := sql.Open("pgx", dsn)

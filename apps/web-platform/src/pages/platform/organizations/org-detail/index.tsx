@@ -1,1 +1,1 @@
-export { default } from "../../../organizations/org-detail";
+export { default } from "../org-detail";

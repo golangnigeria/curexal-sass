@@ -1,11 +1,27 @@
 {
-  "name": "curexal-sass",
+  "name": "curexal-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Curexal Health Operating System",
+  "packageManager": "npm@10.8.2",
+  "description": "Curexal Multi-Tenant Healthcare Operating Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tooling/*"
+  ],
   "scripts": {
-    "build": "bun run build:all || npm run build:all",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
     "build:all": "cd apps/api && go build -ldflags=\"-w -s\" -o bin/curexal-backend ./cmd/CUREXAL",
     "start": "node server.js"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "turbo": "^2.4.4",
+    "typescript": "~5.8.3"
   }
 }

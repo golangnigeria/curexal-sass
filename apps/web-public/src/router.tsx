@@ -1,13 +1,13 @@
 import "./index.css";
 import { LandingPage } from "@/pages/landing-page";
 import { BookDemoPage } from "@/pages/book-demo";
-import { PatientMarketplacePage } from "@/pages/patient-marketplace-page";
 import { SolutionsPage } from "@/pages/solutions-page";
 import { PricingPage } from "@/pages/pricing-page";
 import { AboutPage } from "@/pages/about-page";
 import { ResourcesPage } from "@/pages/resources-page";
 import { DevelopersPage } from "@/pages/developers-page";
 import { WaitlistPage } from "@/pages/waitlist-page";
+import { MarketplacePage } from "@/pages/marketplace-page";
 import {
   Route,
   Navigate,
@@ -31,15 +31,14 @@ const routes = createRoutesFromElements(
 
     {/* ── Public Information Architecture ───────────── */}
     <Route path="/solutions" element={<SolutionsPage />} />
+    <Route path="/marketplace" element={<MarketplacePage />} />
+    <Route path="/network" element={<MarketplacePage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/about" element={<AboutPage />} />
     <Route path="/resources" element={<ResourcesPage />} />
     <Route path="/developers" element={<DevelopersPage />} />
     <Route path="/book-demo" element={<BookDemoPage />} />
     <Route path="/waitlist" element={<WaitlistPage />} />
-
-    {/* ── Healthcare & Medical Marketplace ───────────── */}
-    <Route path="/marketplace" element={<PatientMarketplacePage />} />
 
     {/* ── External App Redirects (Strict Public Constitution) ──── */}
     <Route path="/login" element={<ExternalRedirect targetUrl={`${patientPortalUrl}/login`} />} />

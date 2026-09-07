@@ -36,7 +36,21 @@ func (h *BootstrapHandler) SetEntitlementService(svc *subApp.EntitlementService)
 
 func (h *BootstrapHandler) GetBootstrap(c echo.Context) error {
 	principal := middleware.GetPrincipal(c)
-	contract, err := h.bootstrapBuilder.BuildBootstrap(c.Request().Context(), principal)
+
+	reqHost := c.Request().Header.Get("X-Forwarded-Host")
+	if reqHost == "" {
+		reqHost = c.Request().Host
+	}
+	if qHost := c.QueryParam("host"); qHost != "" {
+		reqHost = qHost
+	}
+
+	branchSlug := c.QueryParam("branch")
+	if branchSlug == "" {
+		branchSlug = c.Request().Header.Get("X-Branch-Slug")
+	}
+
+	contract, err := h.bootstrapBuilder.BuildBootstrapWithContext(c.Request().Context(), principal, reqHost, branchSlug)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to assemble bootstrap contract")
 	}

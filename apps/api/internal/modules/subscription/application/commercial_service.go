@@ -421,3 +421,36 @@ func (s *CommercialService) ProcessRefund(ctx context.Context, orgID, orderID uu
 
 	return nil
 }
+
+func (s *CommercialService) GetOrganizationInvoices(ctx context.Context, orgID uuid.UUID) ([]domain.CommercialInvoice, error) {
+	return s.commercialRepo.GetInvoicesByOrg(ctx, orgID)
+}
+
+func (s *CommercialService) ListPlans(ctx context.Context) ([]map[string]interface{}, error) {
+	rows, err := s.server.DB.Pool.Query(ctx, `
+		SELECT id::text, code, name, limits, features
+		FROM subscription.plans
+		ORDER BY created_at ASC
+	`)
+	if err != nil {
+		return []map[string]interface{}{}, nil
+	}
+	defer rows.Close()
+
+	var plans []map[string]interface{}
+	for rows.Next() {
+		var id, code, name string
+		var limits map[string]interface{}
+		var features []string
+		if errScan := rows.Scan(&id, &code, &name, &limits, &features); errScan == nil {
+			plans = append(plans, map[string]interface{}{
+				"id":       id,
+				"code":     code,
+				"name":     name,
+				"limits":   limits,
+				"features": features,
+			})
+		}
+	}
+	return plans, nil
+}

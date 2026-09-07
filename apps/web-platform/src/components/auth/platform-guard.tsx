@@ -4,6 +4,8 @@ import { authClient } from "@/lib/auth-client";
 import { useBootstrap } from "@/api/hooks/use-bootstrap";
 import { BootstrapLoader } from "@/components/loading/app-loader";
 
+import { isPlatformHost, getCanonicalPlatformUrl, getCanonicalOrgUrl } from "@/lib/url-builder";
+
 export { BootstrapLoader as RouteLoadingScreen };
 
 interface PlatformGuardProps {
@@ -36,6 +38,14 @@ export function PlatformGuard({ children }: PlatformGuardProps) {
     user.role === "super_admin";
 
   if (isPlatformAuthorized) {
+    // Automatically redirect bare localhost / tenant domains to app.localhost:5002 / app.curexal.space
+    if (typeof window !== "undefined" && !isPlatformHost()) {
+      const canonicalPlatformUrl = getCanonicalPlatformUrl(location.pathname + location.search);
+      if (canonicalPlatformUrl !== location.pathname + location.search) {
+        window.location.replace(canonicalPlatformUrl);
+        return <BootstrapLoader message="Connecting to Platform Control Center (app.localhost)..." />;
+      }
+    }
     return children ? <>{children}</> : <Outlet />;
   }
 
@@ -59,7 +69,13 @@ export function PlatformGuard({ children }: PlatformGuardProps) {
     Boolean(user.workspaceId);
 
   if (isWorkspaceAuthorized) {
-    return <Navigate to="/workspace/dashboard" replace />;
+    const activeBranchSlug =
+      effectiveBootstrap?.branch?.slug ||
+      effectiveBootstrap?.branch?.code?.toLowerCase() ||
+      effectiveBootstrap?.availableBranches?.[0]?.slug ||
+      effectiveBootstrap?.workspace?.slug ||
+      "main";
+    return <Navigate to={`/${activeBranchSlug}/dashboard`} replace />;
   }
 
   // 5. Fallback if no usable context is authorized

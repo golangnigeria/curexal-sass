@@ -49,7 +49,7 @@ func (r *TenantRepository) CreateTenant(ctx context.Context, userID string, name
 	var orgOwnerID string
 	err = dbExec.QueryRow(ctx, `
 		SELECT user_id FROM organization.organization_memberships 
-		WHERE organization_id = $1 AND role_title = 'owner'
+		WHERE organization_id = $1 AND role = 'owner'
 		LIMIT 1
 	`, orgID).Scan(&orgOwnerID)
 	if err != nil {

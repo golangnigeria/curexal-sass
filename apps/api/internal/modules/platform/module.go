@@ -15,7 +15,9 @@ type Module struct {
 	AppService         *application.PlatformApplicationService
 	ConfigService      *application.PlatformConfigService
 	LaunchGateService  *application.LaunchGateService
+	NavigationService  *application.NavigationService
 	BootstrapHandler   *api.BootstrapHandler
+	NavigationHandler  *api.NavigationHandler
 	DiagnosticsHandler *api.DiagnosticsHandler
 	ConfigHandler      *api.PlatformConfigHandler
 	LaunchGateHandler  *api.LaunchGateHandler
@@ -27,9 +29,16 @@ func NewModule(s *server.Server) *Module {
 	oRepo := orgRepo.NewOrganizationRepository(s)
 	tRepo := orgRepo.NewTenantRepository(s)
 	sRepo := orgRepo.NewSubscriptionRepository(s)
+	navRepo := platformPostgres.NewNavigationRepository(s)
 
 	bootstrapHandler := api.NewBootstrapHandler(s, oRepo, tRepo, sRepo)
 	diagnosticsHandler := api.NewDiagnosticsHandler(s)
+
+	navService := application.NewNavigationService(navRepo, oRepo, tRepo, sRepo)
+	if s != nil && s.DB != nil && s.DB.Pool != nil {
+		navService.SetDBPool(s.DB.Pool)
+	}
+	navHandler := api.NewNavigationHandler(navService)
 
 	configRepo := platformPostgres.NewPlatformConfigRepository(s)
 	launchGateRepo := platformPostgres.NewLaunchGateRepository(s)
@@ -45,7 +54,9 @@ func NewModule(s *server.Server) *Module {
 		AppService:         appService,
 		ConfigService:      configService,
 		LaunchGateService:  launchGateService,
+		NavigationService:  navService,
 		BootstrapHandler:   bootstrapHandler,
+		NavigationHandler:  navHandler,
 		DiagnosticsHandler: diagnosticsHandler,
 		ConfigHandler:      configHandler,
 		LaunchGateHandler:  launchGateHandler,
@@ -55,6 +66,9 @@ func NewModule(s *server.Server) *Module {
 func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group) {
 	if m.BootstrapHandler != nil {
 		apiGroup.GET("/bootstrap", m.BootstrapHandler.GetBootstrap)
+	}
+	if m.NavigationHandler != nil {
+		apiGroup.GET("/navigation", m.NavigationHandler.GetNavigation)
 	}
 	if pltGroup != nil {
 		if m.DiagnosticsHandler != nil {

@@ -1,8 +1,6 @@
 package organization
 
 import (
-	"fmt"
-
 	auditPostgres "github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
 	identityHdl "github.com/golangnigeria/curexal/internal/modules/identity/handler"
 	"github.com/golangnigeria/curexal/internal/modules/organization/api"
@@ -45,6 +43,8 @@ type Module struct {
 	CatalogHandler     *api.OrganizationCatalogHandler
 	BrandingHandler    *api.OrganizationBrandingHandler
 	IntegrationHandler *api.OrganizationIntegrationHandler
+	RoleHandler        *api.OrganizationRoleHandler
+	StorageHandler     *api.StorageHandler
 }
 
 func NewModule(s *server.Server) *Module {
@@ -68,9 +68,6 @@ func NewModule(s *server.Server) *Module {
 	baseURL := ""
 	if s != nil && s.Config != nil {
 		masterKey = s.Config.Auth.SecretKey
-		if s.Config.Server.Port != "" {
-			baseURL = fmt.Sprintf("http://localhost:%s", s.Config.Server.Port)
-		}
 	}
 	var storageService storage.ObjectStorageService
 	if s != nil && s.Storage != nil {
@@ -83,7 +80,7 @@ func NewModule(s *server.Server) *Module {
 	docService := application.NewOrganizationDocumentApplicationService(s, docRepo, orgRepo, storageService)
 	setupService := application.NewOrganizationSetupService(orgRepo, auditRepo)
 	branchService := application.NewFacilityBranchService(branchRepo, orgRepo, auditRepo)
-	staffService := application.NewStaffMembershipService(staffRepo, orgRepo, branchRepo, auditRepo)
+	staffService := application.NewStaffMembershipService(staffRepo, orgRepo, branchRepo, auditRepo, s.Mailer)
 	catalogService := application.NewOrganizationCatalogService(catalogRepo, branchRepo, orgRepo, auditRepo)
 	brandingService := application.NewOrganizationBrandingService(brandingRepo, orgRepo, auditRepo, masterKey)
 	integrationService := application.NewOrganizationIntegrationService(integrationRepo, orgRepo, auditRepo, masterKey)
@@ -98,6 +95,8 @@ func NewModule(s *server.Server) *Module {
 	catalogHandler := api.NewOrganizationCatalogHandler(catalogService)
 	brandingHandler := api.NewOrganizationBrandingHandler(brandingService)
 	integrationHandler := api.NewOrganizationIntegrationHandler(integrationService)
+	roleHandler := api.NewOrganizationRoleHandler(s)
+	storageHandler := api.NewStorageHandler(storageService)
 
 	return &Module{
 		OrgRepo:            orgRepo,
@@ -129,10 +128,18 @@ func NewModule(s *server.Server) *Module {
 		CatalogHandler:     catalogHandler,
 		BrandingHandler:    brandingHandler,
 		IntegrationHandler: integrationHandler,
+		RoleHandler:        roleHandler,
+		StorageHandler:     storageHandler,
 	}
 }
 
 func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group, orgGroup *echo.Group, wspGroup *echo.Group, identityHandler *identityHdl.UserRoleHandler) {
+	if m.RoleHandler != nil {
+		apiGroup.GET("/organization/roles", m.RoleHandler.ListRoles)
+		apiGroup.POST("/organization/roles", m.RoleHandler.CreateRole, middleware.RequirePermission("users:write"))
+		apiGroup.PUT("/organization/roles/:id", m.RoleHandler.UpdateRole, middleware.RequirePermission("users:write"))
+	}
+
 	if m.IntegrationHandler != nil {
 		apiGroup.GET("/organization/api-keys", m.IntegrationHandler.ListAPIKeys)
 		apiGroup.POST("/organization/api-keys", m.IntegrationHandler.CreateAPIKey, middleware.RequirePermission("organization:integrations:write"))
@@ -168,6 +175,7 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group, orgG
 
 	if m.StaffHandler != nil {
 		apiGroup.GET("/organization/members", m.StaffHandler.ListMembers)
+		apiGroup.POST("/organization/members", m.StaffHandler.CreateMember, middleware.RequirePermission("users:write"))
 		apiGroup.POST("/organization/invitations", m.StaffHandler.CreateInvitation, middleware.RequirePermission("users:write"))
 		apiGroup.GET("/organization/invitations", m.StaffHandler.ListInvitations)
 		apiGroup.DELETE("/organization/invitations/:id", m.StaffHandler.RevokeInvitation, middleware.RequirePermission("users:write"))
@@ -177,11 +185,12 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group, orgG
 	}
 
 	if m.BranchHandler != nil {
-		apiGroup.GET("/organization/branches", m.BranchHandler.ListBranches)
-		apiGroup.POST("/organization/branches", m.BranchHandler.CreateBranch, middleware.RequirePermission("organization:branch:create"))
-		apiGroup.GET("/organization/branches/:id", m.BranchHandler.GetBranch)
-		apiGroup.PUT("/organization/branches/:id", m.BranchHandler.UpdateBranch, middleware.RequirePermission("organization:branch:update"))
-		apiGroup.DELETE("/organization/branches/:id", m.BranchHandler.DeactivateBranch, middleware.RequirePermission("organization:branch:deactivate"))
+		apiGroup.GET("/organization/branches", m.BranchHandler.ListBranches, middleware.RequirePermission("organization:view"))
+		apiGroup.POST("/organization/branches", m.BranchHandler.CreateBranch, middleware.RequirePermission("organization:branch:manage"))
+		apiGroup.GET("/organization/branches/:id", m.BranchHandler.GetBranch, middleware.RequirePermission("organization:view"))
+		apiGroup.PUT("/organization/branches/:id", m.BranchHandler.UpdateBranch, middleware.RequirePermission("organization:branch:manage"))
+		apiGroup.DELETE("/organization/branches/:id", m.BranchHandler.DeactivateBranch, middleware.RequirePermission("organization:branch:manage"))
+		apiGroup.POST("/organization/branches/:id/set-headquarters", m.BranchHandler.SetHeadquarters, middleware.RequirePermission("organization:branch:manage"))
 	}
 
 	if m.ProfileHandler != nil {
@@ -220,6 +229,18 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group, orgG
 	if m.DocHandler != nil {
 		apiGroup.POST("/organizations/:id/documents", m.DocHandler.UploadDocument, middleware.RequirePermission("organization:document:upload"))
 		apiGroup.GET("/organizations/:id/documents", m.DocHandler.ListDocuments, middleware.RequirePermission("organization:document:read"))
+		apiGroup.GET("/organizations/:id/documents/:docID/preview", m.DocHandler.PreviewDocument, middleware.RequirePermission("organization:document:read"))
+		apiGroup.GET("/organizations/:id/documents/:docID/download", m.DocHandler.DownloadDocument, middleware.RequirePermission("organization:document:read"))
+
+		apiGroup.POST("/organization/documents", m.DocHandler.UploadDocument, middleware.RequirePermission("organization:document:upload"))
+		apiGroup.GET("/organization/documents", m.DocHandler.ListDocuments, middleware.RequirePermission("organization:document:read"))
+		apiGroup.GET("/organization/documents/:docID/preview", m.DocHandler.PreviewDocument, middleware.RequirePermission("organization:document:read"))
+		apiGroup.GET("/organization/documents/:docID/download", m.DocHandler.DownloadDocument, middleware.RequirePermission("organization:document:read"))
+	}
+
+	if m.StorageHandler != nil {
+		apiGroup.GET("/storage/download", m.StorageHandler.DownloadFile)
+		apiGroup.GET("/storage/preview", m.StorageHandler.DownloadFile)
 	}
 
 	if pltGroup != nil {
@@ -230,6 +251,8 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, pltGroup *echo.Group, orgG
 			pltGroup.POST("/organizations/:id/verify", m.ProfileHandler.VerifyOrganization)
 		}
 		if m.DocHandler != nil {
+			pltGroup.GET("/documents/:docID/preview", m.DocHandler.PreviewDocument, middleware.RequirePermission("organization:document:read"))
+			pltGroup.GET("/documents/:docID/download", m.DocHandler.DownloadDocument, middleware.RequirePermission("organization:document:read"))
 			pltGroup.PATCH("/documents/:docID/review", m.DocHandler.ReviewDocument, middleware.RequirePermission("organization:document:review"))
 			pltGroup.POST("/organizations/:id/approve", m.DocHandler.ApproveOrganization, middleware.RequirePermission("organization:verify"))
 			pltGroup.POST("/organizations/:id/reject", m.DocHandler.RejectOrganization, middleware.RequirePermission("organization:verify"))

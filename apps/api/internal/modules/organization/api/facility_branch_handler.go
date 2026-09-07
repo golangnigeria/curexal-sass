@@ -155,3 +155,29 @@ func (h *FacilityBranchHandler) DeactivateBranch(c echo.Context) error {
 
 	return response.SuccessEcho(c, http.StatusOK, map[string]string{"message": "Facility branch deactivated successfully"})
 }
+
+func (h *FacilityBranchHandler) SetHeadquarters(c echo.Context) error {
+	principal := middleware.GetPrincipal(c)
+	if principal == nil {
+		return response.UnauthorizedEcho(c, "Authentication required")
+	}
+
+	branchIDParam := c.Param("id")
+	branchUUID, errParse := uuid.Parse(branchIDParam)
+	if errParse != nil {
+		return response.BadRequestEcho(c, "Invalid branch ID format")
+	}
+
+	updated, err := h.branchService.SetHeadquarters(c.Request().Context(), principal, branchUUID)
+	if err != nil {
+		if errors.Is(err, domain.ErrFacilityBranchNotFound) {
+			return response.NotFoundEcho(c, err.Error())
+		}
+		if errors.Is(err, domain.ErrUnauthorizedTenantAccess) {
+			return response.ForbiddenEcho(c, err.Error())
+		}
+		return response.BadRequestEcho(c, err.Error())
+	}
+
+	return response.SuccessEcho(c, http.StatusOK, updated)
+}

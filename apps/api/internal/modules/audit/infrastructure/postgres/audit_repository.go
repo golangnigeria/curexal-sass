@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
@@ -78,6 +79,24 @@ func generateAuditSignature(tenantID, actorID *string, action, severity, status 
 	return "sha256:" + hex.EncodeToString(hash[:])
 }
 
+func generateAuditRecordHash(orgID, actorID, patientID *string, action string, occurredAt time.Time, payload string) string {
+	oID := ""
+	if orgID != nil {
+		oID = *orgID
+	}
+	aID := ""
+	if actorID != nil {
+		aID = *actorID
+	}
+	pID := ""
+	if patientID != nil {
+		pID = *patientID
+	}
+	raw := fmt.Sprintf("%s|%s|%s|%s|%d|%s", oID, aID, pID, action, occurredAt.UnixNano(), payload)
+	hash := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(hash[:])
+}
+
 type AuditRepository struct {
 	server *server.Server
 }
@@ -94,7 +113,11 @@ func (r *AuditRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Au
 			al.occurred_at, 
 			al.organization_id, 
 			al.tenant_id, 
+			al.facility_branch_id,
+			al.patient_id,
 			al.actor_id, 
+			al.actor_email,
+			al.is_break_glass,
 			COALESCE(u.name, al.actor_name) AS actor_name,
 			COALESCE(al.actor_role, 'User') AS actor_role,
 			al.action, 
@@ -117,7 +140,9 @@ func (r *AuditRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Au
 			al.after_state, 
 			al.reason, 
 			al.approval_reference, 
-			al.digital_signature
+			al.digital_signature,
+			al.prev_record_hash,
+			al.record_hash
 		FROM audit.audit_events al
 		LEFT JOIN identity.users u ON u.id = al.actor_id
 		WHERE al.id = @id
@@ -225,33 +250,63 @@ func (r *AuditRepository) Create(
 		}
 	}
 
+	var facilityBranchUUID *uuid.UUID
+	if payload.FacilityBranchID != nil && *payload.FacilityBranchID != "" {
+		if pUID, err := uuid.Parse(*payload.FacilityBranchID); err == nil {
+			facilityBranchUUID = &pUID
+		}
+	}
+
+	var patientUUID *uuid.UUID
+	if payload.PatientID != nil && *payload.PatientID != "" {
+		if pUID, err := uuid.Parse(*payload.PatientID); err == nil {
+			patientUUID = &pUID
+		}
+	}
+
+	recHash := payload.RecordHash
+	if recHash == nil || *recHash == "" {
+		h := generateAuditRecordHash(tenantID, actorID, payload.PatientID, action, time.Now().UTC(), "")
+		recHash = &h
+	}
+
 	stmt := `
 		INSERT INTO audit.audit_events (
-			organization_id, tenant_id, actor_id, actor_name, actor_role,
+			organization_id, tenant_id, facility_branch_id, patient_id,
+			actor_id, actor_name, actor_email, actor_role, is_break_glass,
 			action, resource_type, resource_id, resource_name, event_category,
 			severity, status, ip_address, device, operating_system,
 			browser, user_agent, hostname, request_id, session_id,
-			trace_id, before_state, after_state, reason, approval_reference, digital_signature
+			trace_id, before_state, after_state, reason, approval_reference,
+			digital_signature, prev_record_hash, record_hash
 		) VALUES (
-			@organization_id, @tenant_id, @actor_id, @actor_name, @actor_role,
+			@organization_id, @tenant_id, @facility_branch_id, @patient_id,
+			@actor_id, @actor_name, @actor_email, @actor_role, @is_break_glass,
 			@action, @resource_type, @resource_id, @resource_name, @event_category,
 			@severity, @status, @ip_address, @device, @operating_system,
 			@browser, @user_agent, @hostname, @request_id, @session_id,
-			@trace_id, @before_state, @after_state, @reason, @approval_reference, @digital_signature
+			@trace_id, @before_state, @after_state, @reason, @approval_reference,
+			@digital_signature, @prev_record_hash, @record_hash
 		)
 		RETURNING 
-			id, occurred_at, organization_id, tenant_id, actor_id, actor_name, actor_role,
+			id, occurred_at, organization_id, tenant_id, facility_branch_id, patient_id,
+			actor_id, actor_name, actor_email, actor_role, is_break_glass,
 			action, resource_type, resource_id, resource_name, event_category, severity, status,
 			ip_address, device, operating_system, browser, user_agent, hostname, request_id,
-			session_id, trace_id, before_state, after_state, reason, approval_reference, digital_signature
+			session_id, trace_id, before_state, after_state, reason, approval_reference,
+			digital_signature, prev_record_hash, record_hash
 	`
 
 	args := pgx.NamedArgs{
 		"organization_id":    resolvedOrgID,
 		"tenant_id":          resolvedTenantID,
+		"facility_branch_id": facilityBranchUUID,
+		"patient_id":         patientUUID,
 		"actor_id":           actorID,
 		"actor_name":         actorName,
+		"actor_email":        payload.ActorEmail,
 		"actor_role":         actorRole,
+		"is_break_glass":     payload.IsBreakGlass,
 		"action":             action,
 		"resource_type":      resourceType,
 		"resource_id":        resourceID,
@@ -273,6 +328,8 @@ func (r *AuditRepository) Create(
 		"reason":             reason,
 		"approval_reference": approvalReference,
 		"digital_signature":  digitalSignature,
+		"prev_record_hash":   payload.PrevRecordHash,
+		"record_hash":        recHash,
 	}
 
 	rows, err := dbExec.Query(ctx, stmt, args)
@@ -352,9 +409,14 @@ func (r *AuditRepository) ListTenantLogs(ctx context.Context, tenantID *uuid.UUI
 		SELECT 
 			al.id, 
 			al.occurred_at, 
+			al.created_at,
 			al.organization_id, 
 			al.tenant_id, 
+			al.facility_branch_id,
+			al.patient_id,
 			al.actor_id, 
+			al.actor_email,
+			al.is_break_glass,
 			COALESCE(u.name, al.actor_name) AS actor_name,
 			COALESCE(al.actor_role, 'User') AS actor_role,
 			al.action, 
@@ -377,7 +439,9 @@ func (r *AuditRepository) ListTenantLogs(ctx context.Context, tenantID *uuid.UUI
 			al.after_state, 
 			al.reason, 
 			al.approval_reference, 
-			al.digital_signature
+			al.digital_signature,
+			al.prev_record_hash,
+			al.record_hash
 		FROM audit.audit_events al
 		LEFT JOIN identity.users u ON u.id = al.actor_id
 		WHERE %s
@@ -459,10 +523,12 @@ func (r *AuditRepository) ListPlatformLogs(ctx context.Context, orgID *uuid.UUID
 
 	stmt := fmt.Sprintf(`
 		SELECT 
-			id, occurred_at, organization_id, tenant_id, actor_id, actor_name, actor_role,
+			id, occurred_at, created_at, organization_id, tenant_id, facility_branch_id, patient_id,
+			actor_id, actor_name, actor_email, actor_role, is_break_glass,
 			action, resource_type, resource_id, resource_name, event_category, severity, status,
 			ip_address, device, operating_system, browser, user_agent, hostname, request_id,
-			session_id, trace_id, before_state, after_state, reason, approval_reference, digital_signature
+			session_id, trace_id, before_state, after_state, reason, approval_reference,
+			digital_signature, prev_record_hash, record_hash
 		FROM audit.audit_events
 		WHERE %s
 		ORDER BY occurred_at DESC
@@ -577,4 +643,70 @@ func (r *AuditRepository) ListAll(ctx context.Context, tenantID *uuid.UUID, orgI
 	}
 	return r.ListPlatformLogs(ctx, orgID, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, limit, offset)
 }
+
+// ListPatientDisclosures returns all audit records for a given patient (HIPAA § 164.528 Accounting of Disclosures).
+func (r *AuditRepository) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]domain.AuditLog, error) {
+	dbExec := r.server.DB.Conn(ctx)
+
+	if limit <= 0 {
+		limit = 50
+	}
+
+	stmt := `
+		SELECT 
+			al.id, 
+			al.occurred_at, 
+			al.organization_id, 
+			al.tenant_id, 
+			al.facility_branch_id,
+			al.patient_id,
+			al.actor_id, 
+			al.actor_email,
+			al.is_break_glass,
+			COALESCE(u.name, al.actor_name) AS actor_name,
+			COALESCE(al.actor_role, 'User') AS actor_role,
+			al.action, 
+			al.resource_type, 
+			al.resource_id, 
+			al.resource_name, 
+			al.event_category, 
+			al.severity, 
+			al.status, 
+			al.ip_address, 
+			al.device, 
+			al.operating_system, 
+			al.browser, 
+			al.user_agent, 
+			al.hostname, 
+			al.request_id, 
+			al.session_id, 
+			al.trace_id, 
+			al.before_state, 
+			al.after_state, 
+			al.reason, 
+			al.approval_reference, 
+			al.digital_signature,
+			al.prev_record_hash,
+			al.record_hash
+		FROM audit.audit_events al
+		LEFT JOIN identity.users u ON u.id = al.actor_id
+		WHERE al.patient_id = $1
+		ORDER BY al.occurred_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := dbExec.Query(ctx, stmt, patientID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query patient audit disclosures: %w", err)
+	}
+	defer rows.Close()
+
+	logs, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.AuditLog])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect patient disclosure logs: %w", err)
+	}
+
+	return logs, nil
+}
+
 

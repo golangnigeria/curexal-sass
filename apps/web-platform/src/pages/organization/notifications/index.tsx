@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { organizationService } from "@/api/services/organization.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 export default function OrganizationNotificationsPage() {
@@ -23,25 +25,75 @@ export default function OrganizationNotificationsPage() {
   const [smtpHost, setSmtpHost] = useState("smtp.sendgrid.net");
   const [smtpPort, setSmtpPort] = useState("587");
   const [smtpUser, setSmtpUser] = useState("apikey");
-  const [smtpPass, setSmtpPass] = useState("••••••••••••••••");
+  const [smtpPass, setSmtpPass] = useState("");
   const [senderEmail, setSenderEmail] = useState("notifications@curexalhealth.com");
   const [senderName, setSenderName] = useState("Diagnostic Center Laboratory");
 
   // SMS Gateway
   const [smsProvider, setSmsProvider] = useState("termii");
-  const [smsApiKey, setSmsApiKey] = useState("••••••••••••••••••••••••");
+  const [smsApiKey, setSmsApiKey] = useState("");
   const [smsSenderId, setSmsSenderId] = useState("CUREXAL-LAB");
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadConfigs() {
+      try {
+        const configs = await organizationService.getNotificationConfigs();
+        if (isMounted && configs) {
+          if (configs.smtp) {
+            setSmtpHost(configs.smtp.host || "smtp.sendgrid.net");
+            setSmtpPort(String(configs.smtp.port || "587"));
+            setSmtpUser(configs.smtp.user || "apikey");
+            setSenderEmail(configs.smtp.fromEmail || "notifications@curexalhealth.com");
+            setSenderName(configs.smtp.fromName || "Diagnostic Center Laboratory");
+          }
+          if (configs.sms) {
+            setSmsProvider(configs.sms.provider || "termii");
+            setSmsSenderId(configs.sms.senderId || "CUREXAL-LAB");
+          }
+        }
+      } catch {
+        // Fallback default
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadConfigs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setIsSaving(false);
-    toast.success("Notification Channel Settings Saved!", {
-      description: "Automated SMS and email dispatches will use these credentials.",
-    });
+    try {
+      await organizationService.saveNotificationConfig({
+        smtp: {
+          host: smtpHost,
+          port: parseInt(smtpPort, 10) || 587,
+          user: smtpUser,
+          pass: smtpPass || undefined,
+          fromEmail: senderEmail,
+          fromName: senderName,
+        },
+        sms: {
+          provider: smsProvider,
+          apiKey: smsApiKey || undefined,
+          senderId: smsSenderId,
+        },
+      });
+      toast.success("Notification Channel Settings Saved!", {
+        description: "Automated SMS and email dispatches will use these credentials.",
+      });
+    } catch (err: any) {
+      toast.error("Failed to save notification settings: " + (err.message || "Network error"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -70,7 +122,7 @@ export default function OrganizationNotificationsPage() {
             disabled={isSaving}
             className="text-xs h-9 gap-1.5 bg-primary text-primary-foreground shadow"
           >
-            <Save className="w-3.5 h-3.5" />
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {isSaving ? "Saving..." : "Save Settings"}
           </Button>
         </div>
@@ -98,22 +150,17 @@ export default function OrganizationNotificationsPage() {
         </button>
       </div>
 
-      {activeTab === "channels" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Custom SMTP Email Provider */}
+      {activeTab === "channels" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Custom SMTP Email */}
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-primary" />
-                  Custom SMTP Email Provider
-                </CardTitle>
-                <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                  Verified
-                </Badge>
-              </div>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Custom SMTP Mail Server
+              </CardTitle>
               <CardDescription className="text-xs">
-                Deliver patient test results and invoices from your own custom email domain.
+                Deliver clinical lab reports and patient discharge summaries from your own domain.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -134,14 +181,20 @@ export default function OrganizationNotificationsPage() {
                   <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="text-xs h-9 font-mono" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Password / Secret</Label>
-                  <Input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} className="text-xs h-9 font-mono" />
+                  <Label className="text-xs font-medium">Password / Secret Token</Label>
+                  <Input
+                    type="password"
+                    placeholder="••••••••••••••••"
+                    value={smtpPass}
+                    onChange={(e) => setSmtpPass(e.target.value)}
+                    className="text-xs h-9 font-mono"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Sender Email</Label>
+                  <Label className="text-xs font-medium">Sender From Email</Label>
                   <Input value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} className="text-xs h-9" />
                 </div>
                 <div className="space-y-1.5">
@@ -155,84 +208,60 @@ export default function OrganizationNotificationsPage() {
           {/* SMS Notification Gateway */}
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  SMS Notification Gateway
-                </CardTitle>
-                <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                  Connected
-                </Badge>
-              </div>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                SMS & WhatsApp Gateway
+              </CardTitle>
               <CardDescription className="text-xs">
-                Dispatch automated SMS alerts when diagnostic results are ready for download.
+                Send appointment reminders and critical panic test result SMS alerts directly to patient mobile lines.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">SMS Provider</Label>
-                <select
-                  value={smsProvider}
-                  onChange={(e) => setSmsProvider(e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="termii">Termii (African Telcos & DND Bypassing)</option>
-                  <option value="twilio">Twilio (Global Telephony)</option>
-                  <option value="africastalking">Africa's Talking</option>
-                </select>
+                <Label className="text-xs font-medium">SMS Provider Gateway</Label>
+                <Input value={smsProvider} onChange={(e) => setSmsProvider(e.target.value)} className="text-xs h-9 capitalize" />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Provider API Key / Secret</Label>
-                <Input type="password" value={smsApiKey} onChange={(e) => setSmsApiKey(e.target.value)} className="text-xs h-9 font-mono" />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Registered Sender ID (Alphanumeric)</Label>
+                <Label className="text-xs font-medium">Registered Sender ID</Label>
                 <Input value={smsSenderId} onChange={(e) => setSmsSenderId(e.target.value)} className="text-xs h-9 font-mono uppercase" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Gateway API Secret Key</Label>
+                <Input
+                  type="password"
+                  placeholder="••••••••••••••••••••••••"
+                  value={smsApiKey}
+                  onChange={(e) => setSmsApiKey(e.target.value)}
+                  className="text-xs h-9 font-mono"
+                />
               </div>
             </CardContent>
           </Card>
         </div>
-      ) : (
-        /* Message Templates List */
-        <div className="space-y-4">
-          {[
-            {
-              key: "lab.results_ready",
-              title: "Laboratory Diagnostic Results Ready",
-              channel: "SMS & Email",
-              preview: "Dear {{patient_name}}, your {{test_name}} results from {{org_name}} are ready. Download: {{result_link}}",
-            },
-            {
-              key: "radiology.scan_scheduled",
-              title: "Radiology Scan Appointment Confirmation",
-              channel: "SMS",
-              preview: "Hello {{patient_name}}, your {{modality}} appointment is scheduled on {{appointment_time}} at {{branch_name}}.",
-            },
-            {
-              key: "billing.invoice_receipt",
-              title: "Patient Receipt & Payment Confirmation",
-              channel: "Email",
-              preview: "Payment received: {{currency}} {{amount_paid}} for Invoice {{invoice_number}}. Thank you for choosing {{org_name}}.",
-            },
-          ].map((t) => (
-            <Card key={t.key} className="border-border shadow-sm p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="space-y-1 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-foreground">{t.title}</span>
-                  <Badge variant="outline" className="text-[9px] font-mono">{t.channel}</Badge>
-                </div>
-                <p className="text-[11px] font-mono text-muted-foreground bg-secondary/30 p-2 rounded-lg border border-border/50">
-                  {t.preview}
-                </p>
+      )}
+
+      {activeTab === "templates" && (
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold">Automated Clinical Alert Templates</CardTitle>
+            <CardDescription className="text-xs">
+              System variables like <code className="text-primary">{`{{patient_name}}`}</code>, <code className="text-primary">{`{{test_name}}`}</code>, and <code className="text-primary">{`{{accession_number}}`}</code> are populated automatically at runtime.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-xl border border-border bg-card/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground">Laboratory Result Ready Notification</span>
+                <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">SMS & Email</Badge>
               </div>
-              <Button size="sm" variant="outline" className="text-xs h-8 shrink-0">
-                Edit Template
-              </Button>
-            </Card>
-          ))}
-        </div>
+              <p className="text-xs font-mono text-muted-foreground">
+                Dear {`{{patient_name}}`}, your medical laboratory results ({`{{test_name}}`}) from {`{{facility_name}}`} are now finalized and available. Access your secure PDF here: {`{{report_link}}`}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -8,14 +8,24 @@ import (
 )
 
 // ResolvePrincipal resolves identity from incoming requests following the standard resolution pipeline:
-// Cookie -> Authorization Bearer -> X-Access-Token -> X-User-ID
+// Cookie -> Authorization Bearer -> X-Access-Token -> Verified JWT Claims
 func ResolvePrincipal(c echo.Context, cfg *config.Config) *AuthenticatedPrincipal {
 	return ResolvePrincipalWithProvider(c, cfg, nil)
 }
 
+// ResolvePrincipalWithVerifier resolves principal identity and validates tenant membership using TenantMembershipVerifier.
+func ResolvePrincipalWithVerifier(c echo.Context, cfg *config.Config, verifier TenantMembershipVerifier) *AuthenticatedPrincipal {
+	return ResolvePrincipalWithAll(c, cfg, nil, verifier)
+}
+
 // ResolvePrincipalWithProvider resolves principal identity using an optional IdentityProvider implementation.
 func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider IdentityProvider) *AuthenticatedPrincipal {
-	// Stage 1: Try IdentityProvider session verification (MockProvider)
+	return ResolvePrincipalWithAll(c, cfg, provider, nil)
+}
+
+// ResolvePrincipalWithAll resolves principal identity using provider and verifier.
+func ResolvePrincipalWithAll(c echo.Context, cfg *config.Config, provider IdentityProvider, verifier TenantMembershipVerifier) *AuthenticatedPrincipal {
+	// Stage 1: Try IdentityProvider session verification
 	if provider != nil {
 		var sessionToken string
 		if customSession := c.Request().Header.Get("X-Session-Token"); customSession != "" {
@@ -25,11 +35,22 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 		if sessionToken != "" {
 			sess, err := provider.Authenticate(c.Request().Context(), sessionToken)
 			if err == nil && sess != nil && sess.Active {
-				tenantID := c.Request().Header.Get("X-Tenant-ID")
-				role := c.Request().Header.Get("X-User-Role")
-				if role == "" {
-					role = "member"
+				tenantID := resolveRequestTenantID(c)
+				role := "member"
+
+				// Server-side membership verification
+				if verifier != nil && tenantID != "" {
+					valid, memberRole, errVer := verifier.VerifyMembership(c.Request().Context(), sess.IdentityID, tenantID)
+					if errVer == nil && valid {
+						if memberRole != "" {
+							role = memberRole
+						}
+					} else {
+						// Not a verified member of the requested tenant
+						tenantID = ""
+					}
 				}
+
 				p := &AuthenticatedPrincipal{
 					UserID:    sess.IdentityID,
 					SessionID: sess.ID,
@@ -93,7 +114,7 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 		}
 	}
 
-	// If token found, parse JWT claims
+	// If token found, parse and cryptographically verify JWT claims
 	if tokenStr != "" {
 		claims, err := ParseAccessJWT(cfg, tokenStr)
 		if err == nil && claims != nil && claims.Subject != "" {
@@ -105,14 +126,15 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 			if claims.OrganizationRole != nil {
 				orgRole = *claims.OrganizationRole
 			}
-			tenantID := c.Request().Header.Get("X-Tenant-ID")
-			role := c.Request().Header.Get("X-User-Role")
-			if role == "" {
-				if platformRole != "" {
-					role = platformRole
-				} else if orgRole != "" {
-					role = orgRole
-				}
+
+			tenantID := resolveRequestTenantID(c)
+
+			// Security: Role is derived STRICTLY from verified cryptographic claims, NEVER from client headers
+			role := "member"
+			if platformRole != "" {
+				role = platformRole
+			} else if orgRole != "" {
+				role = orgRole
 			}
 
 			isStaff := claims.IsPlatformAdmin
@@ -125,18 +147,43 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 				}
 			}
 
-			isSuperAdmin := claims.IsPlatformAdmin || platformRole == "super_admin" || role == "super_admin"
+			// Security: Super admin privilege requires verified claim or server platform role, NEVER client header
+			isSuperAdmin := claims.IsPlatformAdmin || platformRole == "super_admin"
+
+			// Server-side tenant membership verification (unless user is platform super admin)
+			if verifier != nil && tenantID != "" && !isSuperAdmin {
+				valid, memberRole, errVer := verifier.VerifyMembership(c.Request().Context(), claims.Subject, tenantID)
+				if errVer == nil && valid {
+					if memberRole != "" && orgRole == "" {
+						role = memberRole
+						orgRole = memberRole
+					}
+				} else {
+					// User is not an active verified member of the requested tenant
+					tenantID = ""
+				}
+			}
+
 			effectiveOrgRole := orgRole
 			if effectiveOrgRole == "" {
 				effectiveOrgRole = role
 			}
+
+			if tenantID == "" && claims.OrganizationID != "" {
+				tenantID = claims.OrganizationID
+			}
+			branchID := claims.ActiveBranchID
+
 			p := &AuthenticatedPrincipal{
-				UserID:    claims.Subject,
-				SessionID: claims.SessionID,
-				TenantID:  tenantID,
-				Role:      role,
+				UserID:         claims.Subject,
+				SessionID:      claims.SessionID,
+				TenantID:       tenantID,
+				OrganizationID: tenantID,
+				ActiveBranchID: branchID,
+				Role:           role,
 				Identity: IdentityVector{
 					UserID: claims.Subject,
+					Email:  claims.Email,
 				},
 				Platform: PlatformVector{
 					IsPlatformStaff: isStaff,
@@ -175,11 +222,14 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 		}
 	}
 
-	// 3. Fallback to X-User-ID header (for internal service calls/testing if enabled)
-	if cfg.Auth.AllowTestHeaders {
+	// 3. Fallback to X-User-ID header (STRICTLY for internal test environments when explicitly enabled; disabled in production)
+	if cfg.Auth.AllowTestHeaders && cfg.Primary.Env != "production" {
 		if internalUserID := c.Request().Header.Get("X-User-ID"); internalUserID != "" {
-			tenantID := c.Request().Header.Get("X-Tenant-ID")
+			tenantID := resolveRequestTenantID(c)
 			role := c.Request().Header.Get("X-User-Role")
+			if role == "" {
+				role = "member"
+			}
 			isStaff := role == "super_admin" || role == "platform_staff" || role == "super_support_agent" || role == "super_sales_staff"
 			isSuperAdmin := role == "super_admin"
 			p := &AuthenticatedPrincipal{
@@ -228,3 +278,55 @@ func ResolvePrincipalWithProvider(c echo.Context, cfg *config.Config, provider I
 
 	return nil
 }
+
+func resolveRequestTenantID(c echo.Context) string {
+	if c == nil {
+		return ""
+	}
+
+	// 1. Direct Tenant / Organization Headers
+	if tid := c.Request().Header.Get("X-Tenant-ID"); tid != "" {
+		return tid
+	}
+	if orgID := c.Request().Header.Get("X-Organization-ID"); orgID != "" {
+		return orgID
+	}
+	if activeTid := c.Request().Header.Get("X-Active-Tenant-ID"); activeTid != "" {
+		return activeTid
+	}
+
+	// 2. Domain / Subdomain Resolved Organization ID
+	if resolvedOrgID := GetResolvedOrgID(c); resolvedOrgID != "" {
+		return resolvedOrgID
+	}
+	if val := c.Get(ResolvedOrgIDKey); val != nil {
+		if s, ok := val.(string); ok && s != "" {
+			return s
+		}
+	}
+
+	// 3. Query Parameter Overrides (e.g. ?organization_id=... or ?tenant_id=...)
+	if qOrgID := c.QueryParam("organization_id"); qOrgID != "" {
+		return qOrgID
+	}
+	if qTenantID := c.QueryParam("tenant_id"); qTenantID != "" {
+		return qTenantID
+	}
+	if qOrg := c.QueryParam("org_id"); qOrg != "" {
+		return qOrg
+	}
+
+	// 4. Session / Active Org Cookie Fallbacks
+	if cookie, err := c.Cookie("active_org_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+	if cookie, err := c.Cookie("active_organization_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+	if cookie, err := c.Cookie("tenant_id"); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+
+	return ""
+}
+

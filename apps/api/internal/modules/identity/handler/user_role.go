@@ -106,9 +106,9 @@ func (h *UserRoleHandler) GetUsers(c echo.Context) error {
 	if !isOrgLevelManager && userID != "" {
 		var memberRole string
 		errRole := h.server.DB.Conn(ctx).QueryRow(ctx, `
-			SELECT m.role_title
+			SELECT m.role
 			FROM organization.organization_memberships m
-			WHERE m.user_id = $1 AND m.role_title IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager')
+			WHERE m.user_id = $1 AND m.role IN ('owner', 'org_admin', 'admin', 'org_regional_manager', 'org_quality_manager', 'org_finance_manager', 'org_hr_manager')
 			ORDER BY m.created_at ASC
 			LIMIT 1
 		`, userID).Scan(&memberRole)
@@ -214,55 +214,38 @@ func (h *UserRoleHandler) GetMe(c echo.Context) error {
 	}
 
 	var activeTenantID string
+	tenantName, _ := c.Get(middleware.TenantNameKey).(string)
+	tenantSlug, _ := c.Get(middleware.TenantSlugKey).(string)
 	sessionID := middleware.GetSessionID(c)
 
-	// Try resolving from request subdomain first
+	// Try resolving organization and default branch from request subdomain or domain context
 	subdomain := middleware.GetSubdomainFromHeaders(c, h.server.Config.ResolveCookieDomain())
 	if subdomain != "" {
-		var subTenantID string
-		err := h.server.DB.Pool.QueryRow(ctx, `
-			SELECT id::text 
-			FROM organization.facility_branches 
-			WHERE slug = $1
-		`, subdomain).Scan(&subTenantID)
-		if err == nil {
-			if tenantUUID, errParse := uuid.Parse(subTenantID); errParse == nil {
-				var hasAccess bool
-				if u.IsPlatformAdmin {
-					hasAccess = true
-				} else {
-					err = h.server.DB.Pool.QueryRow(ctx, `
-						SELECT EXISTS(
-							SELECT 1 FROM organization.organization_memberships 
-							WHERE user_id = $1 AND tenant_id = $2 AND is_active = TRUE
-						)
-					`, userID, tenantUUID).Scan(&hasAccess)
-					if err == nil && hasAccess {
-						hasAccess = true
-					} else {
-						hasAccess = false
-					}
+		var orgID string
+		_ = h.server.DB.Pool.QueryRow(ctx, `
+			SELECT o.id::text 
+			FROM organization.organizations o
+			LEFT JOIN organization.organization_domains od ON od.organization_id = o.id
+			WHERE o.slug = $1 OR od.hostname = $1
+			LIMIT 1
+		`, subdomain).Scan(&orgID)
+
+		if orgID != "" {
+			var branchID, bName, bSlug string
+			errBranch := h.server.DB.Pool.QueryRow(ctx, `
+				SELECT b.id::text, b.name, b.slug
+				FROM organization.facility_branches b
+				WHERE b.organization_id = $1 AND b.status = 'ACTIVE'
+				ORDER BY b.is_headquarters DESC, b.created_at ASC
+				LIMIT 1
+			`, orgID).Scan(&branchID, &bName, &bSlug)
+			if errBranch == nil && branchID != "" {
+				activeTenantID = branchID
+				if tenantName == "" {
+					tenantName = bName
 				}
-
-				if hasAccess {
-					activeTenantID = subTenantID
-
-					// Sync session context if it differs
-					atc, _ := c.Get("active_tenant_context").(*model.ActiveTenantContext)
-					if atc == nil || atc.TenantID != activeTenantID {
-						newAtc := &model.ActiveTenantContext{
-							TenantID: activeTenantID,
-						}
-						_, _ = h.server.DB.Pool.Exec(ctx, `
-							UPDATE session 
-							SET active_tenant_context = $1, updated_at = CURRENT_TIMESTAMP 
-							WHERE id = $2
-						`, newAtc, sessionID)
-
-						// Invalidate Redis session cache
-						cacheKey := "session:" + sessionID
-						_ = h.server.Redis.Del(ctx, cacheKey)
-					}
+				if tenantSlug == "" {
+					tenantSlug = bSlug
 				}
 			}
 		}
@@ -271,8 +254,6 @@ func (h *UserRoleHandler) GetMe(c echo.Context) error {
 	if activeTenantID == "" {
 		activeTenantID = middleware.GetActiveTenantID(c)
 	}
-	tenantName, _ := c.Get(middleware.TenantNameKey).(string)
-	tenantSlug, _ := c.Get(middleware.TenantSlugKey).(string)
 
 	var availableTenants []model.TenantSelectorItem = []model.TenantSelectorItem{}
 	hasPlatformStaffRole := u.PlatformRole != nil && (*u.PlatformRole == "super_admin" || *u.PlatformRole == "super_support_agent" || *u.PlatformRole == "super_sales_staff" || *u.PlatformRole == "super_compliance_officer")
@@ -365,11 +346,12 @@ func (h *UserRoleHandler) GetMe(c echo.Context) error {
 	// Query user organization memberships from database
 	var orgSummaries []model.OrganizationSummary = []model.OrganizationSummary{}
 	rowsOrgs, errOrgs := h.server.DB.Pool.Query(ctx, `
-		SELECT o.id::text, o.name, o.slug, m.role_title
+		SELECT o.id::text, o.name, o.slug, 
+		       COALESCE(NULLIF(NULLIF(m.role, 'member'), ''), NULLIF(NULLIF(m.role_title, 'member'), ''), m.role, m.role_title, 'member')
 		FROM organization.organization_memberships m
 		JOIN organization.organizations o ON o.id = m.organization_id
-		WHERE m.user_id = $1
-		ORDER BY m.created_at ASC
+		WHERE m.user_id::text = $1 AND m.is_active = TRUE
+		ORDER BY (m.role IN ('owner', 'org_admin') OR m.role_title IN ('owner', 'org_admin')) DESC, m.created_at ASC
 	`, userID)
 	if errOrgs == nil {
 		defer rowsOrgs.Close()
@@ -377,17 +359,17 @@ func (h *UserRoleHandler) GetMe(c echo.Context) error {
 			var os model.OrganizationSummary
 			if errScan := rowsOrgs.Scan(&os.ID, &os.Name, &os.Slug, &os.Role); errScan == nil {
 				orgSummaries = append(orgSummaries, os)
-				if (platformRole == nil || *platformRole == "" || *platformRole == "member") && (os.Role == "owner" || os.Role == "admin") {
-					ownerRole := os.Role
-					platformRole = &ownerRole
-				}
 			}
 		}
 	}
 
 	effectiveWorkspaceRole := branchRoleName
-	if effectiveWorkspaceRole == nil || *effectiveWorkspaceRole == "" {
+	if (effectiveWorkspaceRole == nil || *effectiveWorkspaceRole == "" || *effectiveWorkspaceRole == "member") && len(orgSummaries) > 0 && orgSummaries[0].Role != "" && orgSummaries[0].Role != "member" {
+		effectiveWorkspaceRole = &orgSummaries[0].Role
+	} else if (effectiveWorkspaceRole == nil || *effectiveWorkspaceRole == "") && platformRole != nil && (*platformRole == "super_admin" || *platformRole == "platform_admin" || *platformRole == "platform_staff") {
 		effectiveWorkspaceRole = platformRole
+	} else if (effectiveWorkspaceRole == nil || *effectiveWorkspaceRole == "") && len(orgSummaries) > 0 && orgSummaries[0].Role != "" {
+		effectiveWorkspaceRole = &orgSummaries[0].Role
 	}
 
 	var activeOrgCtx model.ActiveOrganizationContext
@@ -454,6 +436,7 @@ func (h *UserRoleHandler) GetMe(c echo.Context) error {
 				MiddleName:    middleName,
 				EmailVerified: u.EmailVerified,
 				AvatarURL:     u.Image,
+				Role:          effectiveWorkspaceRole,
 			},
 			Platform: model.PlatformCapability{
 				IsPlatformAdmin: u.IsPlatformAdmin || u.Email == "superadmin@curexal.internal",

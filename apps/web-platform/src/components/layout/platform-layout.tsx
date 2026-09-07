@@ -6,6 +6,7 @@ import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { cn } from "@/lib/utils";
 
 import { TopLoadingBar } from "@/components/loading";
+import { VerificationBanner } from "@/components/organization/verification-banner";
 
 function PlatformLayoutContent() {
   const { isCollapsed } = useSidebar();
@@ -26,6 +27,7 @@ function PlatformLayoutContent() {
         )}
       >
         <PlatformTopbar />
+        <VerificationBanner />
         <main className="flex-1 p-8 max-w-7xl w-full mx-auto animate-fade-in">
           <Outlet />
         </main>

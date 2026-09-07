@@ -1,5 +1,42 @@
 // ==========================================
-// 1. Identity & Session Contracts
+// 1. System Roles & Context Scope Constants
+// ==========================================
+
+export const ROLES = {
+  // Platform Control Plane
+  SUPER_ADMIN: "super_admin",
+  PLATFORM_ADMIN: "platform_admin",
+  PLATFORM_STAFF: "platform_staff",
+
+  // Organization Control Plane (Executive HQ)
+  OWNER: "owner",
+  ORG_ADMIN: "org_admin",
+  ORG_REGIONAL_MANAGER: "org_regional_manager",
+  ORG_QUALITY_MANAGER: "org_quality_manager",
+  ORG_FINANCE_MANAGER: "org_finance_manager",
+  ORG_HR_MANAGER: "org_hr_manager",
+
+  // Workspace Operational Plane
+  BRANCH_ADMIN: "branch_admin",
+  CLINICIAN: "clinician",
+  TECHNICIAN: "technician",
+  CUSTOMER_CARE: "customer_care",
+  CASHIER: "cashier",
+  MEMBER: "member",
+} as const;
+
+export type RoleType = (typeof ROLES)[keyof typeof ROLES];
+
+export const CONTEXT_SCOPES = {
+  PLATFORM: "platform",
+  ORGANIZATION: "organization",
+  WORKSPACE: "workspace",
+} as const;
+
+export type ContextScopeType = (typeof CONTEXT_SCOPES)[keyof typeof CONTEXT_SCOPES];
+
+// ==========================================
+// 2. Identity & Session Contracts
 // ==========================================
 
 export interface IdentityPayload {
@@ -23,6 +60,32 @@ export interface OrganizationPayload {
   logo?: string;
   role?: string;
   subscription: string;
+  status?: string;
+  setupState?: string;
+  setup_state?: string;
+  hostname?: string;
+  isCustomDomain?: boolean;
+}
+
+export interface BranchPayload {
+  id: string;
+  name: string;
+  slug: string;
+  code: string;
+  facilityType: string;
+  isHeadquarters: boolean;
+  city?: string;
+  state?: string;
+  operatingHours?: Record<string, any>;
+}
+
+export interface BranchSummaryPayload {
+  id: string;
+  name: string;
+  slug: string;
+  code: string;
+  facilityType: string;
+  isHeadquarters: boolean;
 }
 
 export interface WorkspacePayload {
@@ -47,6 +110,45 @@ export interface ModuleCapabilityPayload {
   visible: boolean;
   upgradeAvailable: boolean;
   actions: string[];
+}
+
+export type NavigationStatus = "active" | "pending" | "disabled";
+
+export interface NavigationItem {
+  id: string;
+  key: string;
+  contextScope: string;
+  moduleCode?: string;
+  title: string;
+  description?: string;
+  icon: string;
+  path: string;
+  order: number;
+  parentId?: string;
+  requiredPermission?: string;
+  requiredCapability?: string;
+  status: NavigationStatus;
+  isVisible: boolean;
+  isActive: boolean;
+  badgeKey?: string;
+  badgeCount?: number;
+  children?: NavigationItem[];
+  createdAt?: string;
+}
+
+export interface NavigationContext {
+  type: "platform" | "organization" | "workspace" | "patient" | string;
+  organizationId?: string;
+  organizationSlug?: string;
+  branchId?: string;
+  branchSlug?: string;
+  role?: string;
+  capabilities?: string[];
+}
+
+export interface NavigationResponse {
+  context: NavigationContext;
+  items: NavigationItem[];
 }
 
 export interface NavigationItemPayload {
@@ -119,7 +221,9 @@ export interface BootstrapContractResponse {
   identity: IdentityPayload;
   platform: PlatformPayload;
   organization: OrganizationPayload;
+  branch?: BranchPayload;
   workspace: WorkspacePayload;
+  availableBranches?: BranchSummaryPayload[];
   subscription: SubscriptionPayload;
   modules: ModuleCapabilityPayload[];
   capabilities: string[];
@@ -142,6 +246,9 @@ export interface UserRoleResponse {
   phone?: string;
   role: string;
   platformRole?: string;
+  organizationId?: string;
+  organizationRole?: string;
+  workspaceId?: string;
   isPlatformAdmin: boolean;
   activeTenantId?: string;
   tenantSlug?: string;
@@ -310,14 +417,52 @@ export interface Organization {
   name: string;
   slug: string;
   plan: "smart" | "optimize" | "pro" | "enterprise" | string;
+  logoUrl?: string;
   customDomain?: string;
   status: "active" | "inactive" | "pending_verification" | "suspended" | string;
+  registrationNumber?: string;
+  legalName?: string;
+  licenseNumber?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  lga?: string;
+  country?: string;
+  setupState?: string;
+  setupStep?: number;
+  completedAt?: string;
   ownerId?: string;
   settings?: OrganizationSettings | Record<string, any>;
+  currency?: string;
+  timezone?: string;
+  version?: number;
   memberCount?: number;
   branchCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateOrganizationProfilePayload {
+  name?: string;
+  legalName?: string;
+  registrationNumber?: string;
+  licenseNumber?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  lga?: string;
+  country?: string;
+  logoUrl?: string;
+  customDomain?: string;
+  currency?: string;
+  timezone?: string;
+  version?: number;
 }
 
 export interface CreateOrganizationPayload {
@@ -350,14 +495,21 @@ export interface OrganizationDocument {
   id: string;
   organizationId: string;
   documentType: string;
+  originalFilename?: string;
   fileName: string;
-  fileSize: number;
+  storageKey?: string;
   mimeType: string;
-  status: "pending" | "approved" | "rejected";
-  rejectionReason?: string;
-  uploadedBy: string;
+  fileSize?: number;
+  fileSizeBytes?: number;
+  checksumSha256?: string;
+  uploadedBy?: string;
+  uploadedAt?: string;
+  status: "pending" | "approved" | "rejected" | "expired" | string;
+  version?: number;
   reviewedBy?: string;
   reviewedAt?: string;
+  rejectionReason?: string;
+  presignedUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -389,6 +541,7 @@ export interface CapabilityCatalogItem {
   name?: string;
   category?: string;
   description?: string;
+  basePrice?: number;
   monthlyPrice?: number;
   annualPrice?: number;
   currency?: string;
@@ -559,19 +712,26 @@ export interface AuditLog {
   id: string;
   organizationId?: string;
   tenantId?: string;
+  facilityBranchId?: string;
+  patientId?: string;
   actorId?: string;
   actorEmail?: string;
   actorRole?: string;
   ipAddress?: string;
   userAgent?: string;
-  category: string;
+  category?: string;
+  eventCategory?: string;
   severity: "info" | "warn" | "error" | "critical" | string;
   action: string;
   resourceType: string;
   resourceId?: string;
   status: "success" | "failure" | string;
   details?: Record<string, any>;
-  createdAt: string;
+  isBreakGlass?: boolean;
+  prevRecordHash?: string;
+  recordHash?: string;
+  occurredAt?: string;
+  createdAt?: string;
 }
 
 export interface ListAuditLogsPayload {
@@ -614,3 +774,261 @@ export interface DemoRequest {
   createdAt: string;
   updatedAt: string;
 }
+
+// ==========================================
+// 11. Regulatory Compliance Documents
+// ==========================================
+
+export interface DocumentWithPresignedURL {
+  document: OrganizationDocument;
+  presignedUrl: string;
+}
+
+// ==========================================
+// 12. Patient Access, MPI & Care Orchestration
+// ==========================================
+
+export type MatchConfidence = "NONE" | "LOW" | "PROBABLE_DUPLICATE" | "EXACT_MATCH";
+
+export interface PatientContact {
+  id?: string;
+  patientId?: string;
+  system: "PHONE" | "EMAIL" | "WHATSAPP" | string;
+  value: string;
+  useType: "MOBILE" | "HOME" | "WORK" | "EMERGENCY" | string;
+  isPrimary: boolean;
+  verifiedAt?: string;
+  createdAt?: string;
+}
+
+export interface PortalAccount {
+  id: string;
+  patientId: string;
+  tenantId: string;
+  identifier: string;
+  status: "INVITED" | "PENDING_VERIFICATION" | "ACTIVE" | "LOCKED" | "SUSPENDED" | string;
+  mfaEnabled: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Consent {
+  id: string;
+  patientId: string;
+  consentType: "TELEHEALTH" | "DATA_SHARING" | "RESEARCH" | "PROXY_ACCESS" | string;
+  status: "ACTIVE" | "REVOKED" | "EXPIRED" | string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CanonicalPatient {
+  id: string;
+  userId?: string;
+  tenantId: string;
+  mrn: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  gender: "MALE" | "FEMALE" | "OTHER" | string;
+  dateOfBirth: string;
+  bloodGroup?: string;
+  genotype?: string;
+  nin?: string;
+  status: "DISCOVERED" | "IDENTIFIED" | "REGISTERED" | "SUSPENDED" | "DEACTIVATED" | string;
+  registrationChannel: "RECEPTION" | "PORTAL" | "REFERRAL" | "API" | string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+  contacts?: PatientContact[];
+  portal?: PortalAccount;
+}
+
+export interface DuplicateEvaluationRequest {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  dateOfBirth?: string;
+  phone?: string;
+  email?: string;
+  nin?: string;
+}
+
+export interface DuplicateMatchCandidate {
+  patientId: string;
+  mrn: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: string;
+  matchedSignals: string[];
+  confidenceScore: number;
+  confidenceLevel: MatchConfidence;
+}
+
+export interface DuplicateEvaluationResponse {
+  matchStatus: MatchConfidence;
+  candidates: DuplicateMatchCandidate[];
+}
+
+export interface RegisterCanonicalPatientPayload {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  gender: "MALE" | "FEMALE" | "OTHER" | string;
+  dateOfBirth: string; // YYYY-MM-DD
+  phone: string;
+  email?: string;
+  bloodGroup?: string;
+  genotype?: string;
+  nin?: string;
+  address?: string;
+  registrationChannel?: string;
+  forceRegistration?: boolean;
+}
+
+export interface PatientListFilter {
+  query?: string;
+  status?: string;
+  gender?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PatientListResponse {
+  items: CanonicalPatient[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SendPortalOTPPayload {
+  identifier: string;
+}
+
+export interface VerifyPortalOTPPayload {
+  identifier: string;
+  code: string;
+}
+
+export interface SetPortalPINPayload {
+  pin: string;
+}
+
+export interface PortalAuthResponse {
+  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  patientId?: string;
+  mrn?: string;
+  firstName?: string;
+  lastName?: string;
+  status?: string;
+  hasPin?: boolean;
+  expiresAt?: string;
+  patient?: CanonicalPatient;
+}
+
+// Care Request & Orchestration
+export interface CareRequest {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  patientName?: string;
+  mrn?: string;
+  requestNumber: string;
+  serviceType: "GENERAL_CONSULTATION" | "SPECIALIST" | "LAB_TEST" | "REFILL" | "TELEHEALTH" | string;
+  preferredMode: "IN_PERSON" | "VIDEO" | "AUDIO" | "ASYNC_CHAT" | string;
+  urgency: "ROUTINE" | "URGENT" | "EMERGENCY" | string;
+  status: "SUBMITTED" | "TRIAGED" | "ASSIGNED_AGENT" | "MATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | string;
+  chiefComplaint?: string;
+  symptomsJson?: any[];
+  preferredTimeWindow?: any;
+  assignedCareAgentId?: string;
+  matchedProviderId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CareRequestFilter {
+  status?: string;
+  urgency?: string;
+  serviceType?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CareRequestListResponse {
+  items: CareRequest[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface TriageAssessment {
+  id: string;
+  careRequestId: string;
+  patientId: string;
+  assessorId?: string;
+  acuityLevel: "GREEN" | "YELLOW" | "RED";
+  systolicBp?: number;
+  diastolicBp?: number;
+  pulseRate?: number;
+  temperature?: number;
+  spo2?: number;
+  respiratoryRate?: number;
+  painScore?: number;
+  triageNotes?: string;
+  createdAt: string;
+}
+
+export interface SubmitTriagePayload {
+  systolicBp?: number;
+  diastolicBp?: number;
+  pulseRate?: number;
+  temperature?: number;
+  spo2?: number;
+  respiratoryRate?: number;
+  painScore?: number;
+  triageNotes?: string;
+  acuityOverride?: "GREEN" | "YELLOW" | "RED" | string;
+}
+
+export interface MatchedProviderCandidate {
+  providerId: string;
+  userId: string;
+  providerName: string;
+  specialtyCode: string;
+  status: "ON_DUTY" | "ON_BREAK" | "OFF_DUTY" | "BUSY" | string;
+  currentActiveQueue: number;
+  maxActiveQueue: number;
+  matchScore: number;
+  matchingReasons: string[];
+}
+
+export interface ProviderMatchingResponse {
+  careRequestId: string;
+  requiredMode: string;
+  specialty: string;
+  candidates: MatchedProviderCandidate[];
+}
+
+export interface CareJourneyMilestone {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  encounterId?: string;
+  stageCode: "INTAKE" | "TRIAGE" | "CONSULTATION" | "LAB_WORKLIST" | "RADIOLOGY_STUDY" | "PHARMACY_DISPENSE" | "SETTLEMENT" | "FOLLOW_UP" | string;
+  title: string;
+  description?: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "BLOCKED" | string;
+  blockingReason?: string;
+  completedAt?: string;
+  createdAt: string;
+}
+
+
+
+

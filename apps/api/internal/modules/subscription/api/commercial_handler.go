@@ -76,3 +76,26 @@ func (h *CommercialHandler) HandlePaymentWebhook(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"status": "processed"})
 }
+
+func (h *CommercialHandler) ListOrganizationInvoices(c echo.Context) error {
+	orgIDParam := c.Param("id")
+	orgID, errParse := uuid.Parse(orgIDParam)
+	if errParse != nil {
+		return errs.NewBadRequestError("invalid organization ID format")
+	}
+
+	invoices, err := h.commercialSvc.GetOrganizationInvoices(c.Request().Context(), orgID)
+	if err != nil {
+		return errs.NewBadRequestError(err.Error())
+	}
+
+	return response.SuccessEcho(c, http.StatusOK, invoices)
+}
+
+func (h *CommercialHandler) ListPublicPlans(c echo.Context) error {
+	plans, err := h.commercialSvc.ListPlans(c.Request().Context())
+	if err != nil {
+		return errs.NewInternalServerError()
+	}
+	return response.SuccessEcho(c, http.StatusOK, plans)
+}

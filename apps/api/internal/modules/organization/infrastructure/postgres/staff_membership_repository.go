@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type StaffMembershipRepository struct {
@@ -23,15 +23,15 @@ func NewStaffMembershipRepository(server *server.Server) *StaffMembershipReposit
 func (r *StaffMembershipRepository) ListMembers(ctx context.Context, orgID uuid.UUID) ([]domain.StaffMemberDTO, error) {
 	dbExec := r.server.DB.Conn(ctx)
 	stmt := `
-		SELECT m.id, m.organization_id, m.user_id, u.email, COALESCE(u.full_name, ''),
+		SELECT m.id, m.organization_id, m.user_id::text, u.email, COALESCE(u.name, ''),
 		       m.role, COALESCE(m.role_title, 'member'), CASE WHEN m.is_active THEN 'ACTIVE' ELSE 'INACTIVE' END, m.created_at
 		FROM organization.organization_memberships m
-		JOIN identity.users u ON u.id::text = m.user_id
+		JOIN identity.users u ON u.id::text = m.user_id::text
 		WHERE m.organization_id = $1
 		ORDER BY m.created_at ASC
 	`
 
-	rows, err := dbExec.Query(ctx, stmt, orgID.String())
+	rows, err := dbExec.Query(ctx, stmt, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query staff memberships: %w", err)
 	}
@@ -64,16 +64,16 @@ func (r *StaffMembershipRepository) ListMembers(ctx context.Context, orgID uuid.
 func (r *StaffMembershipRepository) GetMemberByID(ctx context.Context, orgID, membershipID uuid.UUID) (*domain.StaffMemberDTO, error) {
 	dbExec := r.server.DB.Conn(ctx)
 	stmt := `
-		SELECT m.id, m.organization_id, m.user_id, u.email, COALESCE(u.full_name, ''),
+		SELECT m.id, m.organization_id, m.user_id::text, u.email, COALESCE(u.name, ''),
 		       m.role, COALESCE(m.role_title, 'member'), CASE WHEN m.is_active THEN 'ACTIVE' ELSE 'INACTIVE' END, m.created_at
 		FROM organization.organization_memberships m
-		JOIN identity.users u ON u.id::text = m.user_id
+		JOIN identity.users u ON u.id::text = m.user_id::text
 		WHERE m.organization_id = $1 AND m.id = $2
 		LIMIT 1
 	`
 
 	var m domain.StaffMemberDTO
-	err := dbExec.QueryRow(ctx, stmt, orgID.String(), membershipID.String()).Scan(
+	err := dbExec.QueryRow(ctx, stmt, orgID, membershipID).Scan(
 		&m.MembershipID, &m.OrganizationID, &m.UserID, &m.Email, &m.FullName,
 		&m.Role, &m.RoleTitle, &m.Status, &m.CreatedAt,
 	)
@@ -93,12 +93,12 @@ func (r *StaffMembershipRepository) GetMemberByID(ctx context.Context, orgID, me
 func (r *StaffMembershipRepository) listMemberBranches(ctx context.Context, membershipID uuid.UUID) ([]domain.FacilityBranch, error) {
 	dbExec := r.server.DB.Conn(ctx)
 	stmt := `
-		SELECT b.id, b.organization_id, b.facility_type_id, ft.code, ft.name, ft.category,
+		SELECT b.id, b.organization_id, COALESCE(b.facility_type_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(ft.code, ''), COALESCE(ft.name, ''), COALESCE(ft.category, ''),
 		       b.code, b.name, b.is_headquarters, b.email, b.phone, b.address, b.city, b.state, b.lga, COALESCE(b.country, 'Nigeria'),
 		       b.operating_hours, b.status, b.version, b.created_at, b.updated_at
 		FROM organization.membership_branches mb
 		JOIN organization.facility_branches b ON b.id = mb.facility_branch_id
-		JOIN platform.facility_types ft ON ft.id = b.facility_type_id
+		LEFT JOIN platform.facility_types ft ON ft.id = b.facility_type_id
 		WHERE mb.membership_id = $1
 	`
 	rows, err := dbExec.Query(ctx, stmt, membershipID)
@@ -173,18 +173,23 @@ func (r *StaffMembershipRepository) CreateInvitation(ctx context.Context, invite
 			id, organization_id, facility_branch_id, email, role, role_title, invite_token_hash, status, expires_at, invited_by
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8, $9)
-		RETURNING created_at, updated_at
+		ON CONFLICT (organization_id, email) DO UPDATE SET
+			facility_branch_id = EXCLUDED.facility_branch_id,
+			role = EXCLUDED.role,
+			role_title = EXCLUDED.role_title,
+			invite_token_hash = EXCLUDED.invite_token_hash,
+			status = 'PENDING',
+			expires_at = EXCLUDED.expires_at,
+			invited_by = EXCLUDED.invited_by,
+			updated_at = CURRENT_TIMESTAMP
+		RETURNING id, created_at, updated_at
 	`
 
 	err := dbExec.QueryRow(ctx, stmt,
 		invite.ID, invite.OrganizationID, branchIDStr, invite.Email, invite.Role, invite.RoleTitle, invite.InviteTokenHash, invite.ExpiresAt, invite.InvitedBy,
-	).Scan(&invite.CreatedAt, &invite.UpdatedAt)
+	).Scan(&invite.ID, &invite.CreatedAt, &invite.UpdatedAt)
 
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, domain.ErrDuplicateStaffInvite
-		}
 		return nil, fmt.Errorf("failed to create staff invitation: %w", err)
 	}
 
@@ -368,3 +373,88 @@ func (r *StaffMembershipRepository) UpdateMemberRole(ctx context.Context, orgID,
 
 	return r.GetMemberByID(ctx, orgID, membershipID)
 }
+
+func (r *StaffMembershipRepository) DirectCreateMember(
+	ctx context.Context,
+	orgID uuid.UUID,
+	fullName, email, passwordHash, role, roleTitle string,
+	branchIDs []uuid.UUID,
+	actorID uuid.UUID,
+) (*domain.StaffMemberDTO, error) {
+	dbExec := r.server.DB.Conn(ctx)
+	cleanEmail := strings.ToLower(strings.TrimSpace(email))
+
+	// 1. Check if user already exists in identity.users
+	var userID string
+	var userExists bool
+	err := dbExec.QueryRow(ctx, `SELECT id FROM identity.users WHERE email = $1`, cleanEmail).Scan(&userID)
+	if err == nil && userID != "" {
+		userExists = true
+	}
+
+	if !userExists {
+		newUserID := uuid.New().String()
+		err = dbExec.QueryRow(ctx, `
+			INSERT INTO identity.users (id, name, email, email_verified, is_platform_admin)
+			VALUES ($1, $2, $3, TRUE, FALSE)
+			RETURNING id
+		`, newUserID, fullName, cleanEmail).Scan(&userID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user record: %w", err)
+		}
+
+		// Insert credential record in identity.credentials
+		credID := uuid.New().String()
+		_, err = dbExec.Exec(ctx, `
+			INSERT INTO identity.credentials (id, account_id, auth_provider, user_id, password_hash)
+			VALUES ($1, $2, 'credential', $3, $4)
+			ON CONFLICT (account_id) DO UPDATE SET password_hash = EXCLUDED.password_hash
+		`, credID, cleanEmail, userID, passwordHash)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create credential record: %w", err)
+		}
+	} else if passwordHash != "" {
+		// Update credential password if provided
+		_, _ = dbExec.Exec(ctx, `
+			INSERT INTO identity.credentials (id, account_id, auth_provider, user_id, password_hash, created_at, updated_at)
+			VALUES ($1, $2, 'credential', $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+			ON CONFLICT (user_id, auth_provider) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = CURRENT_TIMESTAMP
+		`, uuid.New().String(), cleanEmail, userID, passwordHash)
+	}
+
+	// 2. Insert or update organization membership
+	var memID uuid.UUID
+	memUUID := uuid.New()
+	err = dbExec.QueryRow(ctx, `
+		INSERT INTO organization.organization_memberships (id, organization_id, user_id, role, role_title, is_active, updated_at)
+		VALUES ($1, $2, $3, $4, $5, TRUE, CURRENT_TIMESTAMP)
+		ON CONFLICT (organization_id, user_id) DO UPDATE SET 
+			role = EXCLUDED.role, 
+			role_title = EXCLUDED.role_title, 
+			is_active = TRUE,
+			updated_at = CURRENT_TIMESTAMP
+		RETURNING id
+	`, memUUID, orgID.String(), userID, role, roleTitle).Scan(&memID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create organization membership: %w", err)
+	}
+
+	// 3. Assign branches in organization.membership_branches
+	for _, bID := range branchIDs {
+		if bID != uuid.Nil {
+			var actorIDParam *string
+			if actorID != uuid.Nil {
+				actStr := actorID.String()
+				actorIDParam = &actStr
+			}
+			_, _ = dbExec.Exec(ctx, `
+				INSERT INTO organization.membership_branches (id, membership_id, facility_branch_id, created_by)
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (membership_id, facility_branch_id) DO NOTHING
+			`, uuid.New(), memID, bID, actorIDParam)
+		}
+	}
+
+	return r.GetMemberByID(ctx, orgID, memID)
+}
+

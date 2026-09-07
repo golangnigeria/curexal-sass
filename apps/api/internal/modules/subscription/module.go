@@ -56,9 +56,12 @@ func (m *Module) RegisterRoutes(e *echo.Echo, apiGroup *echo.Group, pltGroup *ec
 	apiGroup.GET("/marketplace/capabilities", m.Handler.GetCapabilityCatalog)
 	apiGroup.POST("/organizations/:id/marketplace/subscribe", m.Handler.PurchaseCapabilityAddOn, middleware.RequirePermission("organization:write"))
 
-	// Commercial Order Creation (Authenticated + org:write permission)
+	// Commercial Order Creation & Invoice Listing (Authenticated + org:read/write permission)
 	if m.CommercialHandler != nil {
 		apiGroup.POST("/organizations/:id/marketplace/orders", m.CommercialHandler.CreateCommercialOrder, middleware.RequirePermission("organization:write"))
+		apiGroup.GET("/organizations/:id/marketplace/orders", m.CommercialHandler.ListOrganizationInvoices, middleware.RequirePermission("organization:read"))
+		apiGroup.GET("/organizations/:id/invoices", m.CommercialHandler.ListOrganizationInvoices, middleware.RequirePermission("organization:read"))
+		apiGroup.GET("/plans", m.CommercialHandler.ListPublicPlans)
 	}
 
 	// Unauthenticated Cryptographically Verified Payment Webhooks (No middleware.Authenticate)

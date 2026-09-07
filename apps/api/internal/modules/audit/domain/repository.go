@@ -13,4 +13,5 @@ type AuditRepository interface {
 	ListPlatformLogs(ctx context.Context, orgID *uuid.UUID, category, severity, status, actorID, action, resourceType, resourceID, startDate, endDate, search *string, limit, offset int) ([]AuditLog, error)
 	GetStats(ctx context.Context, tenantID *uuid.UUID, orgID *uuid.UUID) (*AdminStats, error)
 	ListAll(ctx context.Context, tenantID *uuid.UUID, orgID *uuid.UUID, limit int, offset int) ([]AuditLog, error)
+	ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]AuditLog, error)
 }

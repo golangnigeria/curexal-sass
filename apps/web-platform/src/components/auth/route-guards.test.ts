@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { ROLES, CONTEXT_SCOPES } from "@/api/contracts";
 
 interface UserContext {
   id?: string;
@@ -37,26 +38,30 @@ export function resolveDestination(session: SessionContext | null, returnTo?: st
   const isPlatformStaff = Boolean(
     effectiveBootstrap?.platform?.isStaff === true ||
     user?.isPlatformAdmin === true ||
-    user?.platformRole === "super_admin" ||
-    user?.role === "super_admin"
+    user?.platformRole === ROLES.SUPER_ADMIN ||
+    user?.role === ROLES.SUPER_ADMIN
   );
 
+  const userOrgRole = (effectiveBootstrap?.organization?.role || user?.role || "").toLowerCase();
   const isOrgAuthorized = Boolean(
     isPlatformStaff ||
-    Boolean(effectiveBootstrap?.organization?.id) ||
-    effectiveBootstrap?.contexts?.current === "organization" ||
-    user?.role === "owner" ||
-    user?.role === "org_admin" ||
-    user?.role === "org_regional_manager" ||
-    Boolean(user?.organizationId)
+    userOrgRole === "owner" ||
+    userOrgRole === "org_admin" ||
+    userOrgRole === "org_regional_manager" ||
+    userOrgRole === "org_quality_manager" ||
+    userOrgRole === "org_finance_manager" ||
+    userOrgRole === "org_hr_manager" ||
+    userOrgRole === "admin" ||
+    (effectiveBootstrap?.contexts?.current === CONTEXT_SCOPES.ORGANIZATION && effectiveBootstrap?.contexts?.available?.includes(CONTEXT_SCOPES.ORGANIZATION))
   );
 
   const isWorkspaceAuthorized = Boolean(
-    isOrgAuthorized ||
     Boolean(effectiveBootstrap?.workspace?.id) ||
-    effectiveBootstrap?.contexts?.current === "workspace" ||
+    Boolean(effectiveBootstrap?.branch?.id) ||
+    effectiveBootstrap?.contexts?.current === CONTEXT_SCOPES.WORKSPACE ||
     Boolean(user?.activeTenantId) ||
-    Boolean(user?.workspaceId)
+    Boolean(user?.workspaceId) ||
+    !isOrgAuthorized
   );
 
   // Validate returnTo if present (prevent open redirect & privilege escalation)
@@ -73,7 +78,16 @@ export function resolveDestination(session: SessionContext | null, returnTo?: st
   // Canonical destination resolution
   if (isPlatformStaff) return "/platform/dashboard";
   if (isOrgAuthorized) return "/organization/dashboard";
-  if (isWorkspaceAuthorized) return "/workspace/dashboard";
+  if (isWorkspaceAuthorized) {
+    const bSlug =
+      effectiveBootstrap?.branch?.slug ||
+      effectiveBootstrap?.branch?.code?.toLowerCase() ||
+      effectiveBootstrap?.workspace?.slug ||
+      "main";
+    const userRoleStr = (user?.role || userOrgRole).toLowerCase();
+    const mod = userRoleStr.includes("doc") || userRoleStr.includes("clin") ? "clinical" : "dashboard";
+    return `/${bSlug}/${mod}`;
+  }
 
   return "/login";
 }
@@ -99,34 +113,48 @@ export function evaluateRouteAccess(
     user?.role === "super_admin"
   );
 
+  const userOrgRole = (effectiveBootstrap?.organization?.role || user?.role || "").toLowerCase();
   const isOrgAuthorized = Boolean(
     isPlatformStaff ||
-    Boolean(effectiveBootstrap?.organization?.id) ||
-    effectiveBootstrap?.contexts?.current === "organization" ||
-    user?.role === "owner" ||
-    user?.role === "org_admin" ||
-    user?.role === "org_regional_manager" ||
-    Boolean(user?.organizationId)
+    userOrgRole === "owner" ||
+    userOrgRole === "org_admin" ||
+    userOrgRole === "org_regional_manager" ||
+    userOrgRole === "org_quality_manager" ||
+    userOrgRole === "org_finance_manager" ||
+    userOrgRole === "org_hr_manager" ||
+    userOrgRole === "admin" ||
+    (effectiveBootstrap?.contexts?.current === "organization" && effectiveBootstrap?.contexts?.available?.includes("organization"))
   );
 
   const isWorkspaceAuthorized = Boolean(
-    isOrgAuthorized ||
     Boolean(effectiveBootstrap?.workspace?.id) ||
+    Boolean(effectiveBootstrap?.branch?.id) ||
     effectiveBootstrap?.contexts?.current === "workspace" ||
     Boolean(user?.activeTenantId) ||
-    Boolean(user?.workspaceId)
+    Boolean(user?.workspaceId) ||
+    !isOrgAuthorized
   );
+
+  const branchSlug =
+    effectiveBootstrap?.branch?.slug ||
+    effectiveBootstrap?.branch?.code?.toLowerCase() ||
+    effectiveBootstrap?.workspace?.slug ||
+    "main";
 
   if (route.startsWith("/platform/")) {
     if (isPlatformStaff) return { allowed: true };
     if (isOrgAuthorized) return { allowed: false, redirectTo: "/organization/dashboard" };
-    if (isWorkspaceAuthorized) return { allowed: false, redirectTo: "/workspace/dashboard" };
+    if (isWorkspaceAuthorized) return { allowed: false, redirectTo: `/${branchSlug}/dashboard` };
     return { allowed: false, redirectTo: "/login" };
   }
 
   if (route.startsWith("/organization/")) {
     if (isOrgAuthorized) return { allowed: true };
-    if (isWorkspaceAuthorized) return { allowed: false, redirectTo: "/workspace/dashboard" };
+    if (isWorkspaceAuthorized) {
+      const userRoleStr = (user?.role || userOrgRole).toLowerCase();
+      const mod = userRoleStr.includes("doc") || userRoleStr.includes("clin") ? "clinical" : "dashboard";
+      return { allowed: false, redirectTo: `/${branchSlug}/${mod}` };
+    }
     return { allowed: false, redirectTo: "/login" };
   }
 
@@ -175,16 +203,16 @@ describe("Role-Based Route Protection & Context Redirection Test Suite", () => {
   });
 
   // Scenario D: Workspace User
-  it("Scenario D: Workspace-only user resolves to /workspace/dashboard", () => {
+  it("Scenario D: Workspace-only user resolves to /main/dashboard", () => {
     const session: SessionContext = {
       user: { id: "usr_4", isPlatformAdmin: false, role: "lab_technician", activeTenantId: "tenant_1" },
       bootstrap: {
         platform: { isStaff: false, role: "" },
-        workspace: { id: "tenant_1", name: "Main Lab" },
+        workspace: { id: "tenant_1", name: "Main Lab", slug: "main" },
         contexts: { current: "workspace" },
       },
     };
-    expect(resolveDestination(session)).toBe("/workspace/dashboard");
+    expect(resolveDestination(session)).toBe("/main/dashboard");
   });
 
   // Scenario E: Unauthenticated
@@ -207,17 +235,17 @@ describe("Role-Based Route Protection & Context Redirection Test Suite", () => {
   });
 
   // Scenario H: Workspace user enters /platform/dashboard
-  it("Scenario H: Workspace user visiting /platform/dashboard is redirected to /workspace/dashboard", () => {
+  it("Scenario H: Workspace user visiting /platform/dashboard is redirected to /main/dashboard", () => {
     const session: SessionContext = {
       user: { id: "usr_4", isPlatformAdmin: false, role: "doctor", workspaceId: "ws_1" },
       bootstrap: {
         platform: { isStaff: false, role: "" },
-        workspace: { id: "ws_1", name: "Clinical Unit" },
+        workspace: { id: "ws_1", name: "Clinical Unit", slug: "main" },
       },
     };
     const check = evaluateRouteAccess("/platform/dashboard", session);
     expect(check.allowed).toBe(false);
-    expect(check.redirectTo).toBe("/workspace/dashboard");
+    expect(check.redirectTo).toBe("/main/dashboard");
   });
 
   // Scenario I: Organization user enters /organization/members
@@ -234,17 +262,17 @@ describe("Role-Based Route Protection & Context Redirection Test Suite", () => {
   });
 
   // Scenario J: Workspace-only user enters /organization/members
-  it("Scenario J: Workspace-only user visiting /organization/members is redirected to /workspace/dashboard", () => {
+  it("Scenario J: Workspace-only user visiting /organization/members is redirected to /main/dashboard", () => {
     const session: SessionContext = {
       user: { id: "usr_4", isPlatformAdmin: false, role: "pharmacist", workspaceId: "ws_1" },
       bootstrap: {
         platform: { isStaff: false, role: "" },
-        workspace: { id: "ws_1", name: "Pharmacy Branch" },
+        workspace: { id: "ws_1", name: "Pharmacy Branch", slug: "main" },
       },
     };
     const check = evaluateRouteAccess("/organization/members", session);
     expect(check.allowed).toBe(false);
-    expect(check.redirectTo).toBe("/workspace/dashboard");
+    expect(check.redirectTo).toBe("/main/dashboard");
   });
 
   // Scenario K: Platform admin enters /platform/dashboard
