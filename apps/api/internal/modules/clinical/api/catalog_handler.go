@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/application"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

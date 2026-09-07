@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -505,4 +505,3 @@ func (r *FacilityBranchRepository) VerifyUserFacilityAccess(ctx context.Context,
 func (r *FacilityBranchRepository) IsUserAssignedToBranch(ctx context.Context, userID, orgID, branchID uuid.UUID) (bool, error) {
 	return r.VerifyUserFacilityAccess(ctx, orgID, branchID, userID.String(), false)
 }
-

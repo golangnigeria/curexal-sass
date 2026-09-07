@@ -106,4 +106,3 @@ type DirectCreateStaffMemberPayload struct {
 	FacilityBranchID *uuid.UUID  `json:"facilityBranchId"`
 	BranchIDs        []uuid.UUID `json:"branchIds"`
 }
-

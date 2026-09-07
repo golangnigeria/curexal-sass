@@ -82,4 +82,3 @@ func (p *ForgotPasswordPayload) Validate() error {
 	validate := validator.New()
 	return validate.Struct(p)
 }
-

@@ -10,8 +10,8 @@ type Encounter struct {
 	PatientID            string     `json:"patientId" db:"patient_id"`
 	ProviderID           string     `json:"providerId" db:"provider_id"`
 	EncounterType        string     `json:"encounterType" db:"encounter_type"` // OUTPATIENT, EMERGENCY, TELEHEALTH, INPATIENT_ROUND
-	Mode                 string     `json:"mode" db:"mode"` // IN_PERSON, VIDEO, AUDIO, ASYNC_CHAT
-	Status               string     `json:"status" db:"status"` // WAITING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
+	Mode                 string     `json:"mode" db:"mode"`                    // IN_PERSON, VIDEO, AUDIO, ASYNC_CHAT
+	Status               string     `json:"status" db:"status"`                // WAITING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
 	ChiefComplaint       *string    `json:"chiefComplaint,omitempty" db:"chief_complaint"`
 	Subjective           *string    `json:"subjective,omitempty" db:"subjective"`
 	Objective            *string    `json:"objective,omitempty" db:"objective"`

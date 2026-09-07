@@ -269,4 +269,3 @@ func (s *PlatformConfigService) UpdateSecurityPolicy(
 
 	return updated, nil
 }
-

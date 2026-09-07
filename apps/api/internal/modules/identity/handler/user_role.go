@@ -9,19 +9,19 @@ import (
 	"strings"
 	"time"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
+	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/identity/domain"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	modelUser "github.com/golangnigeria/curexal/internal/modules/identity/model/user"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
+	orgRepo "github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
 	crypto "github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/golangnigeria/curexal/internal/shared/job"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
-	"github.com/golangnigeria/curexal/internal/modules/identity/domain"
-	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
-	orgRepo "github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 )
 
 type UserRoleHandler struct {

@@ -6,12 +6,12 @@ import (
 )
 
 type MigrationBundle struct {
-	Name         string
-	MigrationsFS embed.FS
+	Name          string
+	MigrationsFS  embed.FS
 	MigrationsDir string
-	SeedersFS    embed.FS
-	SeedersDir   string
-	TableName    string
+	SeedersFS     embed.FS
+	SeedersDir    string
+	TableName     string
 }
 
 type MigrationRegistry struct {

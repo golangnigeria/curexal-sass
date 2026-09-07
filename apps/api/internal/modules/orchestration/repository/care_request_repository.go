@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golangnigeria/curexal/internal/modules/orchestration/model"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/orchestration/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -424,4 +424,3 @@ func (r *CareRequestRepository) AssignProviderToCareRequest(ctx context.Context,
 	_, err = db.Exec(ctx, updateProvider, providerID)
 	return err
 }
-

@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/golangnigeria/curexal/internal/bootstrap"
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	billingDomain "github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	billingInfra "github.com/golangnigeria/curexal/internal/modules/billing/infrastructure"
 	subDomain "github.com/golangnigeria/curexal/internal/modules/subscription/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"

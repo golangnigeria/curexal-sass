@@ -293,9 +293,6 @@ func (s *OrganizationApplicationService) ListOrganizations(ctx echo.Context, pas
 	return orgs, nil
 }
 
-
-
-
 func (s *OrganizationApplicationService) CreateDemoRequest(ctx context.Context, labName, contactName, email string, phone, dailyVolume, notes *string) (*domain.DemoRequest, error) {
 	return s.demoRepo.Create(ctx, labName, contactName, email, phone, dailyVolume, notes)
 }

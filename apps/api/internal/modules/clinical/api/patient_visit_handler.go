@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	billingApp "github.com/golangnigeria/curexal/internal/modules/billing/application"
 	billingDomain "github.com/golangnigeria/curexal/internal/modules/billing/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )

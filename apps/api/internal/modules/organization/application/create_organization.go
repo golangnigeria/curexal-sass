@@ -44,9 +44,9 @@ type CreateOrganizationResult struct {
 
 func (s *OrganizationApplicationService) CreateOrganization(ctx echo.Context, userID string, cmd *CreateOrganizationCommand) (*CreateOrganizationResult, error) {
 	var (
-		createdOrg *domain.Organization
+		createdOrg       *domain.Organization
 		targetOwnerEmail string
-		rawSetupToken string
+		rawSetupToken    string
 	)
 
 	err := s.server.DB.RunInTx(ctx.Request().Context(), func(txCtx context.Context) error {

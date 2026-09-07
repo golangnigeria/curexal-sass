@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -109,9 +109,9 @@ func (r *PlatformBillingRepository) ListPaymentGateways(ctx context.Context) ([]
 	var list []domain.PaymentGatewayConfig
 	for rows.Next() {
 		var (
-			g                     domain.PaymentGatewayConfig
+			g                      domain.PaymentGatewayConfig
 			rawSupportedCurrencies []byte
-			updatedByStr          *string
+			updatedByStr           *string
 		)
 		err := rows.Scan(
 			&g.ID, &g.ProviderCode, &g.Name, &g.IsEnabled, &g.Priority, &rawSupportedCurrencies,
@@ -142,9 +142,9 @@ func (r *PlatformBillingRepository) GetPaymentGatewayByProvider(ctx context.Cont
 		LIMIT 1
 	`
 	var (
-		g                     domain.PaymentGatewayConfig
+		g                      domain.PaymentGatewayConfig
 		rawSupportedCurrencies []byte
-		updatedByStr          *string
+		updatedByStr           *string
 	)
 	err := dbExec.QueryRow(ctx, stmt, providerCode).Scan(
 		&g.ID, &g.ProviderCode, &g.Name, &g.IsEnabled, &g.Priority, &rawSupportedCurrencies,
@@ -191,9 +191,9 @@ func (r *PlatformBillingRepository) UpdatePaymentGateway(ctx context.Context, ga
 		RETURNING id, version, updated_at
 	`
 	var (
-		id        uuid.UUID
+		id         uuid.UUID
 		newVersion int
-		updatedAt time.Time
+		updatedAt  time.Time
 	)
 	err = dbExec.QueryRow(ctx, stmt,
 		gateway.Name, gateway.IsEnabled, gateway.Priority, currenciesJSON,

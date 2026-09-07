@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/platform/api"
 	"github.com/golangnigeria/curexal/internal/modules/platform/application"
 	"github.com/golangnigeria/curexal/internal/modules/platform/domain"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -187,4 +187,3 @@ func TestPlatformConfigHandler_UpdatePlatformConfig_PartialSuccess(t *testing.T)
 	assert.Contains(t, rec.Body.String(), "Curexal Health OS")
 	assert.Contains(t, rec.Body.String(), "support@curexal.com")
 }
-

@@ -1,10 +1,10 @@
 package patient
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	patientHandler "github.com/golangnigeria/curexal/internal/modules/patient/handler"
 	patientRepo "github.com/golangnigeria/curexal/internal/modules/patient/repository"
 	patientService "github.com/golangnigeria/curexal/internal/modules/patient/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )
@@ -22,11 +22,11 @@ type Module struct {
 func NewModule(s *server.Server, userRepo patientService.UserIdentityRepo) *Module {
 	repo := patientRepo.NewPatientRepository(s)
 	canonicalRepo := patientRepo.NewCanonicalPatientRepository(s)
-	
+
 	mpiSvc := patientService.NewMPIService(canonicalRepo)
 	canonicalSvc := patientService.NewCanonicalPatientService(s, canonicalRepo, mpiSvc)
 	svc := patientService.NewPatientService(s, repo, userRepo)
-	
+
 	hnd := patientHandler.NewPatientHandler(svc)
 	canonicalHnd := patientHandler.NewCanonicalPatientHandler(s, canonicalSvc, mpiSvc)
 
@@ -66,4 +66,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		portalAuthGroup.POST("/patients/:id/pin", m.CanonicalHandler.SetPortalPIN)
 	}
 }
-

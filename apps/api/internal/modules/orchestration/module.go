@@ -1,10 +1,10 @@
 package orchestration
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration/handler"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration/repository"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 

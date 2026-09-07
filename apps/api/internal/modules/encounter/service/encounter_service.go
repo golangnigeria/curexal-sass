@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/encounter/model"
 	"github.com/golangnigeria/curexal/internal/modules/encounter/repository"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 )
 
 type EncounterService struct {

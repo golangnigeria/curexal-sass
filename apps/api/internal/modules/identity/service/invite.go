@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	crypto "github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/golangnigeria/curexal/internal/shared/job"
 	"github.com/google/uuid"

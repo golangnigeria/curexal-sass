@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
@@ -168,8 +168,6 @@ func (h *OrganizationHandler) UpdateOrganization(c echo.Context) error {
 	return c.JSON(http.StatusOK, org)
 }
 
-
-
 func (h *OrganizationHandler) GetOrganizationSettings(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -203,5 +201,3 @@ func (h *OrganizationHandler) UpdateOrganizationSettings(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, settings)
 }
-
-

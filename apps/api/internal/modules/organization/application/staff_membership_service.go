@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/shared/crypto"
-	"github.com/golangnigeria/curexal/internal/shared/mailer"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
+	"github.com/golangnigeria/curexal/internal/shared/crypto"
+	"github.com/golangnigeria/curexal/internal/shared/mailer"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 )

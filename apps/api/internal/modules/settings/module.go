@@ -1,11 +1,11 @@
 package settings
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/settings/api"
 	"github.com/golangnigeria/curexal/internal/modules/settings/application"
 	"github.com/golangnigeria/curexal/internal/modules/settings/domain"
 	"github.com/golangnigeria/curexal/internal/modules/settings/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 
@@ -34,4 +34,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		apiGroup.POST("/settings/branch/reset", m.Handler.ResetBranchSettings)
 	}
 }
-

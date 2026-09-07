@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -363,4 +363,3 @@ func (r *CanonicalPatientRepository) UpsertPortalAccount(ctx context.Context, ac
 	)
 	return err
 }
-

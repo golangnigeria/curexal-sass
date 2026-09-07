@@ -8,10 +8,10 @@ type CareRequest struct {
 	TenantID            string                 `json:"tenantId" db:"tenant_id"`
 	PatientID           string                 `json:"patientId" db:"patient_id"`
 	RequestNumber       string                 `json:"requestNumber" db:"request_number"`
-	ServiceType         string                 `json:"serviceType" db:"service_type"` // GENERAL_CONSULTATION, SPECIALIST, LAB_TEST, REFILL, TELEHEALTH
+	ServiceType         string                 `json:"serviceType" db:"service_type"`     // GENERAL_CONSULTATION, SPECIALIST, LAB_TEST, REFILL, TELEHEALTH
 	PreferredMode       string                 `json:"preferredMode" db:"preferred_mode"` // IN_PERSON, VIDEO, AUDIO, ASYNC_CHAT
-	Urgency             string                 `json:"urgency" db:"urgency"` // ROUTINE, URGENT, EMERGENCY
-	Status              string                 `json:"status" db:"status"` // SUBMITTED, TRIAGED, ASSIGNED_AGENT, MATCHED, IN_PROGRESS, COMPLETED, CANCELLED
+	Urgency             string                 `json:"urgency" db:"urgency"`              // ROUTINE, URGENT, EMERGENCY
+	Status              string                 `json:"status" db:"status"`                // SUBMITTED, TRIAGED, ASSIGNED_AGENT, MATCHED, IN_PROGRESS, COMPLETED, CANCELLED
 	ChiefComplaint      *string                `json:"chiefComplaint,omitempty" db:"chief_complaint"`
 	SymptomsJSON        []string               `json:"symptoms" db:"symptoms_json"`
 	PreferredTimeWindow map[string]interface{} `json:"preferredTimeWindow,omitempty" db:"preferred_time_window"`

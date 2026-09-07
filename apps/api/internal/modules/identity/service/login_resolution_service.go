@@ -21,12 +21,12 @@ import (
 type ResolutionStatus string
 
 const (
-	StatusAuthenticated           ResolutionStatus = "authenticated"
-	StatusRedirectRequired        ResolutionStatus = "redirect_required"
-	StatusBranchSelectionRequired ResolutionStatus = "branch_selection_required"
-	StatusOrgSelectionRequired    ResolutionStatus = "organization_selection_required"
+	StatusAuthenticated            ResolutionStatus = "authenticated"
+	StatusRedirectRequired         ResolutionStatus = "redirect_required"
+	StatusBranchSelectionRequired  ResolutionStatus = "branch_selection_required"
+	StatusOrgSelectionRequired     ResolutionStatus = "organization_selection_required"
 	StatusUnassignedFacilityBranch ResolutionStatus = "unassigned_facility_branch"
-	StatusOrgAccessRequired       ResolutionStatus = "organization_access_required"
+	StatusOrgAccessRequired        ResolutionStatus = "organization_access_required"
 )
 
 type OrganizationOption struct {
@@ -45,7 +45,7 @@ type LoginResolution struct {
 	Organization     *OrganizationOption  `json:"organization,omitempty"`
 	Organizations    []OrganizationOption `json:"organizations,omitempty"`
 	ActiveBranch     *BranchSummary       `json:"activeBranch,omitempty"`
-	AssignedBranches []BranchSummary     `json:"assignedBranches,omitempty"`
+	AssignedBranches []BranchSummary      `json:"assignedBranches,omitempty"`
 	SelectionToken   string               `json:"selectionToken,omitempty"`
 	Message          string               `json:"message,omitempty"`
 }

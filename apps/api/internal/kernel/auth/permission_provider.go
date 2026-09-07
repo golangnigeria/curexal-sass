@@ -267,4 +267,3 @@ func (p *DatabaseRolePermissionProvider) Permissions(ctx context.Context, princi
 	}
 	return all, nil
 }
-

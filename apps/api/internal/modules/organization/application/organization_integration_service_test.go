@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"

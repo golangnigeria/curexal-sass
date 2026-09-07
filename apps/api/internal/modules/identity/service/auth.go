@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/domain"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	crypto "github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/golangnigeria/curexal/internal/shared/job"
 	"github.com/google/uuid"
@@ -254,7 +254,6 @@ func generateSecurePassword(length int) (string, error) {
 	}
 	return "", errors.New("failed to generate policy compliant password")
 }
-
 
 // SignUp handles user registration (forces email verification step).
 func (s *AuthService) SignUp(ctx context.Context, name, email, password, origin, orgName, orgType string) (*model.User, string, error) {

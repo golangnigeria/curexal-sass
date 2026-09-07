@@ -42,19 +42,19 @@ type TemplateTheme struct {
 }
 
 type TemplateData struct {
-	UserName         string
-	UserFirstName    string
-	Title            string
-	Message          string
-	ActionURL        string
-	ActionText       string
-	PatientName      string
-	TestName         string
-	LaboratoryName   string
-	OrderNumber      string
-	PortalURL        string
-	VerificationCode string
-	Code             string
+	UserName          string
+	UserFirstName     string
+	Title             string
+	Message           string
+	ActionURL         string
+	ActionText        string
+	PatientName       string
+	TestName          string
+	LaboratoryName    string
+	OrderNumber       string
+	PortalURL         string
+	VerificationCode  string
+	Code              string
 	VerificationLink  string
 	GeneratedPassword string
 	Password          string

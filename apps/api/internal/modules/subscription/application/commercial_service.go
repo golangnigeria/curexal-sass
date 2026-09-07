@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	billingDomain "github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	"github.com/golangnigeria/curexal/internal/modules/subscription/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 	"net/http"
 	"strings"

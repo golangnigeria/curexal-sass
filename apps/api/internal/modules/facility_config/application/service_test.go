@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/application"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

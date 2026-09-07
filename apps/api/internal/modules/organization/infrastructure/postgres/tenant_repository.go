@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

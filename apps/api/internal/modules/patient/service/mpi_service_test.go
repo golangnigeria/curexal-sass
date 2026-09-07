@@ -63,9 +63,9 @@ func TestMPIService_DuplicateEvaluation(t *testing.T) {
 			name:       "No matching candidates -> NONE",
 			candidates: []patientModel.Patient{},
 			request: patientModel.DuplicateEvaluationRequest{
-				FirstName:   "Chinedu",
-				LastName:    "Okafor",
-				Phone:       "+2348099999999",
+				FirstName: "Chinedu",
+				LastName:  "Okafor",
+				Phone:     "+2348099999999",
 			},
 			expectedStatus: patientModel.MatchNone,
 		},

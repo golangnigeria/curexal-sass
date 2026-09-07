@@ -4,19 +4,19 @@ import "time"
 
 // RegisterCanonicalPatientPayload is the request payload for registering a new patient
 type RegisterCanonicalPatientPayload struct {
-	FirstName           string     `json:"firstName" validate:"required,min=2,max=100"`
-	MiddleName          *string    `json:"middleName,omitempty"`
-	LastName            string     `json:"lastName" validate:"required,min=2,max=100"`
-	Gender              string     `json:"gender" validate:"required,oneof=MALE FEMALE OTHER male female other"`
-	DateOfBirth         string     `json:"dateOfBirth" validate:"required"` // "YYYY-MM-DD"
-	Phone               string     `json:"phone" validate:"required,min=7,max=20"`
-	Email               *string    `json:"email,omitempty" validate:"omitempty,email"`
-	BloodGroup          *string    `json:"bloodGroup,omitempty"`
-	Genotype            *string    `json:"genotype,omitempty"`
-	NIN                 *string    `json:"nin,omitempty"`
-	Address             *string    `json:"address,omitempty"`
-	RegistrationChannel string     `json:"registrationChannel"` // RECEPTION, PORTAL, REFERRAL, API
-	ForceRegistration   bool       `json:"forceRegistration"`   // Proceed even if probable duplicates exist
+	FirstName           string  `json:"firstName" validate:"required,min=2,max=100"`
+	MiddleName          *string `json:"middleName,omitempty"`
+	LastName            string  `json:"lastName" validate:"required,min=2,max=100"`
+	Gender              string  `json:"gender" validate:"required,oneof=MALE FEMALE OTHER male female other"`
+	DateOfBirth         string  `json:"dateOfBirth" validate:"required"` // "YYYY-MM-DD"
+	Phone               string  `json:"phone" validate:"required,min=7,max=20"`
+	Email               *string `json:"email,omitempty" validate:"omitempty,email"`
+	BloodGroup          *string `json:"bloodGroup,omitempty"`
+	Genotype            *string `json:"genotype,omitempty"`
+	NIN                 *string `json:"nin,omitempty"`
+	Address             *string `json:"address,omitempty"`
+	RegistrationChannel string  `json:"registrationChannel"` // RECEPTION, PORTAL, REFERRAL, API
+	ForceRegistration   bool    `json:"forceRegistration"`   // Proceed even if probable duplicates exist
 }
 
 // SendPortalOTPPayload request payload to send a login OTP
@@ -53,14 +53,14 @@ type PortalAuthResult struct {
 
 // PortalAuthResponse returned after successful portal authentication
 type PortalAuthResponse struct {
-	Token       string          `json:"token"`
-	PatientID   string          `json:"patientId"`
-	MRN         string          `json:"mrn"`
-	FirstName   string          `json:"firstName"`
-	LastName    string          `json:"lastName"`
-	Status      string          `json:"status"`
-	HasPIN      bool            `json:"hasPin"`
-	ExpiresAt   time.Time       `json:"expiresAt"`
+	Token     string    `json:"token"`
+	PatientID string    `json:"patientId"`
+	MRN       string    `json:"mrn"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
+	Status    string    `json:"status"`
+	HasPIN    bool      `json:"hasPin"`
+	ExpiresAt time.Time `json:"expiresAt"`
 }
 
 // PatientListFilter query parameters for patient directory search

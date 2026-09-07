@@ -137,6 +137,46 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  fmt:
+    desc: format Go code
+    dir: apps/api
+    cmds:
+      - go fmt ./...
+
+  lint:
+    desc: run static analysis (go vet) on backend
+    dir: apps/api
+    cmds:
+      - go vet ./...
+
+  typecheck:
+    desc: run TypeScript typecheck across all frontend applications
+    cmds:
+      - echo "==> Typechecking Web Platform..."
+      - cmd: cd apps/web-platform && bun run typecheck
+        platforms: [linux, darwin]
+      - cmd: powershell -Command "cd apps\web-platform; bun run typecheck"
+        platforms: [windows]
+      - echo "==> Typechecking Web Public..."
+      - cmd: cd apps/web-public && bun run typecheck
+        platforms: [linux, darwin]
+      - cmd: powershell -Command "cd apps\web-public; bun run typecheck"
+        platforms: [windows]
+      - echo "==> Typechecking Web Patient..."
+      - cmd: cd apps/web-patient && bun run typecheck
+        platforms: [linux, darwin]
+      - cmd: powershell -Command "cd apps\web-patient; bun run typecheck"
+        platforms: [windows]
+
+  ci:
+    desc: run all local CI checks (fmt, lint, test, typecheck, build)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test
+      - task: typecheck
+      - task: build
+
   clean:
     desc: clean all built binaries and dist bundles
     cmds:
@@ -144,3 +184,4 @@ tasks:
         platforms: [windows]
       - cmd: rm -rf apps/api/bin apps/web-public/dist apps/web-platform/dist apps/web-patient/dist
         platforms: [linux, darwin]
+

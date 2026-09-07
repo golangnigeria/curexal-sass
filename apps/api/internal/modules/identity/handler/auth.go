@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/domain"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model/auth"
@@ -18,8 +20,6 @@ import (
 	service "github.com/golangnigeria/curexal/internal/modules/identity/service"
 	orgRepo "github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
 	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

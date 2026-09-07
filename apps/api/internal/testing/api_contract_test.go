@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	catalogsDomain "github.com/golangnigeria/curexal/internal/modules/catalogs/domain"
 	identityHandler "github.com/golangnigeria/curexal/internal/modules/identity/handler"
 	identityRepo "github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	identityService "github.com/golangnigeria/curexal/internal/modules/identity/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/config"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
@@ -136,7 +136,7 @@ func TestAPISpec_AuthSignIn_MissingFields_ReturnsError(t *testing.T) {
 }
 
 // ─── 3. /api/v1/platform/catalogs Contract Tests ──────────────────────────────
- 
+
 func TestAPISpec_MasterCatalogs_ResponseStructureContract(t *testing.T) {
 	// Verify catalog response struct serialization contract
 	sampleItem := catalogsDomain.CatalogItem{

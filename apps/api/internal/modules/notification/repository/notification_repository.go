@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/notification/model"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/notification/model"
 	"github.com/jackc/pgx/v5"
 )
 

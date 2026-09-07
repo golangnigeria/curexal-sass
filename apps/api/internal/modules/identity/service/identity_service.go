@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 )
 

@@ -43,15 +43,15 @@ type CatalogItem struct {
 }
 
 type UpdateCatalogItemPayload struct {
-	Category    *string          `json:"category,omitempty"`
-	Code        *string          `json:"code,omitempty"`
-	Name        *string          `json:"name,omitempty"`
-	Description *string          `json:"description,omitempty"`
-	SystemGroup *string          `json:"systemGroup,omitempty"`
-	BasePrice   *float64         `json:"basePrice,omitempty"`
-	Metadata    json.RawMessage  `json:"metadata,omitempty"`
-	IsActive    *bool            `json:"isActive,omitempty"`
-	Version     int              `json:"version,omitempty"`
+	Category    *string         `json:"category,omitempty"`
+	Code        *string         `json:"code,omitempty"`
+	Name        *string         `json:"name,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	SystemGroup *string         `json:"systemGroup,omitempty"`
+	BasePrice   *float64        `json:"basePrice,omitempty"`
+	Metadata    json.RawMessage `json:"metadata,omitempty"`
+	IsActive    *bool           `json:"isActive,omitempty"`
+	Version     int             `json:"version,omitempty"`
 }
 
 func (c *CatalogItem) Validate() error {

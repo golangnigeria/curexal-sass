@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/golangnigeria/curexal/internal/bootstrap"
-	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/shared/config"
 	"github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/google/uuid"

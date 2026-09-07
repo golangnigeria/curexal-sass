@@ -3,8 +3,8 @@ package application
 import (
 	"fmt"
 
-	"github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/billing/domain"
 )
 
 type BillingPolicyRegistry struct {

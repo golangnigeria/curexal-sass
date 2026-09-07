@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	identityModel "github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/notification/model"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/mailer"
 )
 

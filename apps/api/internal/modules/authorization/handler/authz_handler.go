@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/authorization/model"
 	"github.com/golangnigeria/curexal/internal/modules/authorization/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )

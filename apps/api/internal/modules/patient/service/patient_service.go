@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	identityModel "github.com/golangnigeria/curexal/internal/modules/identity/model"
 	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
 	patientRepo "github.com/golangnigeria/curexal/internal/modules/patient/repository"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	crypto "github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

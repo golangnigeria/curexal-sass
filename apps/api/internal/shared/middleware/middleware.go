@@ -411,4 +411,3 @@ func IsPlatformStaff(c echo.Context) bool {
 func GetPatientContext(c echo.Context) interface{} {
 	return c.Get(PatientContextKey)
 }
-

@@ -159,4 +159,3 @@ func Migrate(ctx context.Context, log *zerolog.Logger, cfg *config.Config) error
 
 	return nil
 }
-

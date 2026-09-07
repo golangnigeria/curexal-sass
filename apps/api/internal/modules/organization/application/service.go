@@ -1,8 +1,8 @@
 package application
 
 import (
-	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 )
 
 type OrganizationApplicationService struct {
@@ -32,4 +32,3 @@ func NewOrganizationApplicationService(
 func (s *OrganizationApplicationService) GetNavigation() []domain.OrganizationNavigationItem {
 	return domain.NewOrganizationDomainProvider().GetOrganizationNavigation()
 }
-

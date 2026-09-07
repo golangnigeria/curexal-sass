@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	subApp "github.com/golangnigeria/curexal/internal/modules/subscription/application"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -31,7 +31,6 @@ func NewTenantHandler(s *server.Server, appService *application.OrganizationAppl
 func (h *TenantHandler) SetEntitlementService(svc *subApp.EntitlementService) {
 	h.entitlementSvc = svc
 }
-
 
 func (h *TenantHandler) CreateTenant(c echo.Context) error {
 	var payload CreateTenantPayload
@@ -59,8 +58,6 @@ func (h *TenantHandler) CreateTenant(c echo.Context) error {
 	}
 	return c.JSON(http.StatusCreated, MapTenantToResponse(t))
 }
-
-
 
 func (h *TenantHandler) GetActiveTenant(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -159,8 +156,6 @@ func (h *TenantHandler) ListTenants(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, responses)
 }
-
-
 
 func (h *TenantHandler) GetWorkspaceContext(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -267,4 +262,3 @@ func (h *TenantHandler) GetWorkspaceContext(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 
 }
-

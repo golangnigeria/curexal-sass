@@ -3,8 +3,8 @@ package application
 import (
 	"context"
 
-	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/google/uuid"
 )
 
@@ -46,4 +46,3 @@ func (s *AuditApplicationService) GetAdminStats(ctx context.Context, tenantID *u
 func (s *AuditApplicationService) ListPatientDisclosures(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]domain.AuditLog, error) {
 	return s.auditRepo.ListPatientDisclosures(ctx, patientID, limit, offset)
 }
-

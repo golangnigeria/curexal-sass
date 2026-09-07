@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	identityRepo "github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/notification/channels"
 	"github.com/golangnigeria/curexal/internal/modules/notification/model"
 	notificationRepo "github.com/golangnigeria/curexal/internal/modules/notification/repository"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 )
 
 type OutboxWorker struct {

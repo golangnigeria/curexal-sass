@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/organization/application"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -169,7 +169,7 @@ func TestStaffMembershipService_CreateInvitation_SHA256HashToken_Success(t *test
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.NotEmpty(t, res.RawToken)
-	assert.Equal(t, 6, len(res.RawToken)) // 6-character alphanumeric verification code
+	assert.Equal(t, 6, len(res.RawToken))                            // 6-character alphanumeric verification code
 	assert.NotEqual(t, res.RawToken, res.Invitation.InviteTokenHash) // Plaintext token differs from stored hash
 
 	mockStaffRepo.AssertExpectations(t)

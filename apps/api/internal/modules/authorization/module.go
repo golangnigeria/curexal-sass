@@ -1,9 +1,9 @@
 package authorization
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/authorization/handler"
 	"github.com/golangnigeria/curexal/internal/modules/authorization/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,4 +27,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		apiGroup.GET("/authorization/permissions", m.AuthzHandler.GetUserPermissions)
 	}
 }
-

@@ -284,4 +284,3 @@ func (m *Mailer) SendStaffInvitationEmail(ctx context.Context, toEmail, orgName,
 
 	return m.SendEmail(ctx, toEmail, subject, htmlBody)
 }
-

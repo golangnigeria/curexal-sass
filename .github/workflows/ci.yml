@@ -1,17 +1,21 @@
-name: CUREXAL Monorepo Production CI
+name: Curexal Production CI
 
 on:
   push:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: curexal-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  backend-test-and-build:
+  backend-ci:
     name: Backend API (Go)
     runs-on: ubuntu-latest
     services:
@@ -48,9 +52,31 @@ jobs:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
 
+      - name: Verify Go Formatting
+        working-directory: apps/api
+        run: |
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "The following Go files violate gofmt formatting:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+          echo "All Go files formatted correctly."
+
+      - name: Run Go Vet
+        working-directory: apps/api
+        run: go vet ./...
+
       - name: Verify Go Modules
         working-directory: apps/api
         run: go mod verify
+
+      - name: Validate Database Migrations
+        working-directory: apps/api
+        env:
+          CUREXAL_DB_DSN: "postgres://curexal:password123@localhost:5432/curexal_test?sslmode=disable"
+          DATABASE_URL: "postgres://curexal:password123@localhost:5432/curexal_test?sslmode=disable"
+        run: go run ./cmd/migrate
 
       - name: Run Backend Tests
         working-directory: apps/api
@@ -64,10 +90,10 @@ jobs:
 
       - name: Build Backend Binaries
         working-directory: apps/api
-        run: go build -v ./cmd/CUREXAL
+        run: go build -v -ldflags="-w -s" ./cmd/CUREXAL
 
-  frontend-typecheck-and-build:
-    name: Frontend Applications (React 19 / Vite / Bun)
+  frontend-ci:
+    name: Frontend Applications (Vite / React 19 / Bun)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
@@ -93,6 +119,14 @@ jobs:
         working-directory: apps/web-patient
         run: bun run typecheck
 
+      - name: Run Web Platform Tests
+        working-directory: apps/web-platform
+        run: bun test
+
+      - name: Run Web Public Tests
+        working-directory: apps/web-public
+        run: bun test
+
       - name: Build Web Platform Bundle
         working-directory: apps/web-platform
         run: bun run build
@@ -104,3 +138,21 @@ jobs:
       - name: Build Web Patient Bundle
         working-directory: apps/web-patient
         run: bun run build
+
+  security-audit:
+    name: Security & Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+
+      - name: Run Govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-file: apps/api/go.mod
+          work-dir: apps/api

@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	ErrOrganizationNotFound          = errors.New("organization not found")
-	ErrInvalidSetupStateTransition   = errors.New("invalid setup wizard state transition")
-	ErrOptimisticLockingConflict     = errors.New("optimistic concurrency conflict: organization record was modified concurrently")
-	ErrUnauthorizedTenantAccess      = errors.New("unauthorized: caller does not have permission for active tenant organization")
-	ErrInvalidOrganizationProfile    = errors.New("invalid organization profile data")
+	ErrOrganizationNotFound        = errors.New("organization not found")
+	ErrInvalidSetupStateTransition = errors.New("invalid setup wizard state transition")
+	ErrOptimisticLockingConflict   = errors.New("optimistic concurrency conflict: organization record was modified concurrently")
+	ErrUnauthorizedTenantAccess    = errors.New("unauthorized: caller does not have permission for active tenant organization")
+	ErrInvalidOrganizationProfile  = errors.New("invalid organization profile data")
 )
 
 type SetupState string
@@ -20,10 +20,10 @@ type SetupState string
 const (
 	SetupStatePendingRegistration SetupState = "PENDING_REGISTRATION"
 	SetupStateProfileCompleted    SetupState = "PROFILE_COMPLETED"
-	SetupStateDocumentsSubmitted SetupState = "DOCUMENTS_SUBMITTED"
-	SetupStateUnderReview        SetupState = "UNDER_REVIEW"
-	SetupStateVerified           SetupState = "VERIFIED"
-	SetupStateRejected           SetupState = "REJECTED"
+	SetupStateDocumentsSubmitted  SetupState = "DOCUMENTS_SUBMITTED"
+	SetupStateUnderReview         SetupState = "UNDER_REVIEW"
+	SetupStateVerified            SetupState = "VERIFIED"
+	SetupStateRejected            SetupState = "REJECTED"
 )
 
 func IsValidSetupTransition(from, to SetupState) bool {

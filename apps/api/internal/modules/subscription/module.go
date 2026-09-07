@@ -1,12 +1,12 @@
 package subscription
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	billingDomain "github.com/golangnigeria/curexal/internal/modules/billing/domain"
 	billingInfra "github.com/golangnigeria/curexal/internal/modules/billing/infrastructure"
 	"github.com/golangnigeria/curexal/internal/modules/subscription/api"
 	"github.com/golangnigeria/curexal/internal/modules/subscription/application"
 	"github.com/golangnigeria/curexal/internal/modules/subscription/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )

@@ -8,9 +8,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration/model"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration/repository"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 )
 
@@ -312,4 +312,3 @@ func (s *CareRequestService) AssignProvider(ctx context.Context, tenantID, careR
 
 	return nil
 }
-

@@ -39,37 +39,17 @@ const (
 )
 
 type Notification struct {
-	ID               string                 `json:"id"`
-	UserID           string                 `json:"user_id"`
-	TenantID         *string                `json:"tenant_id,omitempty"`
-	Title            string                 `json:"title"`
-	Message          string                 `json:"message"`
-	Type             string                 `json:"type"` // e.g. 'PATIENT_RESULT_READY'
-	Channel          string                 `json:"channel"` // 'in_app', 'email', 'sms'
-	Priority         NotificationPriority   `json:"priority"`
-	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`
-	IsRead           bool                   `json:"is_read"`
-	ReadAt           *time.Time             `json:"read_at,omitempty"`
-	Metadata         map[string]interface{} `json:"metadata,omitempty"`
-	LinkURL          *string                `json:"link_url,omitempty"`
-	PatientID        *string                `json:"patient_id,omitempty"`
-	VisitID          *string                `json:"visit_id,omitempty"`
-	OrderID          *string                `json:"order_id,omitempty"`
-	SpecimenID       *string                `json:"specimen_id,omitempty"`
-	ResultID         *string                `json:"result_id,omitempty"`
-	TriggeredBy      *string                `json:"triggered_by,omitempty"`
-	CreatedAt        time.Time              `json:"created_at"`
-	UpdatedAt        time.Time              `json:"updated_at"`
-}
-
-type CreateNotificationDTO struct {
-	UserID         string                 `json:"user_id" validate:"required"`
+	ID             string                 `json:"id"`
+	UserID         string                 `json:"user_id"`
 	TenantID       *string                `json:"tenant_id,omitempty"`
-	Title          string                 `json:"title" validate:"required"`
-	Message        string                 `json:"message" validate:"required"`
-	Type           NotificationType       `json:"type"`
-	Channel        string                 `json:"channel"`
+	Title          string                 `json:"title"`
+	Message        string                 `json:"message"`
+	Type           string                 `json:"type"`    // e.g. 'PATIENT_RESULT_READY'
+	Channel        string                 `json:"channel"` // 'in_app', 'email', 'sms'
 	Priority       NotificationPriority   `json:"priority"`
+	DeliveryStatus DeliveryStatus         `json:"delivery_status"`
+	IsRead         bool                   `json:"is_read"`
+	ReadAt         *time.Time             `json:"read_at,omitempty"`
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 	LinkURL        *string                `json:"link_url,omitempty"`
 	PatientID      *string                `json:"patient_id,omitempty"`
@@ -78,7 +58,27 @@ type CreateNotificationDTO struct {
 	SpecimenID     *string                `json:"specimen_id,omitempty"`
 	ResultID       *string                `json:"result_id,omitempty"`
 	TriggeredBy    *string                `json:"triggered_by,omitempty"`
-	SendEmail      bool                   `json:"send_email"`
+	CreatedAt      time.Time              `json:"created_at"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+}
+
+type CreateNotificationDTO struct {
+	UserID      string                 `json:"user_id" validate:"required"`
+	TenantID    *string                `json:"tenant_id,omitempty"`
+	Title       string                 `json:"title" validate:"required"`
+	Message     string                 `json:"message" validate:"required"`
+	Type        NotificationType       `json:"type"`
+	Channel     string                 `json:"channel"`
+	Priority    NotificationPriority   `json:"priority"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	LinkURL     *string                `json:"link_url,omitempty"`
+	PatientID   *string                `json:"patient_id,omitempty"`
+	VisitID     *string                `json:"visit_id,omitempty"`
+	OrderID     *string                `json:"order_id,omitempty"`
+	SpecimenID  *string                `json:"specimen_id,omitempty"`
+	ResultID    *string                `json:"result_id,omitempty"`
+	TriggeredBy *string                `json:"triggered_by,omitempty"`
+	SendEmail   bool                   `json:"send_email"`
 }
 
 type OutboxEvent struct {
@@ -97,14 +97,14 @@ type OutboxEvent struct {
 }
 
 type NotificationPreference struct {
-	UserID           string     `json:"user_id"`
-	EmailEnabled     bool       `json:"email_enabled"`
-	SMSEnabled       bool       `json:"sms_enabled"`
-	PushEnabled      bool       `json:"push_enabled"`
-	WhatsAppEnabled  bool       `json:"whatsapp_enabled"`
-	QuietHoursStart  *string    `json:"quiet_hours_start,omitempty"`
-	QuietHoursEnd    *string    `json:"quiet_hours_end,omitempty"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	UserID          string    `json:"user_id"`
+	EmailEnabled    bool      `json:"email_enabled"`
+	SMSEnabled      bool      `json:"sms_enabled"`
+	PushEnabled     bool      `json:"push_enabled"`
+	WhatsAppEnabled bool      `json:"whatsapp_enabled"`
+	QuietHoursStart *string   `json:"quiet_hours_start,omitempty"`
+	QuietHoursEnd   *string   `json:"quiet_hours_end,omitempty"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type Message struct {

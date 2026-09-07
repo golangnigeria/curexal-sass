@@ -15,11 +15,11 @@ func TestAuthorizationRegressionMatrix(t *testing.T) {
 	resolver := NewMemoryPermissionResolver()
 
 	tests := []struct {
-		name           string
-		role           string
+		name            string
+		role            string
 		isPlatformAdmin bool
-		permission     string
-		expectedHas    bool
+		permission      string
+		expectedHas     bool
 	}{
 		// 1. Platform Super Admin (Bypass)
 		{"Platform Admin - organization:read", "super_admin", true, PermissionOrganizationRead, true},

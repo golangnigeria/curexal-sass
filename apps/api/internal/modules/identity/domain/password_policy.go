@@ -21,12 +21,12 @@ var (
 
 // SecurityPolicy defines configurable security policy parameters for an organization or platform deployment.
 type SecurityPolicy struct {
-	MinLengthPlatform   int           `json:"minLengthPlatform"`
-	MinLengthGeneral    int           `json:"minLengthGeneral"`
-	PasswordHistoryDepth int          `json:"passwordHistoryDepth"`
-	LockoutAttempts     int           `json:"lockoutAttempts"`
-	LockoutDuration     time.Duration `json:"lockoutDuration"`
-	PasswordExpiryDays  int           `json:"passwordExpiryDays"`
+	MinLengthPlatform    int           `json:"minLengthPlatform"`
+	MinLengthGeneral     int           `json:"minLengthGeneral"`
+	PasswordHistoryDepth int           `json:"passwordHistoryDepth"`
+	LockoutAttempts      int           `json:"lockoutAttempts"`
+	LockoutDuration      time.Duration `json:"lockoutDuration"`
+	PasswordExpiryDays   int           `json:"passwordExpiryDays"`
 }
 
 // DefaultSecurityPolicy returns standard enterprise security policy configuration.

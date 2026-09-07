@@ -1,13 +1,13 @@
 package notification
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	identityRepo "github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/notification/channels"
 	"github.com/golangnigeria/curexal/internal/modules/notification/handler"
 	"github.com/golangnigeria/curexal/internal/modules/notification/repository"
 	"github.com/golangnigeria/curexal/internal/modules/notification/service"
 	"github.com/golangnigeria/curexal/internal/modules/notification/worker"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 

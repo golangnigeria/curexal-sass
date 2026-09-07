@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	ResolvedOrgIDKey        = "resolved_organization_id"
-	ResolvedOrgSlugKey      = "resolved_organization_slug"
-	ResolvedBranchSlugKey   = "resolved_branch_slug"
+	ResolvedOrgIDKey          = "resolved_organization_id"
+	ResolvedOrgSlugKey        = "resolved_organization_slug"
+	ResolvedBranchSlugKey     = "resolved_branch_slug"
 	ResolvedIsCustomDomainKey = "resolved_is_custom_domain"
-	ResolvedHostTypeKey     = "resolved_host_type"
+	ResolvedHostTypeKey       = "resolved_host_type"
 )
 
 type HostType string

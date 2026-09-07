@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	modelUser "github.com/golangnigeria/curexal/internal/modules/identity/model/user"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -375,7 +375,6 @@ func (r *UserRepository) RevokeAllUserSessions(ctx context.Context, userID strin
 	_, err := db.Exec(ctx, `DELETE FROM identity.sessions WHERE user_id::text = @userID`, pgx.NamedArgs{"userID": userID})
 	return err
 }
-
 
 func (r *UserRepository) ListUsersByTenant(ctx context.Context, tenantID string, allBranches bool) ([]model.MembershipWithDetails, error) {
 	dbExec := r.server.DB.Conn(ctx)
@@ -989,7 +988,6 @@ func (r *UserRepository) CreateProfessionalProfile(ctx context.Context, userID s
 	}, nil
 }
 
-
 func (r *UserRepository) IsBranchOnlyUser(ctx context.Context, userID string) (bool, error) {
 	dbExec := r.server.DB.Conn(ctx)
 	var isBranchOnly bool
@@ -1042,7 +1040,6 @@ func (r *UserRepository) CheckUserWorkspaceAccess(ctx context.Context, userID st
 	err := dbExec.QueryRow(ctx, stmt, pgx.NamedArgs{"userID": userID, "subdomain": subdomain}).Scan(&hasAccess)
 	return hasAccess, err
 }
-
 
 func (r *UserRepository) GetPermissionOverrides(ctx context.Context, userID, tenantID string) ([]map[string]interface{}, error) {
 	return []map[string]interface{}{}, nil

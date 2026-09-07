@@ -68,14 +68,14 @@ type ActiveContext struct {
 //   - Workspace    == nil → user has no active branch workspace
 //   - Patient      == nil → user has no patient profile
 type EnterpriseSession struct {
-	User             UserContext           `json:"user"`
-	Platform         PlatformContext       `json:"platform"`
-	Organization     *OrganizationContext  `json:"organization"`
-	Workspace        *WorkspaceContext     `json:"workspace"`
-	Patient          *PatientContext       `json:"patient"`
+	User             UserContext          `json:"user"`
+	Platform         PlatformContext      `json:"platform"`
+	Organization     *OrganizationContext `json:"organization"`
+	Workspace        *WorkspaceContext    `json:"workspace"`
+	Patient          *PatientContext      `json:"patient"`
 	Permissions      []string             `json:"permissions"`
-	AvailableTenants []TenantSelectorItem  `json:"availableTenants"`
-	ActiveContext    ActiveContext         `json:"activeContext"`
+	AvailableTenants []TenantSelectorItem `json:"availableTenants"`
+	ActiveContext    ActiveContext        `json:"activeContext"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -141,10 +141,10 @@ type WorkspaceMembershipContext struct {
 
 // ContextVector contains mutable active execution scope details.
 type ContextVector struct {
-	ActiveOrganization  ActiveOrganizationContext   `json:"activeOrganization"`
-	ActiveTenant        ActiveTenantContextSummary  `json:"activeTenant"`
-	ActiveBranch        ActiveTenantContextSummary  `json:"activeBranch"`
-	WorkspaceMembership WorkspaceMembershipContext  `json:"workspaceMembership"`
+	ActiveOrganization  ActiveOrganizationContext  `json:"activeOrganization"`
+	ActiveTenant        ActiveTenantContextSummary `json:"activeTenant"`
+	ActiveBranch        ActiveTenantContextSummary `json:"activeBranch"`
+	WorkspaceMembership WorkspaceMembershipContext `json:"workspaceMembership"`
 }
 
 // PrincipalMetadata contains session metadata details.

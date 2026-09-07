@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/application"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/golangnigeria/curexal/internal/shared/response"
 	"github.com/labstack/echo/v4"

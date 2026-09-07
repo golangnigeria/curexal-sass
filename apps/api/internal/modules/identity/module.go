@@ -3,12 +3,12 @@ package identity
 import (
 	"context"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/handler"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/identity/service"
 	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )
@@ -105,4 +105,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, orgGroup *echo.Group, wspG
 		}
 	}
 }
-

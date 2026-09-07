@@ -18,7 +18,7 @@ type Patient struct {
 	BloodGroup          *string                `json:"bloodGroup,omitempty" db:"blood_group"`
 	Genotype            *string                `json:"genotype,omitempty" db:"genotype"`
 	NIN                 *string                `json:"nin,omitempty" db:"nin"`
-	Status              string                 `json:"status" db:"status"` // DISCOVERED, IDENTIFIED, REGISTERED, SUSPENDED, DEACTIVATED
+	Status              string                 `json:"status" db:"status"`                            // DISCOVERED, IDENTIFIED, REGISTERED, SUSPENDED, DEACTIVATED
 	RegistrationChannel string                 `json:"registrationChannel" db:"registration_channel"` // RECEPTION, PORTAL, REFERRAL, API
 	Metadata            map[string]interface{} `json:"metadata" db:"metadata"`
 	CreatedAt           time.Time              `json:"createdAt" db:"created_at"`
@@ -60,7 +60,7 @@ type Consent struct {
 	ID          string                 `json:"id" db:"id"`
 	PatientID   string                 `json:"patientId" db:"patient_id"`
 	ConsentType string                 `json:"consentType" db:"consent_type"` // TELEHEALTH, DATA_SHARING, RESEARCH, PROXY_ACCESS
-	Status      string                 `json:"status" db:"status"`           // ACTIVE, REVOKED, EXPIRED
+	Status      string                 `json:"status" db:"status"`            // ACTIVE, REVOKED, EXPIRED
 	GrantedBy   string                 `json:"grantedBy" db:"granted_by"`     // SELF, LEGAL_GUARDIAN, PROXY
 	GrantedAt   time.Time              `json:"grantedAt" db:"granted_at"`
 	ExpiresAt   *time.Time             `json:"expiresAt,omitempty" db:"expires_at"`

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/subscription/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/subscription/domain"
 	"github.com/google/uuid"
 )
 

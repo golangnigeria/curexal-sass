@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/audit/application"
 	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
@@ -161,4 +161,3 @@ func (h *AuditHandler) GetPatientDisclosures(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, logs)
 }
-

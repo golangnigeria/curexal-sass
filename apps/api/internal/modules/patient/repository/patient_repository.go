@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	identityModel "github.com/golangnigeria/curexal/internal/modules/identity/model"
 	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/jackc/pgx/v5"
 )
 

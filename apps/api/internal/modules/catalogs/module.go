@@ -1,12 +1,12 @@
 package catalogs
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	auditPostgres "github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
 	"github.com/golangnigeria/curexal/internal/modules/catalogs/api"
 	"github.com/golangnigeria/curexal/internal/modules/catalogs/application"
 	"github.com/golangnigeria/curexal/internal/modules/catalogs/domain"
 	catalogPostgres "github.com/golangnigeria/curexal/internal/modules/catalogs/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 

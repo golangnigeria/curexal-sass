@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/clinical/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/clinical/domain"
 	"github.com/google/uuid"
 )
 

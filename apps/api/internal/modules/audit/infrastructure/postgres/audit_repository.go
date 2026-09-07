@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/shared/logger"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -708,5 +708,3 @@ func (r *AuditRepository) ListPatientDisclosures(ctx context.Context, patientID 
 
 	return logs, nil
 }
-
-

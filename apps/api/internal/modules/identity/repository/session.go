@@ -18,7 +18,7 @@ func NewSessionRepository(s *server.Server) *SessionRepository {
 // RevokeOtherUserSessions revokes/deletes all active sessions for a user EXCEPT the current session token or session ID.
 func (r *SessionRepository) RevokeOtherUserSessions(ctx context.Context, userID string, activeSessionIdentifier string) error {
 	db := r.server.DB.Conn(ctx)
-	
+
 	query := `
 		DELETE FROM identity.sessions 
 		WHERE user_id = $1 

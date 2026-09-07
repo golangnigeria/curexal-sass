@@ -4,20 +4,20 @@ import "time"
 
 // TriageAssessment represents clinical vitals intake & urgency categorization
 type TriageAssessment struct {
-	ID              string     `json:"id" db:"id"`
-	CareRequestID   string     `json:"careRequestId" db:"care_request_id"`
-	PatientID       string     `json:"patientId" db:"patient_id"`
-	AssessorID      *string    `json:"assessorId,omitempty" db:"assessor_id"`
-	AcuityLevel     string     `json:"acuityLevel" db:"acuity_level"` // RED (Immediate), YELLOW (Urgent), GREEN (Standard)
-	SystolicBP      *int       `json:"systolicBp,omitempty" db:"systolic_bp"`
-	DiastolicBP     *int       `json:"diastolicBp,omitempty" db:"diastolic_bp"`
-	PulseRate       *int       `json:"pulseRate,omitempty" db:"pulse_rate"`
-	Temperature     *float64   `json:"temperature,omitempty" db:"temperature"`
-	SpO2            *int       `json:"spo2,omitempty" db:"spo2"`
-	RespiratoryRate *int       `json:"respiratoryRate,omitempty" db:"respiratory_rate"`
-	PainScore       *int       `json:"painScore,omitempty" db:"pain_score"`
-	TriageNotes     *string    `json:"triageNotes,omitempty" db:"triage_notes"`
-	CreatedAt       time.Time  `json:"createdAt" db:"created_at"`
+	ID              string    `json:"id" db:"id"`
+	CareRequestID   string    `json:"careRequestId" db:"care_request_id"`
+	PatientID       string    `json:"patientId" db:"patient_id"`
+	AssessorID      *string   `json:"assessorId,omitempty" db:"assessor_id"`
+	AcuityLevel     string    `json:"acuityLevel" db:"acuity_level"` // RED (Immediate), YELLOW (Urgent), GREEN (Standard)
+	SystolicBP      *int      `json:"systolicBp,omitempty" db:"systolic_bp"`
+	DiastolicBP     *int      `json:"diastolicBp,omitempty" db:"diastolic_bp"`
+	PulseRate       *int      `json:"pulseRate,omitempty" db:"pulse_rate"`
+	Temperature     *float64  `json:"temperature,omitempty" db:"temperature"`
+	SpO2            *int      `json:"spo2,omitempty" db:"spo2"`
+	RespiratoryRate *int      `json:"respiratoryRate,omitempty" db:"respiratory_rate"`
+	PainScore       *int      `json:"painScore,omitempty" db:"pain_score"`
+	TriageNotes     *string   `json:"triageNotes,omitempty" db:"triage_notes"`
+	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
 }
 
 // SubmitTriagePayload payload for submitting triage vitals

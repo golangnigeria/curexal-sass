@@ -3,8 +3,8 @@ package application
 import (
 	"context"
 
-	"github.com/golangnigeria/curexal/internal/modules/settings/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/settings/domain"
 	"github.com/google/uuid"
 )
 

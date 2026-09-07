@@ -155,4 +155,3 @@ func TestDirectGrantPermissionProvider(t *testing.T) {
 		t.Errorf("expected explicit direct grants, got %v", perms)
 	}
 }
-

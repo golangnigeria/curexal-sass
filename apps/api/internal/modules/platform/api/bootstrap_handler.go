@@ -3,10 +3,10 @@ package api
 import (
 	"net/http"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	orgDomain "github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/modules/platform/application"
 	subApp "github.com/golangnigeria/curexal/internal/modules/subscription/application"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )
@@ -32,7 +32,6 @@ func (h *BootstrapHandler) SetEntitlementService(svc *subApp.EntitlementService)
 		h.bootstrapBuilder.SetEntitlementService(svc)
 	}
 }
-
 
 func (h *BootstrapHandler) GetBootstrap(c echo.Context) error {
 	principal := middleware.GetPrincipal(c)

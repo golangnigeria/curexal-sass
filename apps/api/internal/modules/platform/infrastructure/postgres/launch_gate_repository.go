@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golangnigeria/curexal/internal/modules/platform/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/platform/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )

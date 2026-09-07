@@ -120,10 +120,6 @@ func (p *CreateTenantPayload) Validate() error {
 	return validate.Struct(p)
 }
 
-
-
-
-
 type CreateDemoRequestPayload struct {
 	LaboratoryName string  `json:"laboratoryName" validate:"required,min=1"`
 	ContactName    string  `json:"contactName"    validate:"required,min=1"`

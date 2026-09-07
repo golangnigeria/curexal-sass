@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/audit"
 	"github.com/golangnigeria/curexal/internal/modules/authorization"
 	"github.com/golangnigeria/curexal/internal/modules/billing"
@@ -26,8 +28,6 @@ import (
 	"github.com/golangnigeria/curexal/internal/modules/subscription"
 	subAPI "github.com/golangnigeria/curexal/internal/modules/subscription/api"
 	subApp "github.com/golangnigeria/curexal/internal/modules/subscription/application"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -122,7 +122,6 @@ func InitModules(s *server.Server) *ModuleRegistry {
 	reg.RegisterRoutes(s)
 	return reg
 }
-
 
 func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 	if s.Echo == nil {
@@ -235,4 +234,3 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 		r.Notification.RegisterRoutes(s.Echo, middleware.Authenticate(s.Config))
 	}
 }
-

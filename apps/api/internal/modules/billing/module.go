@@ -1,21 +1,21 @@
 package billing
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	auditPostgres "github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
 	"github.com/golangnigeria/curexal/internal/modules/billing/api"
 	"github.com/golangnigeria/curexal/internal/modules/billing/application"
 	billingPostgres "github.com/golangnigeria/curexal/internal/modules/billing/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 
 type Module struct {
-	AppService            *application.BillingApplicationService
-	MarketplaceHandler    *api.MarketplaceHandler
-	PricingService        *application.PlatformPricingService
-	PricingHandler        *api.PlatformPricingHandler
-	VaultService          *application.PaymentGatewayVaultService
-	GatewayVaultHandler   *api.PaymentGatewayVaultHandler
+	AppService          *application.BillingApplicationService
+	MarketplaceHandler  *api.MarketplaceHandler
+	PricingService      *application.PlatformPricingService
+	PricingHandler      *api.PlatformPricingHandler
+	VaultService        *application.PaymentGatewayVaultService
+	GatewayVaultHandler *api.PaymentGatewayVaultHandler
 }
 
 func NewModule(s *server.Server) *Module {

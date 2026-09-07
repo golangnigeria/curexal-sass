@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
-	patientService "github.com/golangnigeria/curexal/internal/modules/patient/service"
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
+	patientService "github.com/golangnigeria/curexal/internal/modules/patient/service"
 	"github.com/labstack/echo/v4"
 )
 

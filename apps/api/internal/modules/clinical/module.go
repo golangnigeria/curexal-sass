@@ -1,11 +1,11 @@
 package clinical
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/api"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/application"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/domain"
 	"github.com/golangnigeria/curexal/internal/modules/clinical/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )
@@ -45,4 +45,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group, entitlementSvc middleware.
 		apiGroup.POST("/lims/authorizations", m.LimsHandler.AuthorizeOrder, middleware.RequireCapability("laboratory.basic", entitlementSvc))
 	}
 }
-

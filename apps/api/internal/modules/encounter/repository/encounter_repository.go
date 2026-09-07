@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/encounter/model"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/encounter/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )

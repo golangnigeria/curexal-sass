@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/identity/model/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/identity/model/auth"
 	"github.com/google/uuid"
 )
 

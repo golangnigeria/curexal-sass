@@ -27,17 +27,17 @@ type ScopeContext struct {
 
 // Principal defines the security identity of the authenticated user.
 type Principal struct {
-	UserID          uuid.UUID      `json:"userId"`
-	Email           string         `json:"email"`
-	FullName        string         `json:"fullName"`
-	IsPlatformStaff bool           `json:"isPlatformStaff"`
-	IsPlatformAdmin bool           `json:"isPlatformAdmin"`
-	Roles           []string       `json:"roles"`
-	Permissions     []string       `json:"permissions"`
-	Credentials     []string       `json:"credentials"` // e.g. "physician", "medical_laboratory_scientist", "pharmacist"
-	Products        []string       `json:"products"`    // e.g. "core", "hms", "lis", "pharmacy", "billing"
-	Capabilities    []string       `json:"capabilities"`
-	Context         ScopeContext   `json:"context"`
+	UserID          uuid.UUID    `json:"userId"`
+	Email           string       `json:"email"`
+	FullName        string       `json:"fullName"`
+	IsPlatformStaff bool         `json:"isPlatformStaff"`
+	IsPlatformAdmin bool         `json:"isPlatformAdmin"`
+	Roles           []string     `json:"roles"`
+	Permissions     []string     `json:"permissions"`
+	Credentials     []string     `json:"credentials"` // e.g. "physician", "medical_laboratory_scientist", "pharmacist"
+	Products        []string     `json:"products"`    // e.g. "core", "hms", "lis", "pharmacy", "billing"
+	Capabilities    []string     `json:"capabilities"`
+	Context         ScopeContext `json:"context"`
 }
 
 // HasPermission checks if the principal possesses a specific RBAC permission.

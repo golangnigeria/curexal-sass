@@ -1,12 +1,12 @@
 package platform
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	auditPostgres "github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
 	orgRepo "github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
 	"github.com/golangnigeria/curexal/internal/modules/platform/api"
 	"github.com/golangnigeria/curexal/internal/modules/platform/application"
 	platformPostgres "github.com/golangnigeria/curexal/internal/modules/platform/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )

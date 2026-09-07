@@ -33,9 +33,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golangnigeria/curexal/internal/kernel/database"
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 )

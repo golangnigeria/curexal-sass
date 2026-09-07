@@ -1,11 +1,11 @@
 package audit
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/audit/api"
 	"github.com/golangnigeria/curexal/internal/modules/audit/application"
 	"github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/labstack/echo/v4"
 )
@@ -36,5 +36,3 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		apiGroup.GET("/audit-logs/stats", m.AuditHandler.GetAdminStats)
 	}
 }
-
-

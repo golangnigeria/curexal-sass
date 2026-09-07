@@ -122,4 +122,3 @@ func TestCasbinEngine_RolePermissions(t *testing.T) {
 		BranchID:       &branchB_ID,
 	}))
 }
-

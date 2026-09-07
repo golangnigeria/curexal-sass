@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -48,9 +48,9 @@ func (r *OrganizationCatalogRepository) ListCatalogItems(ctx context.Context, or
 	var items []domain.OrganizationCatalogItem
 	for rows.Next() {
 		var (
-			item          domain.OrganizationCatalogItem
-			masterIDStr   *string
-			updatedByStr  *string
+			item         domain.OrganizationCatalogItem
+			masterIDStr  *string
+			updatedByStr *string
 		)
 		err := rows.Scan(
 			&item.ID, &item.OrganizationID, &masterIDStr, &item.DomainType, &item.Code, &item.Name, &item.Description,
@@ -86,9 +86,9 @@ func (r *OrganizationCatalogRepository) GetCatalogItemByID(ctx context.Context, 
 	`
 
 	var (
-		item          domain.OrganizationCatalogItem
-		masterIDStr   *string
-		updatedByStr  *string
+		item         domain.OrganizationCatalogItem
+		masterIDStr  *string
+		updatedByStr *string
 	)
 	err := dbExec.QueryRow(ctx, stmt, orgID.String(), itemID.String()).Scan(
 		&item.ID, &item.OrganizationID, &masterIDStr, &item.DomainType, &item.Code, &item.Name, &item.Description,

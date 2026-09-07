@@ -4,10 +4,10 @@ package patient
 type MatchConfidence string
 
 const (
-	MatchNone             MatchConfidence = "NONE"
-	MatchLow              MatchConfidence = "LOW"
+	MatchNone              MatchConfidence = "NONE"
+	MatchLow               MatchConfidence = "LOW"
 	MatchProbableDuplicate MatchConfidence = "PROBABLE_DUPLICATE"
-	MatchExact            MatchConfidence = "EXACT_MATCH"
+	MatchExact             MatchConfidence = "EXACT_MATCH"
 )
 
 // DuplicateEvaluationRequest contains signals to check for duplicates
@@ -29,13 +29,13 @@ type DuplicateMatchCandidate struct {
 	LastName        string          `json:"lastName"`
 	DateOfBirth     string          `json:"dateOfBirth"`
 	Gender          string          `json:"gender"`
-	MatchedSignals  []string        `json:"matchedSignals"` // "PHONE", "NIN", "DOB", "NAME"
+	MatchedSignals  []string        `json:"matchedSignals"`  // "PHONE", "NIN", "DOB", "NAME"
 	ConfidenceScore int             `json:"confidenceScore"` // 0 - 100
 	ConfidenceLevel MatchConfidence `json:"confidenceLevel"`
 }
 
 // DuplicateEvaluationResponse is returned by the MPI engine
 type DuplicateEvaluationResponse struct {
-	MatchStatus MatchConfidence            `json:"matchStatus"`
+	MatchStatus MatchConfidence           `json:"matchStatus"`
 	Candidates  []DuplicateMatchCandidate `json:"candidates"`
 }

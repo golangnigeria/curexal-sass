@@ -95,4 +95,3 @@ func TestRenderTemplate_PasswordDelivery(t *testing.T) {
 	assert.Contains(t, html, "P@ssw0rd!2026")
 	assert.Contains(t, html, "https://curexal.space/auth/sign-in")
 }
-

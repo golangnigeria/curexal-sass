@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -457,4 +457,3 @@ func (r *StaffMembershipRepository) DirectCreateMember(
 
 	return r.GetMemberByID(ctx, orgID, memID)
 }
-

@@ -4,21 +4,21 @@ import "time"
 
 // PatientProfile is the database representation of the patient_profile table.
 type PatientProfile struct {
-	ID                   string     `json:"id"                   db:"id"`
-	UserID               string     `json:"userId"               db:"user_id"`
-	Phone                *string    `json:"phone"                db:"phone"`
-	DateOfBirth          *time.Time `json:"dateOfBirth"          db:"date_of_birth"`
-	Gender               *string    `json:"gender"               db:"gender"`
-	BloodGroup           *string    `json:"bloodGroup"           db:"blood_group"`
-	Genotype             *string    `json:"genotype"             db:"genotype"`
-	Address              *string    `json:"address"              db:"address"`
-	City                 *string    `json:"city"                 db:"city"`
-	State                *string    `json:"state"                db:"state"`
-	Country              string     `json:"country"              db:"country"`
-	EmergencyContactName *string    `json:"emergencyContactName" db:"emergency_contact_name"`
-	EmergencyContactPhone *string   `json:"emergencyContactPhone" db:"emergency_contact_phone"`
-	CreatedAt            time.Time  `json:"createdAt"            db:"created_at"`
-	UpdatedAt            time.Time  `json:"updatedAt"            db:"updated_at"`
+	ID                    string     `json:"id"                   db:"id"`
+	UserID                string     `json:"userId"               db:"user_id"`
+	Phone                 *string    `json:"phone"                db:"phone"`
+	DateOfBirth           *time.Time `json:"dateOfBirth"          db:"date_of_birth"`
+	Gender                *string    `json:"gender"               db:"gender"`
+	BloodGroup            *string    `json:"bloodGroup"           db:"blood_group"`
+	Genotype              *string    `json:"genotype"             db:"genotype"`
+	Address               *string    `json:"address"              db:"address"`
+	City                  *string    `json:"city"                 db:"city"`
+	State                 *string    `json:"state"                db:"state"`
+	Country               string     `json:"country"              db:"country"`
+	EmergencyContactName  *string    `json:"emergencyContactName" db:"emergency_contact_name"`
+	EmergencyContactPhone *string    `json:"emergencyContactPhone" db:"emergency_contact_phone"`
+	CreatedAt             time.Time  `json:"createdAt"            db:"created_at"`
+	UpdatedAt             time.Time  `json:"updatedAt"            db:"updated_at"`
 }
 
 // RegisterPatientPayload is the request payload for POST /auth/sign-up (patient).

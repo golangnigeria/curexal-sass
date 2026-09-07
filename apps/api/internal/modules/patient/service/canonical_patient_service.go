@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
-	patientRepo "github.com/golangnigeria/curexal/internal/modules/patient/repository"
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	patientModel "github.com/golangnigeria/curexal/internal/modules/patient/model"
+	patientRepo "github.com/golangnigeria/curexal/internal/modules/patient/repository"
 	crypto "github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

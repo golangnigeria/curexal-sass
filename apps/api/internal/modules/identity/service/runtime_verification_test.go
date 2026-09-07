@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/identity/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/shared/config"
 	"github.com/golangnigeria/curexal/internal/shared/crypto"
 	"github.com/google/uuid"
@@ -267,4 +267,3 @@ func TestRuntimeVerification_PasswordRequestLifecycle(t *testing.T) {
 	_ = srv.DB.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM identity.password_requests WHERE user_id = $1`, unverifiedID).Scan(&unverifiedReqCount)
 	assert.Equal(t, 0, unverifiedReqCount, "Unverified user MUST NOT have password requests processed")
 }
-

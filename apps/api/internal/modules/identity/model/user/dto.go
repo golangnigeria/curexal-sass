@@ -86,15 +86,15 @@ func (p *CreateProfessionalSignaturePayload) Validate() error {
 }
 
 type UpdateTenantStaffPayload struct {
-	JobTitle       string    `json:"jobTitle,omitempty"`
-	EmploymentType string    `json:"employmentType,omitempty" validate:"omitempty,oneof=full_time part_time locum contract"`
-	DateJoined     string    `json:"dateJoined,omitempty"`
-	ManagerID      string    `json:"managerId,omitempty" validate:"omitempty,uuid"`
-	DepartmentIDs  []string  `json:"departmentIds,omitempty"`
-	BankName       string    `json:"bankName,omitempty"`
-	AccountNumber  string    `json:"accountNumber,omitempty"`
-	TaxID          string    `json:"taxId,omitempty"`
-	SalaryRate     *float64  `json:"salaryRate,omitempty"`
+	JobTitle       string   `json:"jobTitle,omitempty"`
+	EmploymentType string   `json:"employmentType,omitempty" validate:"omitempty,oneof=full_time part_time locum contract"`
+	DateJoined     string   `json:"dateJoined,omitempty"`
+	ManagerID      string   `json:"managerId,omitempty" validate:"omitempty,uuid"`
+	DepartmentIDs  []string `json:"departmentIds,omitempty"`
+	BankName       string   `json:"bankName,omitempty"`
+	AccountNumber  string   `json:"accountNumber,omitempty"`
+	TaxID          string   `json:"taxId,omitempty"`
+	SalaryRate     *float64 `json:"salaryRate,omitempty"`
 }
 
 func (p *UpdateTenantStaffPayload) Validate() error {

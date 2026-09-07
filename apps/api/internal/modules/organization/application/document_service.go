@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/kernel/storage"
+	"github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	"github.com/golangnigeria/curexal/internal/shared/errs"
 	"github.com/google/uuid"
 )
@@ -43,12 +43,12 @@ func NewOrganizationDocumentApplicationService(
 
 // Category to Required Document Catalog Rules
 var RequiredDocumentsPerCategory = map[string][]string{
-	"laboratory":  {"operating_license", "registration_certificate"},
-	"clinic":      {"operating_license", "facility_license"},
-	"pharmacy":    {"operating_license", "pharmacy_license"},
-	"hospital":    {"operating_license", "facility_license", "registration_certificate"},
-	"radiology":   {"operating_license", "accreditation_certificate"},
-	"healthcare":  {"operating_license"},
+	"laboratory": {"operating_license", "registration_certificate"},
+	"clinic":     {"operating_license", "facility_license"},
+	"pharmacy":   {"operating_license", "pharmacy_license"},
+	"hospital":   {"operating_license", "facility_license", "registration_certificate"},
+	"radiology":  {"operating_license", "accreditation_certificate"},
+	"healthcare": {"operating_license"},
 }
 
 func (s *OrganizationDocumentApplicationService) UploadDocument(

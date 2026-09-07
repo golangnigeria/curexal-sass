@@ -306,4 +306,3 @@ func TestRequestPasswordPayload_Validation(t *testing.T) {
 		})
 	}
 }
-

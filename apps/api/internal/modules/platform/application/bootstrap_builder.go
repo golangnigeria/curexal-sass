@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"strings"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	orgDomain "github.com/golangnigeria/curexal/internal/modules/organization/domain"
 	platformDomain "github.com/golangnigeria/curexal/internal/modules/platform/domain"
 	subApp "github.com/golangnigeria/curexal/internal/modules/subscription/application"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -349,11 +349,11 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 		}
 
 		_ = row.Scan(
-			&activeOrgID, 
-			&activeMembershipTenantID, 
-			&activeMembershipRole, 
-			&activeOrgName, 
-			&activeOrgSlug, 
+			&activeOrgID,
+			&activeMembershipTenantID,
+			&activeMembershipRole,
+			&activeOrgName,
+			&activeOrgSlug,
 			&activeOrgPlan,
 			&activeOrgStatus,
 			&activeOrgSetupState,
@@ -462,8 +462,8 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 			for bRows.Next() {
 				var (
 					bID, bName, bCode, bSlug, ftName, bCity, bState, bStatus string
-					isHQ                                                    bool
-					opHoursJSON, themeJSON                                  []byte
+					isHQ                                                     bool
+					opHoursJSON, themeJSON                                   []byte
 				)
 				if errScan := bRows.Scan(&bID, &bName, &bCode, &bSlug, &ftName, &isHQ, &bCity, &bState, &opHoursJSON, &themeJSON, &bStatus); errScan == nil {
 					if bStatus == "ACTIVE" {
@@ -774,7 +774,6 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 			}
 		}
 	}
-
 
 	// 6. Dashboard Widgets Spec
 	dashboardWidgets := []string{}
@@ -1159,4 +1158,3 @@ func (b *BootstrapBuilder) BuildBootstrapWithContext(ctx context.Context, princi
 func (b *BootstrapBuilder) SetEntitlementService(svc *subApp.EntitlementService) {
 	b.entitlementSvc = svc
 }
-

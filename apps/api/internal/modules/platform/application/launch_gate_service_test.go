@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
+	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	auditDomain "github.com/golangnigeria/curexal/internal/modules/audit/domain"
 	"github.com/golangnigeria/curexal/internal/modules/platform/application"
 	"github.com/golangnigeria/curexal/internal/modules/platform/domain"
-	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/shared/middleware"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

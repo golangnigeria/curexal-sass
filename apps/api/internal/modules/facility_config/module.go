@@ -1,12 +1,12 @@
 package facility_config
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	auditPostgres "github.com/golangnigeria/curexal/internal/modules/audit/infrastructure/postgres"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/api"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/application"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
 	"github.com/golangnigeria/curexal/internal/modules/facility_config/infrastructure/postgres"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 

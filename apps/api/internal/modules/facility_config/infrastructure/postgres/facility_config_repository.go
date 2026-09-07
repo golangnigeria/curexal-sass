@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/facility_config/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -296,4 +296,3 @@ func (r *FacilityConfigRepository) GetDashboard(ctx context.Context, typeID stri
 func (r *FacilityConfigRepository) GetTenantOverrides(ctx context.Context, tenantID uuid.UUID, branchID *uuid.UUID) (map[string]any, error) {
 	return map[string]any{}, nil
 }
-

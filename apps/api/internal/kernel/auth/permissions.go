@@ -59,16 +59,16 @@ const (
 	PermissionPlatformHealth = "platform:health"
 
 	// Organization Governance Aliases
-	PermissionOrganizationRead           = "organization:read"
-	PermissionOrganizationSettingsWrite  = "organization:settings:write"
-	PermissionOrganizationCreate         = "organization:create"
-	PermissionOrganizationUpdate         = "organization:update"
-	PermissionOrganizationDelete         = "organization:delete"
-	PermissionOrganizationDocumentUpload = "organization:document:upload"
-	PermissionOrganizationDocumentRead   = "organization:document:read"
-	PermissionOrganizationDocumentReview = "organization:document:review"
+	PermissionOrganizationRead            = "organization:read"
+	PermissionOrganizationSettingsWrite   = "organization:settings:write"
+	PermissionOrganizationCreate          = "organization:create"
+	PermissionOrganizationUpdate          = "organization:update"
+	PermissionOrganizationDelete          = "organization:delete"
+	PermissionOrganizationDocumentUpload  = "organization:document:upload"
+	PermissionOrganizationDocumentRead    = "organization:document:read"
+	PermissionOrganizationDocumentReview  = "organization:document:review"
 	PermissionOrganizationDocumentApprove = "organization:document:approve"
-	PermissionOrganizationDocumentReject = "organization:document:reject"
+	PermissionOrganizationDocumentReject  = "organization:document:reject"
 	PermissionOrganizationVerify          = "organization:verify"
 
 	// User Roster & Staff Aliases

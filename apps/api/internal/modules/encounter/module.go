@@ -1,10 +1,10 @@
 package encounter
 
 import (
+	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/golangnigeria/curexal/internal/modules/encounter/handler"
 	"github.com/golangnigeria/curexal/internal/modules/encounter/repository"
 	"github.com/golangnigeria/curexal/internal/modules/encounter/service"
-	"github.com/golangnigeria/curexal/internal/kernel/server"
 	"github.com/labstack/echo/v4"
 )
 

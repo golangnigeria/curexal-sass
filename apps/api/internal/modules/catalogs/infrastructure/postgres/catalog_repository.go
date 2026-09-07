@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golangnigeria/curexal/internal/modules/catalogs/domain"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
+	"github.com/golangnigeria/curexal/internal/modules/catalogs/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
