@@ -1,53 +1,14 @@
 import { apiClient } from "../client";
-
-export interface Encounter {
-  id: string;
-  tenantId: string;
-  careRequestId?: string;
-  patientId: string;
-  providerId: string;
-  encounterType: "OUTPATIENT" | "EMERGENCY" | "TELEHEALTH" | "INPATIENT_ROUND" | string;
-  mode: "IN_PERSON" | "VIDEO" | "AUDIO" | "ASYNC_CHAT" | string;
-  status: "WAITING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" | string;
-  chiefComplaint?: string;
-  subjective?: string;
-  objective?: string;
-  assessment?: string;
-  plan?: string;
-  primaryDiagnosisCode?: string;
-  primaryDiagnosisName?: string;
-  secondaryDiagnoses?: string[];
-  startedAt: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Enriched patient info
-  patientName?: string;
-  mrn?: string;
-  gender?: string;
-  ageYears?: number;
-}
-
-export interface StartEncounterPayload {
-  careRequestId?: string;
-  patientId: string;
-  providerId: string;
-  encounterType: "OUTPATIENT" | "EMERGENCY" | "TELEHEALTH" | "INPATIENT_ROUND" | string;
-  mode: "IN_PERSON" | "VIDEO" | "AUDIO" | "ASYNC_CHAT" | string;
-  chiefComplaint?: string;
-}
-
-export interface UpdateSOAPNotesPayload {
-  chiefComplaint?: string;
-  subjective?: string;
-  objective?: string;
-  assessment?: string;
-  plan?: string;
-  primaryDiagnosisCode?: string;
-  primaryDiagnosisName?: string;
-  secondaryDiagnoses?: string[];
-}
+import type {
+  ClinicalEncounter,
+  ClinicalDiagnosis,
+  Prescription,
+  StartEncounterPayload,
+  UpdateSOAPNotesPayload,
+  AddDiagnosisPayload,
+  CreatePrescriptionPayload,
+  CompleteEncounterResponse,
+} from "../contracts";
 
 export interface LabOrderItem {
   testCode: string;
@@ -77,33 +38,99 @@ export interface DispatchOrdersPayload {
   prescriptionList: PrescriptionOrderItem[];
 }
 
+export interface EncounterFilter {
+  status?: string;
+  providerId?: string;
+  patientId?: string;
+}
+
 export const encounterService = {
   /**
-   * Start a clinical encounter
+   * List encounters with optional status and provider filters
    */
-  async startEncounter(payload: StartEncounterPayload): Promise<Encounter> {
-    const res = await apiClient.post<{ success: boolean; data: Encounter }>(
-      "/encounters/start",
-      payload
+  async listEncounters(filter?: EncounterFilter): Promise<ClinicalEncounter[]> {
+    const params = new URLSearchParams();
+    if (filter?.status) params.append("status", filter.status);
+    if (filter?.providerId) params.append("provider_id", filter.providerId);
+    if (filter?.patientId) params.append("patient_id", filter.patientId);
+
+    const res = await apiClient.get<{ success: boolean; data: ClinicalEncounter[] }>(
+      `/encounters?${params.toString()}`
     );
-    return res.data?.data || res.data;
+    return res.data?.data || [];
   },
 
   /**
-   * Get active encounter by ID
+   * Start a clinical encounter (in-person or telehealth channel)
    */
-  async getEncounterById(encounterId: string): Promise<Encounter> {
-    const res = await apiClient.get<{ success: boolean; data: Encounter }>(
+  async startEncounter(payload: StartEncounterPayload): Promise<ClinicalEncounter> {
+    const res = await apiClient.post<{ success: boolean; data: ClinicalEncounter }>(
+      "/encounters",
+      payload
+    );
+    return res.data?.data || (res.data as any);
+  },
+
+  /**
+   * Get active encounter by ID with enriched data
+   */
+  async getEncounterById(encounterId: string): Promise<ClinicalEncounter> {
+    const res = await apiClient.get<{ success: boolean; data: ClinicalEncounter }>(
       `/encounters/${encounterId}`
     );
-    return res.data?.data || res.data;
+    return res.data?.data || (res.data as any);
   },
 
   /**
    * Save SOAP clinical notes and primary diagnosis
    */
   async saveSOAPNotes(encounterId: string, payload: UpdateSOAPNotesPayload): Promise<void> {
-    await apiClient.put(`/encounters/${encounterId}/notes`, payload);
+    await apiClient.put(`/encounters/${encounterId}/soap`, payload);
+  },
+
+  /**
+   * Add ICD-10 diagnosis to encounter
+   */
+  async addDiagnosis(encounterId: string, payload: AddDiagnosisPayload): Promise<ClinicalDiagnosis> {
+    const res = await apiClient.post<{ success: boolean; data: ClinicalDiagnosis }>(
+      `/encounters/${encounterId}/diagnoses`,
+      payload
+    );
+    return res.data?.data || (res.data as any);
+  },
+
+  /**
+   * List diagnoses for encounter
+   */
+  async listDiagnoses(encounterId: string): Promise<ClinicalDiagnosis[]> {
+    const res = await apiClient.get<{ success: boolean; data: ClinicalDiagnosis[] }>(
+      `/encounters/${encounterId}/diagnoses`
+    );
+    return res.data?.data || [];
+  },
+
+  /**
+   * Create electronic prescription with items
+   */
+  async createPrescription(
+    encounterId: string,
+    payload: CreatePrescriptionPayload
+  ): Promise<Prescription> {
+    const res = await apiClient.post<{ success: boolean; data: Prescription }>(
+      `/encounters/${encounterId}/prescriptions`,
+      payload
+    );
+    return res.data?.data || (res.data as any);
+  },
+
+  /**
+   * List prescriptions for encounter
+   */
+  async listPrescriptions(encounterId: string): Promise<Prescription[]> {
+    const res = await apiClient.get<{ success: boolean; data: Prescription[] }>(
+      `/encounters/${encounterId}/prescriptions`
+    );
+    return res.data?.data || [];
   },
 
   /**
@@ -114,9 +141,16 @@ export const encounterService = {
   },
 
   /**
-   * Finalize consultation and advance Care Journey to settlement
+   * Finalize consultation, advance Care Journey, and generate cashier POS invoice
    */
-  async completeEncounter(encounterId: string): Promise<void> {
-    await apiClient.post(`/encounters/${encounterId}/complete`);
+  async completeEncounter(
+    encounterId: string,
+    consultationFee?: number
+  ): Promise<CompleteEncounterResponse> {
+    const res = await apiClient.post<{ success: boolean; data: CompleteEncounterResponse }>(
+      `/encounters/${encounterId}/complete`,
+      { consultationFee: consultationFee || 5000 }
+    );
+    return res.data?.data || (res.data as any);
   },
 };

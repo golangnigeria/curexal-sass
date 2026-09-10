@@ -602,12 +602,17 @@ func (s *AuthService) CreateSession(ctx context.Context, userID, ipAddress, user
 		LastActiveAt:     time.Now(),
 		MfaVerified:      mfaVerified,
 	}
+	defaultIP := "127.0.0.1"
 	if ipAddress != "" {
-		sess.IPAddress = &ipAddress
+		defaultIP = ipAddress
 	}
+	sess.IPAddress = &defaultIP
+
+	defaultUA := "Unknown Device / Client"
 	if userAgent != "" {
-		sess.UserAgent = &userAgent
+		defaultUA = userAgent
 	}
+	sess.UserAgent = &defaultUA
 
 	if err := s.userRepo.CreateSession(ctx, sess); err != nil {
 		return nil, "", err

@@ -873,6 +873,14 @@ export interface DuplicateEvaluationResponse {
   candidates: DuplicateMatchCandidate[];
 }
 
+export interface EmergencyContactPayload {
+  fullName: string;
+  relationship: string;
+  phone: string;
+  email?: string;
+  address?: string;
+}
+
 export interface RegisterCanonicalPatientPayload {
   firstName: string;
   middleName?: string;
@@ -885,8 +893,67 @@ export interface RegisterCanonicalPatientPayload {
   genotype?: string;
   nin?: string;
   address?: string;
+  emergencyContact?: EmergencyContactPayload;
   registrationChannel?: string;
   forceRegistration?: boolean;
+}
+
+export interface Appointment {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  providerId: string;
+  appointmentNumber: string;
+  serviceType: string;
+  deliveryChannel: "in_person" | "video" | "telephone" | "secure_message" | string;
+  status: "BOOKED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | string;
+  startTime: string;
+  endTime: string;
+  reasonForVisit?: string;
+  cancellationReason?: string;
+  virtualMeetingUrl?: string;
+  patientName?: string;
+  patientMrn?: string;
+  providerName?: string;
+  specialtyCode?: string;
+  roomNumber?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAppointmentPayload {
+  patientId: string;
+  providerId: string;
+  startTime: string;
+  endTime: string;
+  serviceType?: string;
+  deliveryChannel?: "in_person" | "video" | "telephone" | "secure_message" | string;
+  reasonForVisit?: string;
+}
+
+export interface ProviderProfile {
+  id: string;
+  userId: string;
+  tenantId: string;
+  providerName?: string;
+  email?: string;
+  phone?: string;
+  licenseNumber: string;
+  licenseIssuer?: string;
+  specialtyCode: string;
+  subSpecialties?: string[];
+  roomNumber?: string;
+  roomName?: string;
+  virtualRoomUrl?: string;
+  telehealthEnabled: boolean;
+  inPersonEnabled: boolean;
+  maxActiveQueue: number;
+  currentActiveQueue: number;
+  status: "ON_DUTY" | "ON_BREAK" | "OFF_DUTY" | "BUSY" | string;
+  consultationLanguages?: string[];
+  rating?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PatientListFilter {
@@ -941,6 +1008,7 @@ export interface CareRequest {
   requestNumber: string;
   serviceType: "GENERAL_CONSULTATION" | "SPECIALIST" | "LAB_TEST" | "REFILL" | "TELEHEALTH" | string;
   preferredMode: "IN_PERSON" | "VIDEO" | "AUDIO" | "ASYNC_CHAT" | string;
+  deliveryChannel?: "in_person" | "video" | "telephone" | "secure_message" | string;
   urgency: "ROUTINE" | "URGENT" | "EMERGENCY" | string;
   status: "SUBMITTED" | "TRIAGED" | "ASSIGNED_AGENT" | "MATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | string;
   chiefComplaint?: string;
@@ -1027,6 +1095,230 @@ export interface CareJourneyMilestone {
   blockingReason?: string;
   completedAt?: string;
   createdAt: string;
+}
+
+
+export interface AppointmentFilter {
+  patientId?: string;
+  providerId?: string;
+  status?: string;
+  deliveryChannel?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// ==========================================
+// 13. Clinical Encounters, Prescriptions & POS Billing
+// ==========================================
+
+export type EncounterChannel = "in_person" | "video" | "telephone" | "secure_message";
+export type EncounterStatus = "open" | "in_progress" | "awaiting_documentation" | "signed" | "closed" | "amended";
+
+export interface ClinicalObservation {
+  id: string;
+  encounterId: string;
+  patientId: string;
+  code: string;
+  valueNumeric?: number;
+  valueText?: string;
+  unit?: string;
+  source: "staff_measured" | "patient_reported" | "device_reported" | "provider_observed" | string;
+  observedAt: string;
+  recordedBy?: string;
+}
+
+export interface ClinicalDiagnosis {
+  id?: string;
+  encounterId: string;
+  patientId: string;
+  icd10Code: string;
+  icd10Title: string;
+  isPrimary: boolean;
+  clinicalStatus: "ACTIVE" | "RECURRENCE" | "RESOLVED" | string;
+  verificationStatus: "PROVISIONAL" | "DIFFERENTIAL" | "CONFIRMED" | string;
+  notes?: string;
+  diagnosedBy?: string;
+  createdAt?: string;
+}
+
+export interface PrescriptionItem {
+  id?: string;
+  prescriptionId?: string;
+  drugName: string;
+  dosageForm: "TABLET" | "CAPSULE" | "SYRUP" | "INJECTION" | "OINTMENT" | string;
+  strength: string;
+  route: string;
+  frequency: string;
+  durationDays: number;
+  quantityPrescribed: number;
+  instructions?: string;
+}
+
+export interface Prescription {
+  id: string;
+  encounterId: string;
+  patientId: string;
+  prescriberId: string;
+  prescriptionNumber: string;
+  status: "PENDING_DISPENSE" | "PARTIALLY_DISPENSED" | "DISPENSED" | "CANCELLED" | string;
+  notes?: string;
+  items?: PrescriptionItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClinicalEncounter {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  appointmentId?: string;
+  careRequestId?: string;
+  providerId: string;
+  encounterChannel: EncounterChannel;
+  status: EncounterStatus;
+  mode?: string;
+  encounterType?: string;
+  chiefComplaint?: string;
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
+  primaryDiagnosisCode?: string;
+  primaryDiagnosisName?: string;
+  secondaryDiagnoses?: string[];
+  startedAt: string;
+  signedAt?: string;
+  signedBy?: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  patientName?: string;
+  mrn?: string;
+  gender?: string;
+  observations?: ClinicalObservation[];
+  diagnoses?: ClinicalDiagnosis[];
+  prescriptions?: Prescription[];
+}
+
+export interface StartEncounterPayload {
+  patientId: string;
+  providerId: string;
+  appointmentId?: string;
+  careRequestId?: string;
+  encounterChannel: EncounterChannel;
+  chiefComplaint?: string;
+}
+
+export interface UpdateSOAPNotesPayload {
+  chiefComplaint?: string;
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
+  primaryDiagnosisCode?: string;
+  primaryDiagnosisName?: string;
+  secondaryDiagnoses?: string[];
+}
+
+export interface AddDiagnosisPayload {
+  icd10Code: string;
+  icd10Title: string;
+  isPrimary?: boolean;
+  clinicalStatus?: string;
+  verificationStatus?: string;
+  notes?: string;
+}
+
+export interface CreatePrescriptionPayload {
+  notes?: string;
+  items: Array<{
+    drugName: string;
+    dosageForm: string;
+    strength?: string;
+    route?: string;
+    frequency: string;
+    durationDays: number;
+    quantityPrescribed: number;
+    instructions?: string;
+  }>;
+}
+
+export interface CompleteEncounterResponse {
+  encounterId: string;
+  status: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  totalAmount: number;
+  signedAt: string;
+}
+
+// Cashier POS Billing Contracts
+export interface InvoiceItem {
+  id: string;
+  invoiceId: string;
+  description: string;
+  category: "CONSULTATION" | "PHARMACY" | "LAB" | "PROCEDURE" | "OTHER" | string;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  invoiceId: string;
+  receiptNumber: string;
+  amount: number;
+  tenderType: "CASH" | "POS" | "BANK_TRANSFER" | "SPLIT" | string;
+  tenderBreakdown?: Record<string, number>;
+  cashierName?: string;
+  status: "SETTLED" | "FAILED" | "REFUNDED" | string;
+  paidAt: string;
+}
+
+export interface PatientInvoice {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  encounterId?: string;
+  invoiceNumber: string;
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  amountPaid: number;
+  balanceDue: number;
+  status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "VOID" | string;
+  patientName?: string;
+  mrn?: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: InvoiceItem[];
+  payments?: PaymentRecord[];
+}
+
+export interface ProcessPaymentPayload {
+  amount: number;
+  tenderType: "CASH" | "POS" | "BANK_TRANSFER" | "SPLIT" | string;
+  tenderBreakdown?: Record<string, number>;
+  notes?: string;
+}
+
+export interface PaymentReceipt {
+  receiptNumber: string;
+  invoiceNumber: string;
+  patientName: string;
+  mrn: string;
+  amountPaid: number;
+  previousBalance: number;
+  newBalance: number;
+  tenderType: string;
+  tenderBreakdown?: Record<string, number>;
+  status: string;
+  paidAt: string;
+  cashierName: string;
 }
 
 

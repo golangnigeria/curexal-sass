@@ -23,15 +23,19 @@ type DuplicateEvaluationRequest struct {
 
 // DuplicateMatchCandidate is a matched patient with scoring breakdown
 type DuplicateMatchCandidate struct {
-	PatientID       string          `json:"patientId"`
-	MRN             string          `json:"mrn"`
-	FirstName       string          `json:"firstName"`
-	LastName        string          `json:"lastName"`
-	DateOfBirth     string          `json:"dateOfBirth"`
-	Gender          string          `json:"gender"`
-	MatchedSignals  []string        `json:"matchedSignals"`  // "PHONE", "NIN", "DOB", "NAME"
-	ConfidenceScore int             `json:"confidenceScore"` // 0 - 100
-	ConfidenceLevel MatchConfidence `json:"confidenceLevel"`
+	PatientID           string          `json:"patientId"`
+	MRN                 string          `json:"mrn"`
+	FirstName           string          `json:"firstName"`
+	LastName            string          `json:"lastName"`
+	DateOfBirth         string          `json:"dateOfBirth"`
+	Gender              string          `json:"gender"`
+	MatchedSignals      []string        `json:"matchedSignals"`  // "PHONE", "NIN", "DOB", "LAST_NAME", "FIRST_NAME", "SOUNDEX"
+	ConfidenceScore     int             `json:"confidenceScore"` // 0 - 100
+	Score               int             `json:"score,omitempty"`
+	ConfidenceLevel     MatchConfidence `json:"confidenceLevel"`
+	LastVisitAt         *string         `json:"lastVisitAt,omitempty"`
+	RegisteredBranch    *string         `json:"registeredBranch,omitempty"`
+	RegistrationChannel *string         `json:"registrationChannel,omitempty"`
 }
 
 // DuplicateEvaluationResponse is returned by the MPI engine

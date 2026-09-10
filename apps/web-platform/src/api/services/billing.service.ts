@@ -1,5 +1,9 @@
-import { authClient } from "@/lib/auth-client";
-import { apiGet, apiPost } from "@/api/client";
+import { apiClient, apiGet, apiPost } from "../client";
+import type {
+  PatientInvoice,
+  ProcessPaymentPayload,
+  PaymentReceipt,
+} from "../contracts";
 
 export interface CapabilityPricePayload {
   id: string;
@@ -54,7 +58,15 @@ export interface CommercialOrderResponse {
   providerReference?: string;
 }
 
-class BillingService {
+export interface InvoiceFilter {
+  status?: string;
+  patientId?: string;
+}
+
+export const billingService = {
+  // ==========================================
+  // 1. Organization & Marketplace Subscription Billing
+  // ==========================================
   async getCapabilityPrices(currency = "NGN"): Promise<CapabilityPricePayload[]> {
     try {
       const res = await apiGet<any[]>("/marketplace/capabilities");
@@ -73,7 +85,7 @@ class BillingService {
     } catch {
       return [];
     }
-  }
+  },
 
   async getInvoices(orgId: string): Promise<InvoicePayload[]> {
     try {
@@ -94,13 +106,13 @@ class BillingService {
     } catch {
       return [];
     }
-  }
+  },
 
   async subscribeCapability(orgId: string, capabilityCode: string): Promise<void> {
     await apiPost<void>(`/organizations/${orgId}/marketplace/subscribe`, {
       capabilityCode,
     });
-  }
+  },
 
   async createCommercialOrder(
     orgId: string,
@@ -111,7 +123,44 @@ class BillingService {
       `/organizations/${orgId}/marketplace/orders?provider=${encodeURIComponent(provider)}`,
       payload
     );
-  }
-}
+  },
 
-export const billingService = new BillingService();
+  // ==========================================
+  // 2. Outpatient Clinic Patient Billing / POS
+  // ==========================================
+  async listInvoices(filter?: InvoiceFilter): Promise<PatientInvoice[]> {
+    const params = new URLSearchParams();
+    if (filter?.status) params.append("status", filter.status);
+    if (filter?.patientId) params.append("patient_id", filter.patientId);
+
+    const res = await apiClient.get<{ success: boolean; data: PatientInvoice[] }>(
+      `/billing/invoices?${params.toString()}`
+    );
+    return res.data?.data || [];
+  },
+
+  async getInvoiceById(invoiceId: string): Promise<PatientInvoice> {
+    const res = await apiClient.get<{ success: boolean; data: PatientInvoice }>(
+      `/billing/invoices/${invoiceId}`
+    );
+    return res.data?.data || (res.data as any);
+  },
+
+  async processPayment(
+    invoiceId: string,
+    payload: ProcessPaymentPayload
+  ): Promise<PaymentReceipt> {
+    const res = await apiClient.post<{ success: boolean; data: PaymentReceipt }>(
+      `/billing/invoices/${invoiceId}/payments`,
+      payload
+    );
+    return res.data?.data || (res.data as any);
+  },
+
+  async getPaymentReceipt(receiptNumber: string): Promise<PaymentReceipt> {
+    const res = await apiClient.get<{ success: boolean; data: PaymentReceipt }>(
+      `/billing/receipts/${receiptNumber}`
+    );
+    return res.data?.data || (res.data as any);
+  },
+};

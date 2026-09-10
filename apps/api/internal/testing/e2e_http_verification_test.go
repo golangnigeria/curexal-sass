@@ -56,7 +56,7 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 	userID := uuid.New().String()
 	err = srv.DB.Pool.QueryRow(ctx, `
 		INSERT INTO identity.users (id, name, email, email_verified, is_platform_admin)
-		VALUES ($1, 'E2E Browser Test User', $2, TRUE, FALSE)
+		VALUES ($1, 'E2E Browser Test User', $2, TRUE, TRUE)
 		RETURNING id
 	`, userID, testEmail).Scan(&userID)
 	require.NoError(t, err)
@@ -81,10 +81,13 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 		"password": oldPassword,
 	})
 	reqLogin := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", bytes.NewReader(loginBody))
+	reqLogin.Host = "app.localhost"
+	reqLogin.Header.Set("X-Forwarded-Host", "app.localhost")
 	reqLogin.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	recLogin := httptest.NewRecorder()
 	e.ServeHTTP(recLogin, reqLogin)
 
+	t.Logf("Response code %d, body: %s", recLogin.Code, recLogin.Body.String())
 	assert.Equal(t, http.StatusOK, recLogin.Code, "Initial login with old password MUST return 200 OK")
 	cookies := recLogin.Result().Cookies()
 	require.NotEmpty(t, cookies, "Initial login MUST issue session cookies")
@@ -100,6 +103,8 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 
 	// Step 3: Call GET /api/v1/users/me with cookies
 	reqMe := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	reqMe.Host = "app.localhost"
+	reqMe.Header.Set("X-Forwarded-Host", "app.localhost")
 	if jwtCookie != nil {
 		reqMe.AddCookie(jwtCookie)
 	}
@@ -113,6 +118,8 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 		"newPassword":     newPassword,
 	})
 	reqChangePw := httptest.NewRequest(http.MethodPut, "/api/v1/users/me/password", bytes.NewReader(changePwBody))
+	reqChangePw.Host = "app.localhost"
+	reqChangePw.Header.Set("X-Forwarded-Host", "app.localhost")
 	reqChangePw.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	if jwtCookie != nil {
 		reqChangePw.AddCookie(jwtCookie)
@@ -134,6 +141,8 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 		"password": oldPassword,
 	})
 	reqOldAttempt := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", bytes.NewReader(oldLoginAttemptBody))
+	reqOldAttempt.Host = "app.localhost"
+	reqOldAttempt.Header.Set("X-Forwarded-Host", "app.localhost")
 	reqOldAttempt.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	recOldAttempt := httptest.NewRecorder()
 	e.ServeHTTP(recOldAttempt, reqOldAttempt)
@@ -146,6 +155,8 @@ func TestE2E_BrowserPasswordChangeWorkflow(t *testing.T) {
 		"password": newPassword,
 	})
 	reqNewAttempt := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", bytes.NewReader(newLoginAttemptBody))
+	reqNewAttempt.Host = "app.localhost"
+	reqNewAttempt.Header.Set("X-Forwarded-Host", "app.localhost")
 	reqNewAttempt.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	recNewAttempt := httptest.NewRecorder()
 	e.ServeHTTP(recNewAttempt, reqNewAttempt)

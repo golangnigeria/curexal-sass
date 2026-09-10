@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
@@ -31,6 +33,24 @@ func NewCanonicalPatientHandler(
 
 // resolveTenantID extracts active branch/tenant ID from context or header
 func (h *CanonicalPatientHandler) resolveTenantID(c echo.Context) string {
+	if tid, ok := c.Get("tenant_id").(string); ok && tid != "" {
+		return tid
+	}
+	if bid, ok := c.Get("branch_id").(string); ok && bid != "" {
+		return bid
+	}
+	if p := platformAuth.GetPrincipal(c); p != nil {
+		if p.TenantID != "" {
+			return p.TenantID
+		}
+		if p.ActiveBranchID != "" {
+			return p.ActiveBranchID
+		}
+		if p.OrganizationID != "" {
+			return p.OrganizationID
+		}
+	}
+
 	if tid := c.Request().Header.Get("X-Tenant-ID"); tid != "" && tid != "undefined" {
 		return tid
 	}
@@ -50,17 +70,6 @@ func (h *CanonicalPatientHandler) resolveTenantID(c echo.Context) string {
 			}
 		}
 		return orgID
-	}
-
-	if h.server != nil && h.server.DB != nil {
-		var defaultBranchID string
-		_ = h.server.DB.Conn(c.Request().Context()).QueryRow(
-			c.Request().Context(),
-			`SELECT id::text FROM organization.facility_branches ORDER BY is_headquarters DESC, created_at ASC LIMIT 1`,
-		).Scan(&defaultBranchID)
-		if defaultBranchID != "" {
-			return defaultBranchID
-		}
 	}
 
 	return ""
@@ -100,9 +109,21 @@ func (h *CanonicalPatientHandler) RegisterPatient(c echo.Context) error {
 	if err != nil {
 		if duplicateRes != nil {
 			return c.JSON(http.StatusConflict, echo.Map{
-				"code":       "PATIENT_DUPLICATE_SUSPECT",
-				"message":    err.Error(),
+				"code":    "duplicate_patient_detected",
+				"message": err.Error(),
+				"error": echo.Map{
+					"code":    "duplicate_patient_detected",
+					"message": err.Error(),
+					"details": echo.Map{
+						"matchStatus": duplicateRes.MatchStatus,
+						"candidates":  duplicateRes.Candidates,
+					},
+				},
 				"duplicates": duplicateRes,
+				"details": echo.Map{
+					"matchStatus": duplicateRes.MatchStatus,
+					"candidates":  duplicateRes.Candidates,
+				},
 			})
 		}
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -113,10 +134,29 @@ func (h *CanonicalPatientHandler) RegisterPatient(c echo.Context) error {
 		platformAuth.SetSessionCookies(c, h.server.Config, accessToken, refreshToken)
 	}
 
+	patientMap := map[string]interface{}{
+		"id":                  patient.ID,
+		"mrn":                 patient.MRN,
+		"firstName":           patient.FirstName,
+		"lastName":            patient.LastName,
+		"gender":              patient.Gender,
+		"dateOfBirth":         patient.DateOfBirth.Format("2006-01-02"),
+		"phone":               payload.Phone,
+		"status":              patient.Status,
+		"registrationChannel": patient.RegistrationChannel,
+		"createdAt":           patient.CreatedAt.UTC().Format(time.RFC3339),
+	}
+
 	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"success":     true,
-		"message":     "Patient registered successfully",
-		"data":        patient,
+		"success": true,
+		"message": "Patient registered successfully",
+		"data": map[string]interface{}{
+			"patient":          patientMap,
+			"id":               patient.ID,
+			"mrn":              patient.MRN,
+			"portalInviteSent": true,
+		},
+		"patient":     patientMap,
 		"token":       accessToken,
 		"accessToken": accessToken,
 	})
@@ -141,13 +181,16 @@ func (h *CanonicalPatientHandler) ListPatients(c echo.Context) error {
 // GetPatientByID retrieves a patient's canonical profile
 func (h *CanonicalPatientHandler) GetPatientByID(c echo.Context) error {
 	tenantID := h.resolveTenantID(c)
-	patientID := c.Param("id")
-	if strings.TrimSpace(patientID) == "" {
+	patientID := strings.TrimSpace(c.Param("id"))
+	if patientID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Patient ID is required")
 	}
 
 	patient, err := h.canonicalService.GetPatientByID(c.Request().Context(), tenantID, patientID)
 	if err != nil {
+		if errors.Is(err, patientService.ErrPatientNotFound) || errors.Is(err, patientService.ErrInvalidPatientID) {
+			return echo.NewHTTPError(http.StatusNotFound, "Patient not found")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve patient")
 	}
 	if patient == nil {

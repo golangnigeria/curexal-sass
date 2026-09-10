@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { CapabilityGate } from "@/components/design-system/capability-gate";
-import { DataTable } from "@/components/data-display/data-table";
 import { StatusBadge } from "@/components/feedback/status-badge";
-import { DocumentViewerModal } from "@/features/documents/document-viewer-modal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   CreditCard,
@@ -19,120 +25,95 @@ import {
   Sparkles,
   Search,
   User,
+  ArrowRight,
+  ShieldCheck,
+  TrendingUp,
+  Clock,
+  Banknote,
+  Smartphone,
 } from "lucide-react";
+import { useInvoices, useProcessPayment } from "@/api/hooks/use-billing";
 import { usePatients } from "@/api/hooks/use-patients";
-
-interface InvoiceItem {
-  id: string;
-  invoiceNo: string;
-  patientName: string;
-  patientMrn: string;
-  itemsSummary: string;
-  amount: number;
-  paymentMethod: "CASH" | "POS" | "TRANSFER" | "HMO_INSURANCE";
-  status: "paid" | "pending" | "overdue";
-  createdAt: string;
-}
-
-const initialInvoices: InvoiceItem[] = [
-  {
-    id: "inv-1",
-    invoiceNo: "INV-2026-0841",
-    patientName: "Amina Yusuf",
-    patientMrn: "PAT-0012",
-    itemsSummary: "Doctor Consultation + CBC + Malaria Smear",
-    amount: 17500,
-    paymentMethod: "POS",
-    status: "paid",
-    createdAt: "15 mins ago",
-  },
-  {
-    id: "inv-2",
-    invoiceNo: "INV-2026-0842",
-    patientName: "Chinedu Okafor",
-    patientMrn: "PAT-0034",
-    itemsSummary: "General Outpatient Consultation Fee",
-    amount: 10000,
-    paymentMethod: "CASH",
-    status: "paid",
-    createdAt: "45 mins ago",
-  },
-  {
-    id: "inv-3",
-    invoiceNo: "INV-2026-0843",
-    patientName: "Babatunde Lawal",
-    patientMrn: "PAT-0078",
-    itemsSummary: "Specialist Consultation + Follow-up",
-    amount: 15000,
-    paymentMethod: "HMO_INSURANCE",
-    status: "pending",
-    createdAt: "1 hour ago",
-  },
-];
+import type { PatientInvoice, PaymentReceipt } from "@/api/contracts";
 
 export default function WorkspaceBillingPage() {
-  const [invoices, setInvoices] = useState<InvoiceItem[]>(initialInvoices);
-  const [activeReceiptDoc, setActiveReceiptDoc] = useState<any>(null);
-  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const { data: liveInvoices, isLoading: isLoadingInvoices } = useInvoices();
+  const processPaymentMutation = useProcessPayment();
 
-  // New Invoice State
-  const [patientSearch, setPatientSearch] = useState("");
-  const [selectedPatientMrn, setSelectedPatientMrn] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [serviceCategory, setServiceCategory] = useState("Doctor Consultation");
-  const [itemDescription, setItemDescription] = useState("Standard Outpatient Consultation");
-  const [amount, setAmount] = useState<number>(10000);
-  const [tenderMethod, setTenderMethod] = useState<"CASH" | "POS" | "TRANSFER" | "HMO_INSURANCE">("POS");
+  // Payment Settlement Modal State
+  const [selectedInvoice, setSelectedInvoice] = useState<PatientInvoice | null>(null);
+  const [tenderType, setTenderType] = useState<"CASH" | "POS" | "BANK_TRANSFER" | "SPLIT">("POS");
+  const [cashAmount, setCashAmount] = useState<number>(0);
+  const [posAmount, setPosAmount] = useState<number>(0);
+  const [transferAmount, setTransferAmount] = useState<number>(0);
+  const [singleAmount, setSingleAmount] = useState<number>(0);
 
-  // Query real patients from MPI
-  const { data: patientList } = usePatients({
-    query: patientSearch || undefined,
-    limit: 5,
-  });
+  // Active Receipt Modal
+  const [activeReceipt, setActiveReceipt] = useState<PaymentReceipt | null>(null);
 
-  const handleSelectPatient = (p: any) => {
-    setPatientName(`${p.firstName} ${p.lastName}`);
-    setSelectedPatientMrn(p.mrn);
-    setPatientSearch("");
+  // Open checkout modal for an invoice
+  const handleOpenCheckout = (inv: PatientInvoice) => {
+    setSelectedInvoice(inv);
+    setSingleAmount(inv.balanceDue);
+    setPosAmount(inv.balanceDue);
+    setCashAmount(0);
+    setTransferAmount(0);
+    setTenderType("POS");
   };
 
-  const handleCreateInvoice = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patientName.trim()) {
-      toast.error("Please enter or select a patient from MPI");
-      return;
+  const handleSettlePayment = async () => {
+    if (!selectedInvoice) return;
+
+    let payAmount = 0;
+    let breakdown: Record<string, number> | undefined;
+
+    if (tenderType === "SPLIT") {
+      payAmount = cashAmount + posAmount + transferAmount;
+      breakdown = {
+        CASH: cashAmount,
+        POS: posAmount,
+        BANK_TRANSFER: transferAmount,
+      };
+      if (payAmount <= 0) {
+        toast.error("Split tender breakdown must be greater than zero");
+        return;
+      }
+    } else {
+      payAmount = singleAmount;
+      if (payAmount <= 0) {
+        toast.error("Payment amount must be greater than zero");
+        return;
+      }
     }
 
-    const newInv: InvoiceItem = {
-      id: `inv-${Date.now()}`,
-      invoiceNo: `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      patientName,
-      patientMrn: selectedPatientMrn || "PAT-0012",
-      itemsSummary: itemDescription || serviceCategory,
-      amount,
-      paymentMethod: tenderMethod,
-      status: "paid",
-      createdAt: "Just now",
-    };
+    try {
+      const receipt = await processPaymentMutation.mutateAsync({
+        invoiceId: selectedInvoice.id,
+        payload: {
+          amount: payAmount,
+          tenderType,
+          tenderBreakdown: breakdown,
+        },
+      });
 
-    setInvoices([newInv, ...invoices]);
-    setIsCreatingInvoice(false);
-    setPatientName("");
-    setSelectedPatientMrn("");
-    setItemDescription("Standard Outpatient Consultation");
-    toast.success("Payment Received & Cashier Receipt Issued!");
+      setSelectedInvoice(null);
+      setActiveReceipt(receipt);
+      toast.success(`Payment Settled: Receipt ${receipt.receiptNumber}`, {
+        description: `Collected ₦${payAmount.toLocaleString()} via ${tenderType}. Care Journey updated.`,
+      });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to process payment");
+    }
   };
 
-  const handlePrintReceipt = (inv: InvoiceItem) => {
-    setActiveReceiptDoc({
-      title: `Cashier POS Receipt - ${inv.invoiceNo}`,
-      documentType: "REPORT",
-      uploadedAt: inv.createdAt,
-      verifiedBy: "Facility Cashier Desk (Register #1)",
-    });
-  };
+  const formatCurrency = (val: number) => `₦${(val || 0).toLocaleString()}`;
 
-  const formatCurrency = (val: number) => `₦${val.toLocaleString()}`;
+  // Summary Metrics
+  const invoiceList = liveInvoices || [];
+  const totalReceivables = invoiceList.reduce((acc, i) => acc + i.totalAmount, 0);
+  const totalCollected = invoiceList.reduce((acc, i) => acc + i.amountPaid, 0);
+  const totalOutstanding = invoiceList.reduce((acc, i) => acc + i.balanceDue, 0);
+  const paidCount = invoiceList.filter((i) => i.status === "PAID").length;
 
   return (
     <CapabilityGate
@@ -151,197 +132,417 @@ export default function WorkspaceBillingPage() {
                 Cashier Point of Sale & Billing Register
               </h1>
               <Badge variant="outline" className="border-teal-500/40 text-teal-600 dark:text-teal-400 bg-teal-500/10 text-[10px] font-mono">
-                POS Terminal #1 Active
+                POS Terminal #1 • Split Tender Active
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Patient invoicing, diagnostic test payment collection, multi-tender settlement, and HMO claims.
+              Automated encounter invoice settlement, diagnostic test collection, and instant receipt generation.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <Button
-              size="sm"
-              onClick={() => setIsCreatingInvoice(!isCreatingInvoice)}
-              className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground shadow"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              {isCreatingInvoice ? "Close Register" : "New Patient Invoice (F1)"}
-            </Button>
+            <Badge variant="secondary" className="gap-1.5 text-xs py-1 px-3">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              Audit Log Enforced
+            </Badge>
           </div>
         </div>
 
-        {/* New POS Invoice Form Drawer / Card */}
-        {isCreatingInvoice && (
-          <Card className="border-primary/40 bg-card shadow-md">
-            <CardHeader className="pb-3 border-b border-border">
+        {/* Operational Statistics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-border shadow-sm bg-card">
+            <CardContent className="p-4 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
+                <Banknote className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Total Billed</p>
+                <h3 className="text-lg font-bold text-foreground font-mono">
+                  {formatCurrency(totalReceivables)}
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm bg-card">
+            <CardContent className="p-4 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Settled Revenue</p>
+                <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                  {formatCurrency(totalCollected)}
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm bg-card">
+            <CardContent className="p-4 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Outstanding Balance</p>
+                <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">
+                  {formatCurrency(totalOutstanding)}
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm bg-card">
+            <CardContent className="p-4 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Clearance Rate</p>
+                <h3 className="text-lg font-bold text-foreground font-mono">
+                  {invoiceList.length > 0 ? Math.round((paidCount / invoiceList.length) * 100) : 100}%
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Live Patient Invoices Register */}
+        <Card className="border-border shadow-sm bg-card">
+          <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+            <div>
               <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-primary" />
-                New Cashier Transaction Register
+                Active Cashier Invoices & Clinical Encounter Bills
               </CardTitle>
               <CardDescription className="text-xs">
-                Select patient, add billable diagnostic investigations or clinical consult fees.
+                Invoices auto-generated from concluded doctor consultations, diagnostic labs, and dispensary items.
               </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <form onSubmit={handleCreateInvoice} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <label className="text-xs font-semibold text-foreground mb-1 block">Patient Search (MPI)</label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Type name or MRN..."
-                      value={patientName || patientSearch}
-                      onChange={(e) => {
-                        setPatientName(e.target.value);
-                        setPatientSearch(e.target.value);
-                      }}
-                      className="text-xs h-8 pl-8"
-                      required
-                    />
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-                  </div>
-                  {patientSearch && patientList?.items && patientList.items.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-lg shadow-lg p-1 max-h-48 overflow-y-auto">
-                      {patientList.items.map((p: any) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handleSelectPatient(p)}
-                          className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
-                        >
-                          <span className="font-semibold text-foreground">{p.firstName} {p.lastName}</span>
-                          <span className="text-[10px] font-mono text-muted-foreground">{p.mrn}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-1 block">Service Item</label>
-                  <select
-                    value={itemDescription}
-                    onChange={(e) => {
-                      setItemDescription(e.target.value);
-                      if (e.target.value.includes("Doctor Consultation")) setAmount(10000);
-                      else if (e.target.value.includes("Specialist")) setAmount(20000);
-                      else if (e.target.value.includes("Follow-up")) setAmount(5000);
-                      else if (e.target.value.includes("Emergency")) setAmount(25000);
-                    }}
-                    className="w-full text-xs h-8 px-2 rounded-md border border-border bg-background"
+            </div>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {invoiceList.length} Total Invoices
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoadingInvoices ? (
+              <div className="p-8 text-center text-xs text-muted-foreground">
+                Loading live billing invoices from POS register...
+              </div>
+            ) : invoiceList.length === 0 ? (
+              <div className="p-12 text-center space-y-2">
+                <Receipt className="w-8 h-8 text-muted-foreground mx-auto opacity-50" />
+                <p className="text-xs font-semibold text-foreground">No Invoices Pending</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Invoices are automatically created when physicians conclude clinical encounters.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {invoiceList.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-secondary/10 transition-colors"
                   >
-                    <option value="Doctor Consultation (General Outpatient)">Doctor Consultation (General Outpatient) - ₦10,000</option>
-                    <option value="Specialist Clinical Consultation">Specialist Clinical Consultation - ₦20,000</option>
-                    <option value="Clinical Review & Follow-up">Clinical Review & Follow-up - ₦5,000</option>
-                    <option value="Emergency Care Consultation & Triage">Emergency Care Consultation & Triage - ₦25,000</option>
-                    <option value="Clinical Encounter Medication Plan">Clinical Encounter Medication Plan - ₦12,500</option>
-                  </select>
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs font-mono shrink-0">
+                        <Receipt className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-foreground">
+                            {inv.patientName || "Patient"}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            ({inv.mrn || "PAT-UNKNOWN"})
+                          </span>
+                          <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                            {inv.invoiceNumber}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {inv.encounterId ? "Physician Clinical Consultation & Orders" : "General Outpatient Service"} • {new Date(inv.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-foreground font-mono">
+                          {formatCurrency(inv.totalAmount)}
+                        </p>
+                        {inv.balanceDue > 0 ? (
+                          <p className="text-[10px] font-mono text-amber-600 font-semibold">
+                            Due: {formatCurrency(inv.balanceDue)}
+                          </p>
+                        ) : (
+                          <p className="text-[10px] font-mono text-emerald-600 font-semibold">
+                            Fully Settled
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-mono uppercase ${
+                            inv.status === "PAID"
+                              ? "border-emerald-500/40 text-emerald-600 bg-emerald-500/10"
+                              : inv.status === "PARTIALLY_PAID"
+                              ? "border-amber-500/40 text-amber-600 bg-amber-500/10"
+                              : "border-rose-500/40 text-rose-600 bg-rose-500/10"
+                          }`}
+                        >
+                          {inv.status}
+                        </Badge>
+
+                        {inv.balanceDue > 0 ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleOpenCheckout(inv)}
+                            className="text-xs h-7 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                          >
+                            <CreditCard className="w-3 h-3" />
+                            Collect POS
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setActiveReceipt({
+                                receiptNumber: `RCP-${inv.invoiceNumber.replace("INV-", "")}`,
+                                invoiceNumber: inv.invoiceNumber,
+                                patientName: inv.patientName || "Patient",
+                                mrn: inv.mrn || "PAT-0000",
+                                amountPaid: inv.amountPaid,
+                                previousBalance: inv.totalAmount,
+                                newBalance: 0,
+                                tenderType: "SETTLED",
+                                status: "SETTLED",
+                                paidAt: inv.updatedAt,
+                                cashierName: "Cashier Desk",
+                              });
+                            }}
+                            className="text-xs h-7 gap-1"
+                          >
+                            <Printer className="w-3 h-3" />
+                            Receipt
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Checkout Modal (Split Tender POS) */}
+        <Dialog open={Boolean(selectedInvoice)} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                POS Cashier Settlement
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Settle invoice <span className="font-mono font-semibold">{selectedInvoice?.invoiceNumber}</span> for{" "}
+                <span className="font-semibold text-foreground">{selectedInvoice?.patientName}</span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              {/* Outstanding Amount Banner */}
+              <div className="p-3 rounded-xl bg-secondary/30 border border-border flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Total Bill / Balance Due</p>
+                  <p className="text-lg font-bold text-foreground font-mono">
+                    {formatCurrency(selectedInvoice?.balanceDue || 0)}
+                  </p>
                 </div>
+                <Badge variant="outline" className="border-primary/30 text-primary font-mono text-xs">
+                  Split Tender Ready
+                </Badge>
+              </div>
+
+              {/* Tender Type Selection */}
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1.5 block">Payment Tender Type</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(["POS", "CASH", "BANK_TRANSFER", "SPLIT"] as const).map((t) => (
+                    <Button
+                      key={t}
+                      type="button"
+                      size="sm"
+                      variant={tenderType === t ? "default" : "outline"}
+                      onClick={() => setTenderType(t)}
+                      className="text-xs h-8 font-mono uppercase"
+                    >
+                      {t === "BANK_TRANSFER" ? "Transfer" : t}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tender Amounts */}
+              {tenderType === "SPLIT" ? (
+                <div className="space-y-2.5 p-3 rounded-xl border border-border bg-secondary/10">
+                  <p className="text-xs font-semibold text-foreground">Split Multi-Tender Breakdown</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">Cash (NGN)</label>
+                      <Input
+                        type="number"
+                        value={cashAmount}
+                        onChange={(e) => setCashAmount(Number(e.target.value))}
+                        className="text-xs h-8 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">POS Card (NGN)</label>
+                      <Input
+                        type="number"
+                        value={posAmount}
+                        onChange={(e) => setPosAmount(Number(e.target.value))}
+                        className="text-xs h-8 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">Transfer (NGN)</label>
+                      <Input
+                        type="number"
+                        value={transferAmount}
+                        onChange={(e) => setTransferAmount(Number(e.target.value))}
+                        className="text-xs h-8 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1 border-t border-border font-mono">
+                    <span className="text-muted-foreground">Tendered Total:</span>
+                    <span className="font-bold text-foreground">
+                      {formatCurrency(cashAmount + posAmount + transferAmount)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">Tender Amount (NGN)</label>
                   <Input
                     type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
+                    value={singleAmount}
+                    onChange={(e) => setSingleAmount(Number(e.target.value))}
                     className="text-xs h-8 font-mono"
-                    required
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-1 block">Tender Method</label>
-                  <select
-                    value={tenderMethod}
-                    onChange={(e) => setTenderMethod(e.target.value as any)}
-                    className="w-full text-xs h-8 px-2 rounded-md border border-border bg-background"
-                  >
-                    <option value="POS">Card POS Terminal</option>
-                    <option value="CASH">Cash</option>
-                    <option value="TRANSFER">Direct Bank Transfer</option>
-                    <option value="HMO_INSURANCE">HMO Insurance Co-Pay</option>
-                  </select>
-                </div>
-                <div className="sm:col-span-2 md:col-span-4 flex justify-end gap-2 pt-2">
-                  <Button
-                    type="submit"
-                    className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground font-semibold shadow"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Complete Tender & Print Receipt
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+              )}
+            </div>
 
-        {/* Invoice Register Table */}
-        <DataTable
-          data={invoices}
-          searchPlaceholder="Search invoice number, patient name..."
-          searchKey="invoiceNo"
-          statusFilterKey="status"
-          statusOptions={[
-            { label: "Paid", value: "paid" },
-            { label: "Pending Claims", value: "pending" },
-          ]}
-          columns={[
-            {
-              header: "Invoice #",
-              cell: (inv) => <span className="font-mono font-bold text-xs">{inv.invoiceNo}</span>,
-            },
-            {
-              header: "Patient",
-              cell: (inv) => (
-                <div>
-                  <p className="font-semibold text-foreground">{inv.patientName}</p>
-                  <p className="text-[11px] font-mono text-muted-foreground">{inv.patientMrn}</p>
-                </div>
-              ),
-            },
-            {
-              header: "Services Billed",
-              cell: (inv) => <span className="text-xs text-muted-foreground truncate max-w-xs">{inv.itemsSummary}</span>,
-            },
-            {
-              header: "Total Amount",
-              cell: (inv) => <span className="font-mono font-bold text-xs text-foreground">{formatCurrency(inv.amount)}</span>,
-            },
-            {
-              header: "Payment Tender",
-              cell: (inv) => (
-                <Badge variant="outline" className="text-[10px] font-mono border-border">
-                  {inv.paymentMethod.replace(/_/g, " ")}
-                </Badge>
-              ),
-            },
-            {
-              header: "Status",
-              cell: (inv) => <StatusBadge status={inv.status} />,
-            },
-            {
-              header: "Actions",
-              className: "text-right",
-              cell: (inv) => (
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handlePrintReceipt(inv)}
-                    className="text-xs h-7 gap-1"
-                  >
-                    <FileText className="w-3 h-3" /> Receipt
-                  </Button>
-                </div>
-              ),
-            },
-          ]}
-        />
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedInvoice(null)}
+                className="text-xs h-8"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSettlePayment}
+                disabled={processPaymentMutation.isPending}
+                className="text-xs h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {processPaymentMutation.isPending ? "Processing..." : "Authorize Settlement"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-        {/* Universal Cashier Receipt Slip Preview */}
-        <DocumentViewerModal
-          isOpen={Boolean(activeReceiptDoc)}
-          onClose={() => setActiveReceiptDoc(null)}
-          document={activeReceiptDoc}
-        />
+        {/* Thermal Payment Receipt Modal */}
+        <Dialog open={Boolean(activeReceipt)} onOpenChange={(open) => !open && setActiveReceipt(null)}>
+          <DialogContent className="max-w-sm font-mono text-xs">
+            <DialogHeader className="text-center pb-2 border-b border-dashed border-border">
+              <DialogTitle className="text-sm font-bold uppercase tracking-wider text-center">
+                Curexal Clinic OS
+              </DialogTitle>
+              <DialogDescription className="text-[11px] text-center text-muted-foreground">
+                Official Cashier Payment Clearance Receipt
+              </DialogDescription>
+            </DialogHeader>
+
+            {activeReceipt && (
+              <div className="space-y-3 py-2 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Receipt No:</span>
+                  <span className="font-bold text-foreground">{activeReceipt.receiptNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Invoice No:</span>
+                  <span className="font-semibold text-foreground">{activeReceipt.invoiceNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Patient:</span>
+                  <span className="font-semibold text-foreground">{activeReceipt.patientName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">MRN:</span>
+                  <span>{activeReceipt.mrn}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Date/Time:</span>
+                  <span>{new Date(activeReceipt.paidAt).toLocaleString()}</span>
+                </div>
+
+                <div className="border-t border-b border-dashed border-border py-2 space-y-1">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>Amount Paid:</span>
+                    <span>{formatCurrency(activeReceipt.amountPaid)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Tender Type:</span>
+                    <span>{activeReceipt.tenderType}</span>
+                  </div>
+                  {activeReceipt.tenderBreakdown && (
+                    <div className="text-[10px] text-muted-foreground pl-2">
+                      {Object.entries(activeReceipt.tenderBreakdown).map(([k, v]) => (
+                        <div key={k} className="flex justify-between">
+                          <span>• {k}:</span>
+                          <span>{formatCurrency(v as number)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold pt-1">
+                    <span>Remaining Balance:</span>
+                    <span>{formatCurrency(activeReceipt.newBalance)}</span>
+                  </div>
+                </div>
+
+                <div className="text-center text-[10px] text-muted-foreground pt-1">
+                  <p>Cashier: {activeReceipt.cashierName}</p>
+                  <p className="mt-1">Thank you for visiting Curexal Health.</p>
+                  <p>Retain receipt for dispensary & pharmacy clearance.</p>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  window.print();
+                }}
+                className="w-full text-xs h-8 gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                Print Thermal Receipt
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </CapabilityGate>
   );

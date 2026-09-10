@@ -13,19 +13,41 @@ type Patient struct {
 	FirstName           string                 `json:"firstName" db:"first_name"`
 	MiddleName          *string                `json:"middleName,omitempty" db:"middle_name"`
 	LastName            string                 `json:"lastName" db:"last_name"`
+	PreferredName       *string                `json:"preferredName,omitempty" db:"preferred_name"`
 	Gender              string                 `json:"gender" db:"gender"`
 	DateOfBirth         time.Time              `json:"dateOfBirth" db:"date_of_birth"`
 	BloodGroup          *string                `json:"bloodGroup,omitempty" db:"blood_group"`
 	Genotype            *string                `json:"genotype,omitempty" db:"genotype"`
+	MaritalStatus       *string                `json:"maritalStatus,omitempty" db:"marital_status"`
+	Occupation          *string                `json:"occupation,omitempty" db:"occupation"`
 	NIN                 *string                `json:"nin,omitempty" db:"nin"`
-	Status              string                 `json:"status" db:"status"`                            // DISCOVERED, IDENTIFIED, REGISTERED, SUSPENDED, DEACTIVATED
-	RegistrationChannel string                 `json:"registrationChannel" db:"registration_channel"` // RECEPTION, PORTAL, REFERRAL, API
+	ResidentialAddress  *string                `json:"residentialAddress,omitempty" db:"residential_address"`
+	City                *string                `json:"city,omitempty" db:"city"`
+	State               *string                `json:"state,omitempty" db:"state"`
+	Country             string                 `json:"country" db:"country"`
+	PreferredLanguage   string                 `json:"preferredLanguage" db:"preferred_language"`
+	Status              string                 `json:"status" db:"status"`                            // REGISTERED, ACTIVE, INACTIVE, DECEASED
+	RegistrationChannel string                 `json:"registrationChannel" db:"registration_channel"` // RECEPTION, PORTAL, TELEHEALTH, EMERGENCY
 	Metadata            map[string]interface{} `json:"metadata" db:"metadata"`
 	CreatedAt           time.Time              `json:"createdAt" db:"created_at"`
 	UpdatedAt           time.Time              `json:"updatedAt" db:"updated_at"`
 
-	Contacts []PatientContact `json:"contacts,omitempty"`
-	Portal   *PortalAccount   `json:"portal,omitempty"`
+	Contacts  []PatientContact  `json:"contacts,omitempty"`
+	Guardians []PatientGuardian `json:"guardians,omitempty"`
+	Portal    *PortalAccount    `json:"portal,omitempty"`
+}
+
+// PatientGuardian represents next of kin or emergency contact
+type PatientGuardian struct {
+	ID                 string    `json:"id" db:"id"`
+	PatientID          string    `json:"patientId" db:"patient_id"`
+	RelationshipType   string    `json:"relationshipType" db:"relationship_type"`
+	FullName           string    `json:"fullName" db:"full_name"`
+	Phone              string    `json:"phone" db:"phone"`
+	Email              *string   `json:"email,omitempty" db:"email"`
+	Address            *string   `json:"address,omitempty" db:"address"`
+	IsEmergencyContact bool      `json:"isEmergencyContact" db:"is_emergency_contact"`
+	CreatedAt          time.Time `json:"createdAt" db:"created_at"`
 }
 
 // PatientContact represents a phone, email, or messaging address for a patient

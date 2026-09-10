@@ -6,3 +6,5 @@ export * from "./use-care-orchestration";
 export * from "./use-capabilities";
 export * from "./use-marketplace";
 export * from "./use-diagnostics";
+export * from "./use-encounters";
+export * from "./use-billing";

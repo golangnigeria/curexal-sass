@@ -1,70 +1,97 @@
 # CUREXAL CLINIC OS — DAY 2 PRODUCTION SPECIFICATION & IMPLEMENTATION PLAN
 
 **Document**: `docs/Production_plan/day2.md`  
-**Execution Day**: Day 2 of 30 (Friday, September 4, 2026)  
-**Target Milestone**: Patient Intake, Identity Matching & Live Queue Management  
-**Compliance Standard**: HIPAA Security Rule (§ 164.312), NDPR 2019, Master Patient Index (MPI) Best Practices, OWASP ASVS Level 2, Curexal Constitution v2.0  
-**Strict Policy**: **NO SHORTCUTS.** Zero unverified demographic writes, deterministic collision-free MRN sequencing, atomic single-patient queue transitions, zero silent duplicates.
+**Execution Day**: Day 2 of 35 (Friday, September 4, 2026)  
+**Target Milestone**: Patient Intake, Master Patient Index (MPI), Identity Matching & Unified Live Queue Management  
+**Compliance Standard**: HIPAA Security Rule (§ 164.312), NDPR 2019, Master Patient Index Best Practices, OWASP ASVS Level 2, Curexal Constitution v2.0  
+**Strict Policy**: **NO SHORTCUTS.** Zero unverified demographic writes, deterministic collision-free MRN sequencing, atomic single-patient queue transitions, zero silent duplicates, unified in-person and telehealth intake channels over the shared core.
+
+[![Open 35-Day Master Plan](https://img.shields.io/badge/◀_Back_to-35--Day_Master_Plan-0284c7?style=for-the-badge)](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/docs/Production_plan/30-DAY-PRODUCTION-PLAN.md)
+[![Open Day 1 Spec](https://img.shields.io/badge/◀_View-Day_1_Spec-64748b?style=for-the-badge)](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/docs/Production_plan/day1.md)
 
 ---
 
 ## 1. OBJECTIVE & DELIVERABLES
 
-Day 2 establishes the end-to-end clinical intake, provider assignment, and patient throughput pipeline required for operational clinic desks:
-1. **Feature #4: Staff and Provider Management**: Link identity staff accounts to clinical provider profiles (medical specialty, regulatory license number, room assignment, active consultation capacity, duty status).
-2. **Feature #5: Patient Registration & Master Patient Index (MPI)**: Comprehensive demographic capture, telecoms, next of kin, emergency contacts, automated non-colliding Medical Record Number (`MRN-YYYY-XXXX` / `PAT-YYYY-XXXXX`) generation.
-3. **Feature #6: Patient Identity Matching & Duplicate Detection**: Instant multi-signal duplicate matching engine scoring `Phone` + `NIN` + `DOB` + `First/Last Name` with configurable thresholding and modal intervention.
-4. **Feature #8: Appointment Scheduling**: Provider-linked calendar bookings, department routing, conflict-free time slot reservation, and walk-in integration.
-5. **Feature #10: Patient Check-In & Live Queue Management**: Real-time status transitions (`Registered` $\to$ `Waiting (Triage)` $\to$ `Triaged` $\to$ `In Consultation` $\to$ `Completed`), live wait-time timers, and multi-desk badge increments.
+Day 2 establishes the end-to-end clinical intake, provider assignment, and patient throughput pipeline required for operational clinic desks across both **In-Person** and **Telehealth** delivery channels:
+1. **Feature #4: Staff and Provider Management**: Link identity staff accounts to clinical provider profiles (medical specialty, regulatory MDCN license number, physical consulting room / virtual WebRTC room assignment, active consultation queue capacity, duty status).
+2. **Feature #5: Patient Registration & Master Patient Index (MPI)**: Comprehensive demographic capture, telecoms, next of kin, emergency contacts, automated non-colliding Medical Record Number (`PAT-YYYY-XXXXX` / `MRN-YYYY-XXXX`) generation across all registration channels (`RECEPTION`, `PORTAL`, `TELEHEALTH`, `EMERGENCY`).
+3. **Feature #6: Patient Identity Matching & Duplicate Detection**: Instant multi-signal duplicate matching engine scoring `Phone` (+40) + `NIN` (+50) + `DOB` (+20) + `Last Name` (+20) + `First Name` (+15) with cross-channel deduplication preventing split records between physical walk-ins and virtual patient portal registrations.
+4. **Feature #8: Appointment Scheduling**: Provider-linked calendar bookings, department routing, conflict-free time slot reservation, and canonical delivery channel specification (`in_person`, `video`, `telephone`, `secure_message`).
+5. **Feature #10: Patient Check-In & Live Queue Management**: Real-time status transitions (`Registered` $\to$ `Waiting (Triage)` $\to$ `Triaged` $\to$ `In Consultation` $\to$ `Completed`), live wait-time timers, multi-desk badge increments, and unified queueing across in-person and virtual consultation rooms.
 
 ---
 
 ## 2. TECHNICAL SPECIFICATION (DATA SCHEMAS & CONTRACTS)
 
-```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                             CUREXAL PATIENT FLOW                              │
-└───────────────────────────────────────────────────────────────────────────────┘
-  Walk-in Patient / Phone Booking
-                 │
-                 ▼
-  ┌──────────────────────────────┐
-  │   Front Desk / Reception     │ ◄── Search MPI (Name, Phone, NIN, MRN)
-  │    (/reception workspace)    │
-  └──────────────┬───────────────┘
-                 │
-                 ├── [Existing Record] ────► Verify & Update Details
-                 │                                   │
-                 └── [New Registration]              ▼
-                             │                 Check-In to Care Desk
-                 ┌───────────┴──────────┐            │
-                 │   MPI Duplicate      │            │
-                 │  Resolution Engine   │            │
-                 └───────────┬──────────┘            │
-                             │                       │
-                 (Duplicate Alert / Override)        │
-                             │                       │
-                             ▼                       ▼
-                     Generate MRN          ┌───────────────────────┐
-                   (PAT-YYYY-XXXXX) ──────►│   Care Desk Queue     │
-                                           │  Status: SUBMITTED    │
-                                           └───────────┬───────────┘
-                                                       │
-                                          Nurse Triage & Auto-Acuity
-                                                       │
-                                                       ▼
-                                           ┌───────────────────────┐
-                                           │   Status: TRIAGED     │
-                                           │  (RED / YELLOW / GREEN│
-                                           └───────────┬───────────┘
-                                                       │
-                                          Provider Matching & Allocation
-                                                       │
-                                                       ▼
-                                           ┌───────────────────────┐
-                                           │  In Consultation      │
-                                           │  (Doctor Active Room) │
-                                           └───────────────────────┘
+### Unified Dual-Channel Patient Intake & Queue Architecture
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                   CUREXAL UNIFIED INTAKE & CARE ORCHESTRATION PIPELINE                 │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+
+    [CHANNEL A: IN-PERSON]                               [CHANNEL B: TELEHEALTH / REMOTE]
+  Walk-in Patient / Phone Booking                      Patient Portal / Mobile / Web App
+                 │                                                    │
+                 ▼                                                    ▼
+  ┌──────────────────────────────┐                     ┌──────────────────────────────┐
+  │   Front Desk / Reception     │                     │   Digital Intake & Consent   │
+  │    (/reception workspace)    │                     │   (/patient portal web app)  │
+  └──────────────┬───────────────┘                     └──────────────┬───────────────┘
+                 │                                                    │
+                 ├───────────────────────────┬────────────────────────┤
+                 ▼                           ▼                        ▼
+  ┌───────────────────────────────────────────────────────────────────────────────────┐
+  │                 MASTER PATIENT INDEX (MPI) RESOLUTION ENGINE                      │
+  │   • Multi-Signal Scoring: Phone(+40), NIN(+50), DOB(+20), Names(+35), Soundex(+10) │
+  │   • Threshold Classification: EXACT_MATCH (>=80), PROBABLE (>=50), LOW (<50)     │
+  │   • Cross-Channel Protection: Zero split records between in-person & telehealth   │
+  └──────────────────────────────────────────┬────────────────────────────────────────┘
+                                             │
+                       ┌─────────────────────┴────────────────────┐
+                       ▼                                          ▼
+             [Existing Verified Record]                  [New Verified Patient]
+                       │                                          │
+                       │                                  Generate Canonical MRN
+                       │                                     (PAT-YYYY-XXXXX)
+                       │                                          │
+                       └─────────────────────┬────────────────────┘
+                                             │
+                                             ▼
+  ┌───────────────────────────────────────────────────────────────────────────────────┐
+  │                         APPOINTMENT & SCHEDULING CORE                             │
+  │   delivery_channel: in_person | video | telephone | secure_message                │
+  │   Provider Availability, Room/Link Allocation, GIST Anti-Double-Booking Exclusion │
+  └──────────────────────────────────────────┬────────────────────────────────────────┘
+                                             │
+                       ┌─────────────────────┴────────────────────┐
+                       │ (Arrived at Facility)                    │ (Digital Room Check-in)
+                       ▼                                          ▼
+            IN-PERSON QUEUE                                TELEHEALTH QUEUE
+         Status: WAITING_TRIAGE                       Status: WAITING_VIRTUAL_ROOM
+                       │                                          │
+            Nurse Triage Intake &                       Patient Self-Reported Vitals
+            Automated Acuity Scoring                    & Device Network Pre-Check
+            (RED / YELLOW / GREEN)                                │
+                       │                                          │
+                       └─────────────────────┬────────────────────┘
+                                             │
+                                             ▼
+  ┌───────────────────────────────────────────────────────────────────────────────────┐
+  │                           CARE DESK LIVE QUEUE BOARD                              │
+  │   • Real-Time Wait Timers (Elapsed mins, SLA alerts: >30m Amber, >60m Red)        │
+  │   • Dynamic Acuity Ordering: RED (Immediate) -> YELLOW (Urgent) -> GREEN (Standard│
+  │   • Delivery Channel Badging: [IN-PERSON (Room 104)] vs [TELEHEALTH (WebRTC Room)]│
+  └──────────────────────────────────────────┬────────────────────────────────────────┘
+                                             │
+                                  Provider Matches / Admits
+                                             │
+                                             ▼
+  ┌───────────────────────────────────────────────────────────────────────────────────┐
+  │                   ACTIVE CLINICAL ENCOUNTER (DOCTOR CONSULTATION)                 │
+  │   Unified SOAP Charting, ICD-10 Coding, e-Prescriptions, and Billing Checkout     │
+  └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -73,15 +100,18 @@ Day 2 establishes the end-to-end clinical intake, provider assignment, and patie
 
 #### A. Architecture & Clinical Governance
 In healthcare facilities, generic user accounts cannot conduct medical consultations without certified credentials. A staff user in `identity.users` and `organization.staff_memberships` must be linked to a verified `orchestration.provider_profiles` record specifying:
-* Clinical specialty code (e.g., `GP`, `PEDIATRICS`, `CARDIOLOGY`, `INTERNAL_MEDICINE`, `OBGYN`).
+* Clinical specialty code (e.g., `GENERAL_PRACTICE`, `PEDIATRICS`, `CARDIOLOGY`, `INTERNAL_MEDICINE`, `OBGYN`).
 * Medical & Dental Council / Regulatory License Number (verified against state board registries).
-* Physical or virtual consultation room assignment (e.g., `Consulting Room 3 - Ikeja Branch`).
+* Physical or virtual consultation room assignment (e.g., `Consulting Room 3 - Ikeja Branch` or `Virtual WebRTC Room V-102`).
+* Delivery channel enablement: `in_person_enabled` (boolean) and `telehealth_enabled` (boolean).
 * Maximum active patient queue capacity (prevents provider burnout, default `10` patients).
 * Duty status toggle (`ON_DUTY`, `ON_BREAK`, `OFF_DUTY`, `BUSY`).
 
-#### B. Database Schema: `orchestration.provider_profiles` & Room Extensions
+#### B. Database Schema: `orchestration.provider_profiles`
 ```sql
 -- Schema: orchestration
+CREATE SCHEMA IF NOT EXISTS orchestration;
+
 CREATE TABLE IF NOT EXISTS orchestration.provider_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES identity.users(id) ON DELETE CASCADE,
@@ -93,6 +123,7 @@ CREATE TABLE IF NOT EXISTS orchestration.provider_profiles (
     sub_specialties TEXT[] DEFAULT ARRAY[]::TEXT[],
     room_number VARCHAR(50),
     room_name VARCHAR(100),
+    virtual_room_url TEXT,
     telehealth_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     in_person_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     max_active_queue INT NOT NULL DEFAULT 10,
@@ -103,13 +134,16 @@ CREATE TABLE IF NOT EXISTS orchestration.provider_profiles (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_provider_tenant_user UNIQUE (tenant_id, user_id),
-    CONSTRAINT uk_provider_license UNIQUE (license_number)
+    CONSTRAINT uk_provider_license UNIQUE (license_number),
+    CONSTRAINT chk_provider_status CHECK (status IN ('ON_DUTY', 'ON_BREAK', 'OFF_DUTY', 'BUSY'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_provider_profiles_tenant_status 
     ON orchestration.provider_profiles(tenant_id, status);
 CREATE INDEX IF NOT EXISTS idx_provider_profiles_specialty 
     ON orchestration.provider_profiles(specialty_code);
+CREATE INDEX IF NOT EXISTS idx_provider_profiles_channels 
+    ON orchestration.provider_profiles(in_person_enabled, telehealth_enabled);
 ```
 
 #### C. API Contracts: Provider Profile Management
@@ -133,6 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_provider_profiles_specialty
           "subSpecialties": ["FAMILY_MEDICINE", "DIABETOLOGY"],
           "roomNumber": "Suite 104",
           "roomName": "Primary Clinical Examination Room",
+          "virtualRoomUrl": "https://telehealth.curexal.com/room/prov_9b83a210",
           "telehealthEnabled": true,
           "inPersonEnabled": true,
           "maxActiveQueue": 12,
@@ -150,7 +185,7 @@ CREATE INDEX IF NOT EXISTS idx_provider_profiles_specialty
     ```json
     {
       "status": "ON_BREAK",
-      "reason": "Midday ward rounds"
+      "reason": "Midday clinical rounds"
     }
     ```
   * **Response (200 OK)**:
@@ -169,9 +204,9 @@ CREATE INDEX IF NOT EXISTS idx_provider_profiles_specialty
 ### 2.2 Feature #5: Patient Registration & MRN Sequencing Specification
 
 #### A. Master Patient Index (MPI) Demographic Model
-Patient records must capture complete legal identity, biological data, contact mechanisms, emergency contacts, and next of kin without data truncations.
+Patient records capture complete legal identity, biological data, contact channels, emergency contacts, and next of kin without data truncations.
 
-#### B. Database Schemas: `patient.patients`, `patient.patient_contacts`, `patient.emergency_contacts`
+#### B. Database Schemas: `patient.patients`, `patient.patient_contacts`, `patient.patient_guardians`
 ```sql
 CREATE SCHEMA IF NOT EXISTS patient;
 
@@ -201,7 +236,8 @@ CREATE TABLE IF NOT EXISTS patient.patients (
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uk_patients_tenant_mrn UNIQUE (tenant_id, mrn)
+    CONSTRAINT uk_patients_tenant_mrn UNIQUE (tenant_id, mrn),
+    CONSTRAINT chk_patients_channel CHECK (registration_channel IN ('RECEPTION', 'PORTAL', 'TELEHEALTH', 'EMERGENCY'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_patients_tenant_names 
@@ -210,6 +246,8 @@ CREATE INDEX IF NOT EXISTS idx_patients_tenant_dob
     ON patient.patients(tenant_id, date_of_birth);
 CREATE INDEX IF NOT EXISTS idx_patients_tenant_nin 
     ON patient.patients(tenant_id, nin);
+CREATE INDEX IF NOT EXISTS idx_patients_channel 
+    ON patient.patients(registration_channel);
 
 -- Patient Telecoms & Channels
 CREATE TABLE IF NOT EXISTS patient.patient_contacts (
@@ -222,6 +260,7 @@ CREATE TABLE IF NOT EXISTS patient.patient_contacts (
     verified_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
 CREATE INDEX IF NOT EXISTS idx_patient_contacts_system_val 
     ON patient.patient_contacts(system, value);
 
@@ -244,15 +283,15 @@ CREATE TABLE IF NOT EXISTS patient.patient_guardians (
 * **Generation Strategy**:
   1. Prefix: Canonical string `PAT` (or branch-specific abbreviation).
   2. Year: Current UTC 4-digit calendar year (`2026`).
-  3. Sequence: Cryptographically secure 5-digit monotonic pseudo-random integer avoiding predictive enumeration while preventing sequence exhaustion.
-  4. Collision Handling: Wrap in transaction with retry loop up to 5 attempts against `uk_patients_tenant_mrn`.
+  3. Sequence: Monotonically incrementing integer padded to 5 digits, combined with pseudo-random salt to prevent predictable enumeration while maintaining collision-free guarantees.
+  4. Collision Handling: Wrapped inside a PostgreSQL transaction with optimistic retry loop (up to 5 attempts) against `uk_patients_tenant_mrn`.
 
 ---
 
 ### 2.3 Feature #6: Patient Identity Matching & Duplicate Detection Specification
 
 #### A. The Multi-Signal Matching Scoring Matrix
-Duplicate medical records cause dangerous medication errors, fragmented medical histories, and catastrophic billing discrepancies. The Curexal MPI matching engine scores incoming candidate signals deterministically:
+Duplicate medical records cause dangerous medication errors, fragmented medical histories, and catastrophic billing discrepancies. The Curexal MPI matching engine scores incoming candidate signals deterministically across both in-person and telehealth registrations:
 
 | Signal Name | Evaluation Method | Weight (Points) | Clinical Justification |
 | :--- | :--- | :--- | :--- |
@@ -277,7 +316,10 @@ $$\text{Total Score} = \sum \text{Matched Signal Weights} \quad (\text{Capped at
 * **`NO_MATCH` ($< 20$ pts)**:
   * Clean intake proceeds directly.
 
-#### C. API Contracts: Identity Evaluation & Registration
+#### C. Cross-Channel Deduplication Guarantee
+Whether a patient registers at the physical reception desk or creates an account on the Patient Portal for a telehealth appointment, the MPI engine queries the **same tenant-wide patient index**. A telehealth patient who visits the physical clinic is immediately matched via phone number or NIN, avoiding duplicate chart creation.
+
+#### D. API Contracts: Identity Evaluation & Registration
 * `POST /api/v1/patients/mpi/evaluate`:
   * **Request**:
     ```json
@@ -306,7 +348,8 @@ $$\text{Total Score} = \sum \text{Matched Signal Weights} \quad (\text{Capped at
             "confidenceScore": 100,
             "confidenceLevel": "EXACT_MATCH",
             "lastVisitAt": "2026-08-14T10:15:00Z",
-            "registeredBranch": "Victoria Island Main Campus"
+            "registeredBranch": "Victoria Island Main Campus",
+            "registrationChannel": "PORTAL"
           }
         ]
       }
@@ -349,6 +392,7 @@ $$\text{Total Score} = \sum \text{Matched Signal Weights} \quad (\text{Capped at
           "dateOfBirth": "1994-05-18",
           "phone": "+2348123456789",
           "status": "REGISTERED",
+          "registrationChannel": "RECEPTION",
           "createdAt": "2026-09-04T09:12:00Z"
         },
         "portalInviteSent": true
@@ -374,13 +418,19 @@ $$\text{Total Score} = \sum \text{Matched Signal Weights} \quad (\text{Capped at
 ### 2.4 Feature #8: Appointment Scheduling Specification
 
 #### A. Operational Workflow
-Appointments bridge external/portal bookings and clinical rosters:
-1. Patient selects department (e.g. `Cardiology`) and specific attending provider.
-2. System computes provider availability based on:
-   * Standard clinic operational hours.
-   * Provider roster shifts (`ON_DUTY`).
-   * Existing booked appointments (prevents double-booking).
-3. Slot reservation holds time window for 10 minutes prior to confirmation.
+Appointments bridge external portal/telehealth bookings, reception walk-ins, and provider rosters:
+1. Patient selects service type (e.g. `GENERAL_CONSULTATION`, `CARDIOLOGY_REVIEW`) and specific attending provider.
+2. Patient chooses the **delivery channel**:
+   - `in_person`: Scheduled for clinic consulting room.
+   - `video`: Generates telehealth session token and browser room URL.
+   - `telephone`: Direct outbound provider telephone consult.
+   - `secure_message`: Asynchronous clinical consultation thread.
+3. System verifies provider availability based on:
+   - Standard clinic operational hours.
+   - Provider roster shifts (`ON_DUTY`).
+   - Active channel enablement (`in_person_enabled` or `telehealth_enabled`).
+   - Anti-double-booking PostgreSQL `EXCLUDE USING gist` constraint.
+4. Slot reservation holds time window for 10 minutes prior to final confirmation.
 
 #### B. Database Schema: `operations.appointments`
 ```sql
@@ -393,16 +443,19 @@ CREATE TABLE IF NOT EXISTS operations.appointments (
     provider_id UUID NOT NULL REFERENCES orchestration.provider_profiles(id) ON DELETE RESTRICT,
     appointment_number VARCHAR(64) NOT NULL,
     service_type VARCHAR(50) NOT NULL DEFAULT 'CONSULTATION',
-    appointment_mode VARCHAR(30) NOT NULL DEFAULT 'IN_PERSON', -- IN_PERSON, VIDEO, AUDIO
+    delivery_channel VARCHAR(30) NOT NULL DEFAULT 'in_person',
     status VARCHAR(30) NOT NULL DEFAULT 'BOOKED', -- BOOKED, CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
     reason_for_visit TEXT,
     cancellation_reason TEXT,
+    virtual_meeting_url TEXT,
     created_by UUID REFERENCES identity.users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_appointment_number UNIQUE (tenant_id, appointment_number),
+    CONSTRAINT chk_appointment_channel CHECK (delivery_channel IN ('in_person', 'video', 'telephone', 'secure_message')),
+    CONSTRAINT chk_appointment_status CHECK (status IN ('BOOKED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
     CONSTRAINT uk_provider_slot_no_overlap EXCLUDE USING gist (
         provider_id WITH =,
         tstzrange(start_time, end_time) WITH &&
@@ -413,6 +466,8 @@ CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date
     ON operations.appointments(tenant_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient 
     ON operations.appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_channel 
+    ON operations.appointments(delivery_channel);
 ```
 
 #### C. API Contracts: Appointment Management
@@ -425,8 +480,8 @@ CREATE INDEX IF NOT EXISTS idx_appointments_patient
       "startTime": "2026-09-04T10:30:00Z",
       "endTime": "2026-09-04T11:00:00Z",
       "serviceType": "SPECIALIST_CONSULTATION",
-      "appointmentMode": "IN_PERSON",
-      "reasonForVisit": "Follow-up hypertension review"
+      "deliveryChannel": "video",
+      "reasonForVisit": "Follow-up hypertension review and medication check"
     }
     ```
   * **Response (201 Created)**:
@@ -437,9 +492,11 @@ CREATE INDEX IF NOT EXISTS idx_appointments_patient
         "appointmentNumber": "APT-2026-00481",
         "patientId": "pat_3910283",
         "providerId": "prov_9b83a210",
+        "deliveryChannel": "video",
         "startTime": "2026-09-04T10:30:00Z",
         "endTime": "2026-09-04T11:00:00Z",
-        "status": "BOOKED"
+        "status": "BOOKED",
+        "virtualMeetingUrl": "https://telehealth.curexal.com/join/apt_7719283?token=jwt_secure_room_token"
       }
     }
     ```
@@ -449,30 +506,36 @@ CREATE INDEX IF NOT EXISTS idx_appointments_patient
 ### 2.5 Feature #10: Patient Check-In & Live Queue Management Specification
 
 #### A. State Machine & Urgency Transitions
-When a patient arrives at the clinic (whether walk-in or booked), front desk staff checks them in:
+When a patient arrives at the clinic or checks in digitally from home:
 
-```
+```text
 [REGISTERED / BOOKED]
-         │  (Front Desk Check-in: POST /api/v1/orchestration/requests)
+         │
+         ├─────────────────────────────────────────┐
+         │ (Physical Front Desk Check-in)          │ (Digital Check-in via Portal)
+         ▼                                         ▼
+[SUBMITTED / WAITING_TRIAGE]            [WAITING_VIRTUAL_ROOM]
+         │                                         │
+         │ (Nurse Vitals Intake)                   │ (Pre-Call Vitals / Tech Check)
+         ▼                                         │
+[TRIAGED] ──────────────────────────               │
+         │ Acuity Assigned:                        │
+         │ • RED (Emergency / Immediate)           │
+         │ • YELLOW (Urgent Priority)              │
+         │ • GREEN (Standard / Routine)            │
+         │                                         │
+         └────────────────────┬────────────────────┘
+                              │
+                              ▼
+[MATCHED / IN_CONSULTATION] ─── Provider Admits Patient into Room
+         │                      (Physical Suite 104 OR WebRTC Video Room)
+         │ (Doctor Signs SOAP Note / Finishes Encounter)
          ▼
-[SUBMITTED / WAITING_TRIAGE] ────► Real-Time Queue Badge increments on Nurse Desk
-         │  (Nurse Triage Intake: POST /api/v1/orchestration/requests/:id/triage)
-         ▼
-[TRIAGED] ────────────────────────► Priority Acuity Assigned:
-         │                           • RED (Emergency / Immediate)
-         │                           • YELLOW (Urgent Priority)
-         │                           • GREEN (Standard / Routine)
-         ▼
-[MATCHED / IN_CONSULTATION] ──────► Linked to Consulting Doctor Room
-         │  (Doctor Signs SOAP Note / Finishes Consultation)
-         ▼
-[COMPLETED] ──────────────────────► Discharged / Transferred to Lab/Pharmacy/Billing
+[COMPLETED] ──────────────────── Discharged / Invoiced at POS / Sent Follow-up Plan
 ```
 
 #### B. Database Schema: `orchestration.care_requests` & `orchestration.triage_assessments`
 ```sql
-CREATE SCHEMA IF NOT EXISTS orchestration;
-
 CREATE TABLE IF NOT EXISTS orchestration.care_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES organization.facility_branches(id) ON DELETE CASCADE,
@@ -480,9 +543,9 @@ CREATE TABLE IF NOT EXISTS orchestration.care_requests (
     appointment_id UUID REFERENCES operations.appointments(id) ON DELETE SET NULL,
     request_number VARCHAR(64) NOT NULL,
     service_type VARCHAR(50) NOT NULL DEFAULT 'GENERAL_CONSULTATION',
-    preferred_mode VARCHAR(30) NOT NULL DEFAULT 'IN_PERSON',
+    delivery_channel VARCHAR(30) NOT NULL DEFAULT 'in_person',
     urgency VARCHAR(20) NOT NULL DEFAULT 'ROUTINE', -- ROUTINE, URGENT, EMERGENCY
-    status VARCHAR(30) NOT NULL DEFAULT 'SUBMITTED', -- SUBMITTED, TRIAGED, MATCHED, IN_PROGRESS, COMPLETED, CANCELLED
+    status VARCHAR(30) NOT NULL DEFAULT 'SUBMITTED', -- SUBMITTED, WAITING_TRIAGE, TRIAGED, WAITING_VIRTUAL_ROOM, MATCHED, IN_PROGRESS, COMPLETED, CANCELLED
     chief_complaint TEXT,
     symptoms_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     checked_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -493,11 +556,15 @@ CREATE TABLE IF NOT EXISTS orchestration.care_requests (
     matched_provider_id UUID REFERENCES orchestration.provider_profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uk_care_request_tenant_number UNIQUE (tenant_id, request_number)
+    CONSTRAINT uk_care_request_tenant_number UNIQUE (tenant_id, request_number),
+    CONSTRAINT chk_care_request_channel CHECK (delivery_channel IN ('in_person', 'video', 'telephone', 'secure_message')),
+    CONSTRAINT chk_care_request_status CHECK (status IN ('SUBMITTED', 'WAITING_TRIAGE', 'TRIAGED', 'WAITING_VIRTUAL_ROOM', 'MATCHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_care_requests_queue 
     ON orchestration.care_requests(tenant_id, status, checked_in_at);
+CREATE INDEX IF NOT EXISTS idx_care_requests_channel 
+    ON orchestration.care_requests(delivery_channel);
 
 -- Clinical Triage Assessment
 CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
@@ -514,7 +581,8 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
     respiratory_rate INT,
     pain_score INT,
     triage_notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_triage_acuity CHECK (acuity_level IN ('RED', 'YELLOW', 'GREEN'))
 );
 ```
 
@@ -526,7 +594,7 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
       "patientId": "pat_3910283",
       "appointmentId": "apt_7719283",
       "serviceType": "GENERAL_CONSULTATION",
-      "preferredMode": "IN_PERSON",
+      "deliveryChannel": "in_person",
       "chiefComplaint": "Severe recurring migraine and photophobia"
     }
     ```
@@ -537,7 +605,8 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
         "id": "req_8819203",
         "requestNumber": "REQ-2026-00392",
         "patientId": "pat_3910283",
-        "status": "SUBMITTED",
+        "deliveryChannel": "in_person",
+        "status": "WAITING_TRIAGE",
         "urgency": "ROUTINE",
         "checkedInAt": "2026-09-04T09:30:00Z"
       }
@@ -572,8 +641,8 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
     }
     ```
 
-* `GET /api/v1/orchestration/requests` (Live Queue Feed):
-  * **Query Params**: `status=SUBMITTED,TRIAGED,IN_PROGRESS`, `limit=50`
+* `GET /api/v1/orchestration/requests` (Live Unified Queue Feed):
+  * **Query Params**: `status=WAITING_TRIAGE,TRIAGED,WAITING_VIRTUAL_ROOM,IN_PROGRESS`, `limit=50`
   * **Response (200 OK)**:
     ```json
     {
@@ -588,6 +657,7 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
             "gender": "FEMALE",
             "age": 32
           },
+          "deliveryChannel": "in_person",
           "status": "TRIAGED",
           "acuityLevel": "YELLOW",
           "checkedInAt": "2026-09-04T09:30:00Z",
@@ -600,6 +670,7 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
         "total": 1,
         "waitingTriageCount": 0,
         "waitingDoctorCount": 1,
+        "waitingVirtualRoomCount": 0,
         "inConsultationCount": 2
       }
     }
@@ -611,7 +682,7 @@ CREATE TABLE IF NOT EXISTS orchestration.triage_assessments (
 
 ### 3.1 Go Backend Modular Structure
 
-```
+```text
 apps/api/internal/modules/
 ├── patient/
 │   ├── api/
@@ -630,36 +701,36 @@ apps/api/internal/modules/
 │   ├── handler/
 │   │   └── care_request_handler.go           # Check-in, triage intake, provider match
 │   ├── model/
-│   │   ├── care_request_domain.go            # Request states, queue entity
-│   │   └── triage_and_matching.go            # Triage vats, acuity scoring, provider candidates
+│   │   ├── care_request_domain.go            # Request states, queue entity, channel enums
+│   │   └── triage_and_matching.go            # Triage vitals, acuity scoring, provider candidates
 │   ├── repository/
 │   │   └── care_request_repository.go        # Queue state management, elapsed time calc
 │   └── service/
-│       └── care_request_service.go           # Orchestration workflows & event publishing
+│       └── care_request_service.go           # Orchestration workflows & channel routing
 └── operations/
     ├── handler/
     │   └── appointment_handler.go            # Appointment booking, calendar slot query
     └── service/
-        └── appointment_service.go            # Double-booking exclusion & check-in binding
+        └── appointment_service.go            # Double-booking exclusion & delivery channels
 ```
 
 ### 3.2 Frontend Applications (`apps/web-platform`)
 
 * **Reception Intake & Master Patient Index**:
-  * Route: `/:branchSlug/reception` ([`apps/web-platform/src/pages/workspace/reception/index.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/pages/workspace/reception/index.tsx)).
-  * Modal: [`apps/web-platform/src/components/patients/patient-intake-modal.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/components/patients/patient-intake-modal.tsx).
-  * Features:
+  * Route: `/:branchSlug/reception` ([`reception/index.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/pages/workspace/reception/index.tsx)).
+  * Modal: [`patient-intake-modal.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/components/patients/patient-intake-modal.tsx).
+  * Key Capabilities:
     * Debounced (500ms) instant duplicate lookup on Phone/NIN/Last Name input.
     * Warning banner and duplicate resolution candidate list with confidence badges.
-    * Supervisor override checkbox with reason tracking.
+    * Supervisor override checkbox with reason tracking (`forceRegistration: true`).
     * Immediate check-in button upon successful registration.
-* **Care Desk & Live Queue Monitor**:
-  * Route: `/:branchSlug/care-desk` ([`apps/web-platform/src/pages/workspace/care-desk/index.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/pages/workspace/care-desk/index.tsx)).
-  * Features:
-    * Live queue board grouped by acuity (`RED`, `YELLOW`, `GREEN`).
+* **Care Desk & Unified Live Queue Monitor**:
+  * Route: `/:branchSlug/care-desk` ([`care-desk/index.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/pages/workspace/care-desk/index.tsx)).
+  * Key Capabilities:
+    * Live queue board grouped by acuity (`RED`, `YELLOW`, `GREEN`) and filtered by channel (`All`, `In-Person`, `Virtual`).
     * Real-time wait timer component (`Clock` icon showing elapsed minutes with color escalation: $>30\text{ mins}$ amber, $>60\text{ mins}$ red).
     * Nurse triage intake dialog with live auto-acuity calculator (BP, SpO2, Temp, Pain scale).
-    * Provider matching modal assigning on-duty doctors by specialty and current active queue load.
+    * Provider matching modal assigning on-duty doctors by specialty, room, and current active queue load.
 
 ---
 
@@ -670,17 +741,19 @@ apps/api/internal/modules/
 2. Verify table `patient.patients` has unique constraint on `(tenant_id, mrn)`.
 3. Verify table `patient.patient_contacts` has indexed `(system, value)` lookups.
 4. Verify table `orchestration.provider_profiles` has unique `(tenant_id, user_id)` and status index.
+5. Verify table `operations.appointments` has GIST anti-double-booking exclusion constraint.
 
 ### Step 2: Backend Service & Handler Verification
-1. Verify `apps/api/internal/modules/patient/service/mpi_service.go`:
-   - Validates scoring algorithm: Phone (+40), NIN (+50), DOB (+20), Last Name (+20), First Name (+15).
-   - Classifies `EXACT_MATCH` ($\ge 80$), `PROBABLE_DUPLICATE` ($\ge 50$).
-2. Verify `apps/api/internal/modules/patient/service/canonical_patient_service.go`:
-   - Validates `GenerateMRN()` generates non-colliding formatted IDs.
-   - Enforces `mpiService.EvaluateDuplicates` check unless `ForceRegistration == true`.
-3. Verify `apps/api/internal/modules/orchestration/service/care_request_service.go`:
-   - Handles `CheckInPatient` creating care request in `SUBMITTED` state.
-   - Handles `SubmitTriage` transitioning state to `TRIAGED` with acuity calculation.
+1. In `apps/api/internal/modules/patient/service/mpi_service.go`:
+   - Verify scoring weights: Phone (+40), NIN (+50), DOB (+20), Last Name (+20), First Name (+15).
+   - Verify classification thresholds: `EXACT_MATCH` ($\ge 80$), `PROBABLE_DUPLICATE` ($\ge 50$).
+2. In `apps/api/internal/modules/patient/service/canonical_patient_service.go`:
+   - Verify `GenerateMRN()` generates non-colliding formatted IDs (`PAT-YYYY-XXXXX`).
+   - Enforce `mpiService.EvaluateDuplicates` check unless `ForceRegistration == true`.
+3. In `apps/api/internal/modules/orchestration/service/care_request_service.go`:
+   - Handle `CheckInPatient` creating care request in `SUBMITTED` / `WAITING_TRIAGE` state.
+   - Handle `SubmitTriage` transitioning state to `TRIAGED` with acuity calculation.
+   - Handle delivery channels (`in_person` vs `video`).
 
 ### Step 3: Frontend Integration & Real-Time Polish
 1. In [`apps/web-platform/src/components/patients/patient-intake-modal.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/components/patients/patient-intake-modal.tsx):
@@ -689,6 +762,7 @@ apps/api/internal/modules/
 2. In [`apps/web-platform/src/pages/workspace/care-desk/index.tsx`](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/apps/web-platform/src/pages/workspace/care-desk/index.tsx):
    - Confirm live queue badge increments upon check-in.
    - Confirm elapsed wait timer renders dynamically without freezing the DOM.
+   - Confirm channel badge (`IN-PERSON` / `VIRTUAL`) appears on queue cards.
 
 ---
 
@@ -702,6 +776,7 @@ apps/api/internal/modules/
 | **MRN Generation Test** | `apps/api/internal/modules/patient/service/canonical_patient_test.go` | Generate 1,000 consecutive MRNs; verify 0 collisions and regex `PAT-2026-\d{5}` compliance. |
 | **Duplicate Prevention Integration** | `apps/api/internal/testing/mpi_integration_test.go` | Attempt registering second patient with identical phone number without force flag; assert `409 Conflict`. |
 | **Queue State Machine Test** | `apps/api/internal/testing/queue_workflow_test.go` | Check-in $\to$ Triage $\to$ Match $\to$ Complete; assert timestamps and status transitions. |
+| **Delivery Channel Routing Test**| `apps/api/internal/testing/delivery_channel_test.go` | Assert virtual appointment generates meeting URL and check-in routes to `WAITING_VIRTUAL_ROOM`. |
 
 ### 5.2 PowerShell Automated Verification Script
 
@@ -762,12 +837,13 @@ Write-Host "==> 4. Checking in Patient 1 to Care Desk Queue..." -ForegroundColor
 $CheckInBody = @{
     patientId = $Patient1Id
     serviceType = "GENERAL_CONSULTATION"
+    deliveryChannel = "in_person"
     chiefComplaint = "High fever and persistent chills"
 } | ConvertTo-Json
 
 $CheckIn = Invoke-RestMethod -Uri "$BaseUrl/orchestration/requests" -Method Post -Headers $Headers -Body $CheckInBody -ContentType "application/json"
 $RequestId = $CheckIn.data.id
-Write-Host "    Patient checked in. Care Request: $RequestId (Status: SUBMITTED)" -ForegroundColor Green
+Write-Host "    Patient checked in. Care Request: $RequestId (Status: WAITING_TRIAGE)" -ForegroundColor Green
 
 Write-Host "==> 5. Submitting Nurse Triage Assessment..." -ForegroundColor Cyan
 $TriageBody = @{
@@ -814,24 +890,25 @@ In the event of network or server failure at reception desks:
 2. The front desk records: Full Legal Name, Phone Number, Date of Birth, Gender, Emergency Contact, and Arrival Timestamp.
 3. Once connectivity is restored:
    - Receptionists enter records into `/reception` utilizing the standard intake modal.
-   - The MPI engine evaluates each backlog record. If duplicate detected, records are merged using the primary MRN.
+   - The MPI engine evaluates each backlog record. If a duplicate is detected, records are merged using the primary MRN.
    - Historical check-in timestamps are backfilled to preserve true waiting time telemetry.
 
 ---
 
 ## 7. PRODUCTION AUDIT TRAIL EVIDENCE TEMPLATE
 
-Every demographic mutation, duplicate resolution, and queue movement must write an immutable audit record to `audit.audit_events`:
+Every demographic mutation, duplicate resolution, and queue movement writes an immutable audit record to `audit.audit_events`:
 
 | Action Code | Target Entity | Actor Persona | Severity | Metadata Logged |
 | :--- | :--- | :--- | :--- | :--- |
 | `patient:create` | `patient.patients` | `receptionist` | `INFO` | `mrn`, `channel: RECEPTION`, `name_hash` |
 | `patient:duplicate_detected`| `patient.patients` | `receptionist` | `WARNING` | `matched_mrn`, `confidence_score`, `signals` |
 | `patient:duplicate_override`| `patient.patients` | `org_admin` | `HIGH` | `justification`, `supervisor_id`, `new_mrn` |
-| `appointment:schedule` | `operations.appointments` | `receptionist` | `INFO` | `patient_id`, `provider_id`, `time_slot` |
-| `queue:check_in` | `orchestration.care_requests` | `receptionist` | `INFO` | `request_number`, `service_type` |
+| `appointment:schedule` | `operations.appointments` | `receptionist` | `INFO` | `patient_id`, `provider_id`, `delivery_channel`, `time_slot` |
+| `queue:check_in` | `orchestration.care_requests` | `receptionist` | `INFO` | `request_number`, `service_type`, `delivery_channel` |
 | `queue:triage_completed` | `orchestration.care_requests` | `nurse` | `INFO` | `acuity: RED/YELLOW/GREEN`, `vitals_summary` |
 | `queue:provider_assigned` | `orchestration.care_requests` | `doctor` | `INFO` | `provider_id`, `room_number` |
+| `telehealth:virtual_checkin`| `orchestration.care_requests` | `patient` | `INFO` | `patient_id`, `virtual_room_url`, `status: WAITING_VIRTUAL_ROOM` |
 
 ---
 

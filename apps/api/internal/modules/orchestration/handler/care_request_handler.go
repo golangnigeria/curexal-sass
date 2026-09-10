@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
 	"github.com/golangnigeria/curexal/internal/kernel/server"
@@ -115,10 +116,40 @@ func (h *CareRequestHandler) CreateCareRequest(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	channel := req.PreferredMode
+	switch strings.ToUpper(channel) {
+	case "VIDEO":
+		channel = "video"
+	case "AUDIO":
+		channel = "telephone"
+	case "ASYNC_CHAT":
+		channel = "secure_message"
+	default:
+		channel = "in_person"
+	}
+
+	dataMap := map[string]interface{}{
+		"id":              req.ID,
+		"requestNumber":   req.RequestNumber,
+		"patientId":       req.PatientID,
+		"deliveryChannel": channel,
+		"status":          req.Status,
+		"urgency":         req.Urgency,
+		"checkedInAt":     req.CreatedAt.UTC().Format(time.RFC3339),
+		"request":         req,
+	}
+
 	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"message": "Care request submitted successfully",
-		"data":    req,
+		"success":         true,
+		"message":         "Care request submitted successfully",
+		"data":            dataMap,
+		"id":              req.ID,
+		"requestNumber":   req.RequestNumber,
+		"patientId":       req.PatientID,
+		"deliveryChannel": channel,
+		"status":          req.Status,
+		"urgency":         req.Urgency,
+		"checkedInAt":     req.CreatedAt.UTC().Format(time.RFC3339),
 	})
 }
 
@@ -135,7 +166,18 @@ func (h *CareRequestHandler) ListCareRequests(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve care requests")
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    res.Items,
+		"items":   res.Items,
+		"meta": map[string]interface{}{
+			"total":     res.Total,
+			"limit":     res.Limit,
+			"offset":    res.Offset,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		},
+		"total": res.Total,
+	})
 }
 
 // GetCareRequestByID retrieves single request by ID
@@ -223,10 +265,23 @@ func (h *CareRequestHandler) SubmitTriage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	triageData := map[string]interface{}{
+		"assessmentId":  triage.ID,
+		"careRequestId": triage.CareRequestID,
+		"acuityLevel":   triage.AcuityLevel,
+		"status":        "TRIAGED",
+		"triagedAt":     time.Now().UTC().Format(time.RFC3339),
+		"assessment":    triage,
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Triage vitals recorded successfully",
-		"data":    triage,
+		"success":       true,
+		"message":       "Triage vitals recorded successfully",
+		"data":          triageData,
+		"assessmentId":  triage.ID,
+		"careRequestId": triage.CareRequestID,
+		"acuityLevel":   triage.AcuityLevel,
+		"status":        "TRIAGED",
 	})
 }
 

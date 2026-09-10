@@ -19,6 +19,7 @@ bin/
 build/
 .turbo/
 .gocache/
+.cache/
 apps/api/.gocache/
 
 # Go test / coverage binaries

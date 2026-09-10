@@ -51,6 +51,17 @@ func TestCriticalRoutesExistOnEchoEngine(t *testing.T) {
 		{"GET", "/api/v1/audit-logs/tenant"},
 		{"POST", "/api/v1/organizations/:id/marketplace/orders"},
 		{"POST", "/api/v1/billing/webhooks/:provider"},
+
+		// Day 2 Clinical Intake, MPI, Provider & Queue Routes
+		{"POST", "/api/v1/patients/canonical"},
+		{"POST", "/api/v1/patients/mpi/evaluate"},
+		{"GET", "/api/v1/providers/profiles"},
+		{"PUT", "/api/v1/providers/profiles/:id/status"},
+		{"POST", "/api/v1/appointments"},
+		{"GET", "/api/v1/appointments"},
+		{"POST", "/api/v1/orchestration/requests"},
+		{"POST", "/api/v1/orchestration/requests/:id/triage"},
+		{"GET", "/api/v1/orchestration/requests"},
 	}
 
 	for _, cr := range criticalRoutes {

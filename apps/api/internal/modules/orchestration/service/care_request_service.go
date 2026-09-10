@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/golangnigeria/curexal/internal/kernel/server"
@@ -55,15 +56,57 @@ func (s *CareRequestService) CreateCareRequest(
 		urgency = "ROUTINE"
 	}
 
+	channel := strings.ToLower(strings.TrimSpace(payload.DeliveryChannel))
+	if channel == "" {
+		if payload.PreferredMode != "" {
+			switch strings.ToUpper(payload.PreferredMode) {
+			case "VIDEO":
+				channel = "video"
+			case "AUDIO":
+				channel = "telephone"
+			case "ASYNC_CHAT":
+				channel = "secure_message"
+			default:
+				channel = "in_person"
+			}
+		} else {
+			channel = "in_person"
+		}
+	}
+
+	prefMode := payload.PreferredMode
+	if prefMode == "" {
+		switch channel {
+		case "video":
+			prefMode = "VIDEO"
+		case "telephone":
+			prefMode = "AUDIO"
+		case "secure_message":
+			prefMode = "ASYNC_CHAT"
+		default:
+			prefMode = "IN_PERSON"
+		}
+	}
+
+	serviceType := payload.ServiceType
+	if serviceType == "" {
+		serviceType = "GENERAL_CONSULTATION"
+	}
+
+	status := "WAITING_TRIAGE"
+	if channel == "video" {
+		status = "WAITING_VIRTUAL_ROOM"
+	}
+
 	careReq := &model.CareRequest{
 		ID:                  reqID,
 		TenantID:            tenantID,
 		PatientID:           payload.PatientID,
 		RequestNumber:       reqNumber,
-		ServiceType:         payload.ServiceType,
-		PreferredMode:       payload.PreferredMode,
+		ServiceType:         serviceType,
+		PreferredMode:       prefMode,
 		Urgency:             urgency,
-		Status:              "SUBMITTED",
+		Status:              status,
 		ChiefComplaint:      &payload.ChiefComplaint,
 		SymptomsJSON:        payload.Symptoms,
 		PreferredTimeWindow: payload.PreferredTimeWindow,

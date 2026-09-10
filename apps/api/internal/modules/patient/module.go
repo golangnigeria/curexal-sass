@@ -55,6 +55,8 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		// Canonical Patient Directory & Intake Routes
 		patientsGroup := apiGroup.Group("/patients")
 		patientsGroup.POST("/resolve", m.CanonicalHandler.ResolveDuplicates)
+		patientsGroup.POST("/mpi/evaluate", m.CanonicalHandler.ResolveDuplicates)
+		patientsGroup.POST("/canonical", m.CanonicalHandler.RegisterPatient)
 		patientsGroup.POST("", m.CanonicalHandler.RegisterPatient)
 		patientsGroup.GET("", m.CanonicalHandler.ListPatients)
 		patientsGroup.GET("/:id", m.CanonicalHandler.GetPatientByID)

@@ -40,6 +40,7 @@ export const CareAgentDeskWorkspacePage: React.FC = () => {
 
   const [statusFilter, setStatusFilter] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState("");
+  const [channelFilter, setChannelFilter] = useState("");
   const [activeRequest, setActiveRequest] = useState<CareRequest | null>(null);
   const [isTriageOpen, setIsTriageOpen] = useState(false);
   const [isMatchOpen, setIsMatchOpen] = useState(false);
@@ -137,9 +138,20 @@ export const CareAgentDeskWorkspacePage: React.FC = () => {
     );
   };
 
-  const items: CareRequest[] = requestList?.items || [];
-  const emergencyCount = items.filter((i: CareRequest) => i.urgency === "EMERGENCY").length;
-  const pendingTriageCount = items.filter((i: CareRequest) => i.status === "SUBMITTED").length;
+  const allItems: CareRequest[] = requestList?.items || [];
+  const items = allItems.filter((i: CareRequest) => {
+    if (!channelFilter) return true;
+    const mode = (i.preferredMode || i.deliveryChannel || "").toLowerCase();
+    if (channelFilter === "video") {
+      return mode === "video";
+    }
+    if (channelFilter === "in_person") {
+      return mode === "in_person" || mode === "";
+    }
+    return true;
+  });
+  const emergencyCount = allItems.filter((i: CareRequest) => i.urgency === "EMERGENCY").length;
+  const pendingTriageCount = allItems.filter((i: CareRequest) => i.status === "SUBMITTED" || i.status === "WAITING_TRIAGE").length;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 space-y-6 animate-in fade-in duration-300">
@@ -228,6 +240,19 @@ export const CareAgentDeskWorkspacePage: React.FC = () => {
             <option value="EMERGENCY">Emergency Alert</option>
           </select>
         </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs text-slate-400 font-medium">Channel:</span>
+          <select
+            value={channelFilter}
+            onChange={(e) => setChannelFilter(e.target.value)}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500"
+          >
+            <option value="">All Delivery Channels</option>
+            <option value="in_person">In-Person (Physical Clinic)</option>
+            <option value="video">Telehealth (Virtual WebRTC)</option>
+          </select>
+        </div>
       </div>
 
       {/* Care Requests List */}
@@ -288,6 +313,25 @@ export const CareAgentDeskWorkspacePage: React.FC = () => {
                       <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 text-[10px] font-medium border border-cyan-500/20">
                         {req.status}
                       </span>
+                      {(() => {
+                        const elapsedMins = Math.max(0, Math.floor((Date.now() - new Date(req.createdAt).getTime()) / 60000));
+                        const isSlaBreached = elapsedMins >= 60;
+                        const isSlaWarning = elapsedMins >= 30 && elapsedMins < 60;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${
+                              isSlaBreached
+                                ? "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse"
+                                : isSlaWarning
+                                ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                : "bg-slate-800 text-slate-300 border-slate-700"
+                            }`}
+                          >
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>{elapsedMins}m wait</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <p className="text-xs text-slate-300">
@@ -296,7 +340,20 @@ export const CareAgentDeskWorkspacePage: React.FC = () => {
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                       <span>Service: <strong className="text-slate-200">{req.serviceType}</strong></span>
-                      <span>Mode: <strong className="text-cyan-400">{req.preferredMode}</strong></span>
+                      <span className="inline-flex items-center gap-1">
+                        Channel:{" "}
+                        {req.preferredMode === "VIDEO" || req.preferredMode === "video" ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-semibold">
+                            <Video className="w-3 h-3 text-purple-400" />
+                            <span>TELEHEALTH (WebRTC Room)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[10px] font-semibold">
+                            <Building2 className="w-3 h-3 text-blue-400" />
+                            <span>IN-PERSON (Suite 104)</span>
+                          </span>
+                        )}
+                      </span>
                       {req.symptomsJson && req.symptomsJson.length > 0 && (
                         <span>Symptoms: <strong className="text-slate-300">{req.symptomsJson.join(", ")}</strong></span>
                       )}

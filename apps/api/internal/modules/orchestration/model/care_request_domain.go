@@ -43,10 +43,12 @@ type CareJourneyMilestone struct {
 // CreateCareRequestPayload payload for creating a new care request
 type CreateCareRequestPayload struct {
 	PatientID           string                 `json:"patientId"`
-	ServiceType         string                 `json:"serviceType" validate:"required"` // GENERAL_CONSULTATION, SPECIALIST, LAB_TEST, REFILL, TELEHEALTH
-	PreferredMode       string                 `json:"preferredMode" validate:"required,oneof=IN_PERSON VIDEO AUDIO ASYNC_CHAT"`
-	Urgency             string                 `json:"urgency" validate:"omitempty,oneof=ROUTINE URGENT EMERGENCY"`
-	ChiefComplaint      string                 `json:"chiefComplaint" validate:"required"`
+	AppointmentID       *string                `json:"appointmentId,omitempty"`
+	ServiceType         string                 `json:"serviceType"` // GENERAL_CONSULTATION, SPECIALIST, LAB_TEST, REFILL, TELEHEALTH
+	PreferredMode       string                 `json:"preferredMode"` // IN_PERSON, VIDEO, AUDIO, ASYNC_CHAT
+	DeliveryChannel     string                 `json:"deliveryChannel"` // in_person, video, telephone, secure_message
+	Urgency             string                 `json:"urgency"` // ROUTINE, URGENT, EMERGENCY
+	ChiefComplaint      string                 `json:"chiefComplaint"`
 	Symptoms            []string               `json:"symptoms"`
 	PreferredTimeWindow map[string]interface{} `json:"preferredTimeWindow"`
 }

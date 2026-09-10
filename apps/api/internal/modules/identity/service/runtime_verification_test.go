@@ -197,11 +197,7 @@ func TestRuntimeVerification_PasswordRequestLifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	// 3. Create active session to test session revocation
-	sessID := "sess_" + uuid.New().String()[:16]
-	_, err = srv.DB.Pool.Exec(ctx, `
-		INSERT INTO identity.sessions (id, user_id, token, expires_at)
-		VALUES ($1, $2, $3, NOW() + INTERVAL '1 hour')
-	`, sessID, userID, "token_"+sessID)
+	_, _, err = authSvc.CreateSession(ctx, userID, "127.0.0.1", "TestAgent/1.0", true)
 	require.NoError(t, err)
 
 	// Verify session exists before request

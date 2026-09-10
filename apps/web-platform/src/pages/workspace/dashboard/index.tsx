@@ -97,6 +97,164 @@ export default function WorkspaceDashboardPage() {
         />
       </div>
 
+      {/* Interactive Patient Flow & Throughput Funnel */}
+      <Card className="border-border shadow-sm bg-card">
+        <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Activity className="w-4 h-4 text-teal-600" />
+              Live Patient Care Pipeline (Today's Census)
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Real-time patient distribution across clinic service stations.
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="text-[10px] font-mono text-teal-600 border-teal-500/30">
+            48 Total Registered
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+            <Link
+              to={`/${activeBranchSlug}/reception`}
+              className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 hover:border-sky-500/40 transition-colors group cursor-pointer block"
+            >
+              <p className="text-[11px] font-medium text-sky-700 dark:text-sky-300">1. Reception Intake</p>
+              <p className="text-xl font-bold text-sky-900 dark:text-sky-100 mt-0.5">8</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 group-hover:text-foreground transition-colors">Awaiting MPI →</p>
+            </Link>
+            <Link
+              to={`/${activeBranchSlug}/care-desk`}
+              className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 hover:border-teal-500/40 transition-colors group cursor-pointer block"
+            >
+              <p className="text-[11px] font-medium text-teal-700 dark:text-teal-300">2. Nursing Triage</p>
+              <p className="text-xl font-bold text-teal-900 dark:text-teal-100 mt-0.5">5</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 group-hover:text-foreground transition-colors">Taking Vitals →</p>
+            </Link>
+            <Link
+              to={`/${activeBranchSlug}/clinical`}
+              className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 hover:border-indigo-500/40 transition-colors group cursor-pointer block"
+            >
+              <p className="text-[11px] font-medium text-indigo-700 dark:text-indigo-300">3. In Consultation</p>
+              <p className="text-xl font-bold text-indigo-900 dark:text-indigo-100 mt-0.5">4</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 group-hover:text-foreground transition-colors">With Physicians →</p>
+            </Link>
+            <Link
+              to={`/${activeBranchSlug}/billing`}
+              className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-colors group cursor-pointer block"
+            >
+              <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">4. Cashier Billing</p>
+              <p className="text-xl font-bold text-amber-900 dark:text-amber-100 mt-0.5">3</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 group-hover:text-foreground transition-colors">Awaiting POS →</p>
+            </Link>
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 col-span-2 sm:col-span-1">
+              <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">5. Completed</p>
+              <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 mt-0.5">28</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Discharged</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Consultation Room Status & Critical Triage Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Active Consultation Rooms Board */}
+        <Card className="lg:col-span-2 border-border shadow-sm bg-card">
+          <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Stethoscope className="w-4 h-4 text-indigo-600" />
+                Physician Consultation Rooms
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Attending doctors on duty and active room assignments.
+              </CardDescription>
+            </div>
+            <Button asChild size="sm" variant="outline" className="text-xs h-7">
+              <Link to={`/${activeBranchSlug}/clinical`}>Open EMR Canvas</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <div className="p-3 rounded-xl border border-border bg-secondary/15 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 font-bold flex items-center justify-center text-xs">
+                  R1
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Dr. Emeka Nwosu • Consultation Room 1</p>
+                  <p className="text-[11px] text-muted-foreground">In Consult with Amina Yusuf (14 mins elapsed)</p>
+                </div>
+              </div>
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">
+                In Progress
+              </Badge>
+            </div>
+
+            <div className="p-3 rounded-xl border border-border bg-secondary/15 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 font-bold flex items-center justify-center text-xs">
+                  R2
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Dr. Sarah Adebayo • Consultation Room 2</p>
+                  <p className="text-[11px] text-muted-foreground">In Consult with Babatunde Lawal (6 mins elapsed)</p>
+                </div>
+              </div>
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">
+                In Progress
+              </Badge>
+            </div>
+
+            <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center justify-center text-xs">
+                  R3
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Dr. Chinedu Eke • Consultation Room 3</p>
+                  <p className="text-[11px] text-emerald-600 font-medium">Ready for next patient (Next in Queue: Chinedu Okafor)</p>
+                </div>
+              </div>
+              <Button asChild size="sm" className="text-xs h-7 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                <Link to={`/${activeBranchSlug}/clinical`}>Call Patient</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Critical Triage Alerts Widget */}
+        <Card className="border-rose-500/30 bg-rose-500/5 shadow-sm">
+          <CardHeader className="pb-3 border-b border-rose-500/20">
+            <CardTitle className="text-sm font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-rose-600" />
+              High-Acuity Triage Alerts
+            </CardTitle>
+            <CardDescription className="text-xs text-rose-600/80">
+              Vitals exceeding clinical thresholds requiring immediate attention.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <div className="p-3 rounded-xl border border-rose-500/20 bg-background/80 space-y-1.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground">Babatunde Lawal (PAT-0078)</span>
+                <Badge variant="outline" className="text-[10px] uppercase font-mono border-rose-500 text-rose-600 bg-rose-500/10 font-bold">
+                  Emergency
+                </Badge>
+              </div>
+              <p className="text-[11px] text-rose-600 font-medium">
+                BP 175/110 mmHg • SpO2 94% • HR 104 bpm
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Chest tightness & exertional dyspnea (Waiting: 5 mins)
+              </p>
+              <Button asChild size="sm" variant="destructive" className="w-full text-xs h-7 mt-2 shadow-sm font-semibold">
+                <Link to={`/${activeBranchSlug}/clinical`}>Expedite to Doctor</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Operational Department Canvases */}
       <div className="space-y-4">
         <h3 className="text-base font-bold text-foreground">Facility Clinical & Operational Workspaces</h3>

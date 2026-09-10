@@ -1,6 +1,7 @@
 # CUREXAL CLINIC SOFTWARE — 35-DAY DAILY PRODUCTION DEPLOYMENT PLAN
 
 [![Open Day 1 Spec](https://img.shields.io/badge/▶_Open-Day_1_Detailed_Spec-0284c7?style=for-the-badge)](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/docs/Production_plan/day1.md)
+[![Open Day 2 Spec](https://img.shields.io/badge/▶_Open-Day_2_Detailed_Spec-0284c7?style=for-the-badge)](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/docs/Production_plan/day2.md)
 [![Jump to Saturday Launch](https://img.shields.io/badge/🚀_Jump_to-Saturday_Launch_Milestone-16a34a?style=for-the-badge)](#day-3--saturday-live-launch--clinical-care-loop--pos-checkout-saturday-sep-5-2026)
 [![Platform Suite](https://img.shields.io/badge/🛡️_Jump_to-Platform_Super--Admin_Suite-7c3aed?style=for-the-badge)](#phase-5-platform-operations--super-admin-suite-days-25--28)
 [![Deployment Protocol](https://img.shields.io/badge/⚡_Jump_to-Daily_Deploy_Protocol-ea580c?style=for-the-badge)](#daily-production-deployment-protocol)
@@ -47,11 +48,11 @@
 
 ### Day 2: Patient Intake, Identity Matching & Live Queue (Friday, Sep 4, 2026)
 * **Features**:
-  - [ ] **#4. Staff and provider management**: Link staff accounts to clinical provider profiles (specialty, license, room assignment).
-  - [ ] **#5. Patient registration**: Full demographic capture, contact details, emergency contacts, next of kin, MRN generation (`MRN-YYYY-XXXX`).
-  - [ ] **#6. Patient identity matching & duplicate detection**: Instant duplicate match on `Phone` + `DOB` + `First/Last Name`.
-  - [ ] **#8. Appointment scheduling**: Provider-linked calendar booking with department and time slot selection.
-  - [ ] **#10. Patient check-in & queue management**: Real-time status transitions: `Registered` $\to$ `Waiting (Triage)` $\to$ `In Consultation` $\to$ `Completed`.
+  - [x] **#4. Staff and provider management**: Link staff accounts to clinical provider profiles (specialty, license, room assignment).
+  - [x] **#5. Patient registration**: Full demographic capture, contact details, emergency contacts, next of kin, MRN generation (`MRN-YYYY-XXXX`).
+  - [x] **#6. Patient identity matching & duplicate detection**: Instant duplicate match on `Phone` + `DOB` + `First/Last Name`.
+  - [x] **#8. Appointment scheduling**: Provider-linked calendar booking with department and time slot selection.
+  - [x] **#10. Patient check-in & queue management**: Real-time status transitions: `Registered` $\to$ `Waiting (Triage)` $\to$ `In Consultation` $\to$ `Completed`.
 * **Daily Release Scope**:
   1. Test walk-in patient registration in `/reception` workspace.
   2. Verify duplicate detection modal appears when duplicate phone number is entered.
@@ -61,17 +62,18 @@
   # Register duplicate patient and confirm validation warning
   # Verify queue displays patient with elapsed wait timer
   ```
+[![View Day 2 Spec](https://img.shields.io/badge/Inspect-Day_2_Spec_File-0284c7?style=flat-square)](file:///c:/Users/HomePC/Desktop/program/fullstack_Curexal/docs/Production_plan/day2.md)
 
 ---
 
 ### Day 3: 🚀 SATURDAY LIVE LAUNCH — Clinical Care Loop & POS Checkout (Saturday, Sep 5, 2026)
 * **Features**:
-  - [ ] **#11. Encounter management**: Start, pause, resume, and complete clinical encounters with auto-assigned encounter UUIDs.
-  - [ ] **#12. Clinical documentation**: Structured SOAP canvas (Subjective, Objective, Assessment, Plan) with clinical notes.
-  - [ ] **#13. Vital signs & observations**: Triage vitals intake (BP, Pulse, Temp, SpO2, Weight, Height, automated BMI calculation).
-  - [ ] **#14. Diagnosis management**: ICD-10 coding modal with primary/secondary condition tagging.
-  - [ ] **#16. Medication & prescription management**: Digital e-prescription creation (Drug, Dose, Route, Frequency, Duration).
-  - [ ] **#26. Billing and invoicing**: Auto-generate invoice from consultation fee + clinic procedures; cashier POS settlement (Cash, Card, Transfer).
+  - [x] **#11. Encounter management**: Start, pause, resume, and complete clinical encounters with auto-assigned encounter UUIDs.
+  - [x] **#12. Clinical documentation**: Structured SOAP canvas (Subjective, Objective, Assessment, Plan) with clinical notes.
+  - [x] **#13. Vital signs & observations**: Triage vitals intake (BP, Pulse, Temp, SpO2, Weight, Height, automated BMI calculation).
+  - [x] **#14. Diagnosis management**: ICD-10 coding modal with primary/secondary condition tagging.
+  - [x] **#16. Medication & prescription management**: Digital e-prescription creation (Drug, Dose, Route, Frequency, Duration).
+  - [x] **#26. Billing and invoicing**: Auto-generate invoice from consultation fee + clinic procedures; cashier POS settlement (Cash, Card, Transfer).
 * **Daily Release Scope**:
   1. Complete live clinical encounter from Triage to Doctor SOAP notes.
   2. Issue e-prescription and add ICD-10 code.
@@ -186,7 +188,8 @@
 
 ---
 
-## PHASE 4: TELEHEALTH & VIRTUAL CARE (DAYS 18 – 24)
+## PHASE 4: TELEHEALTH DELIVERY INFRASTRUCTURE (DAYS 18 – 24)
+> **Architectural Law**: Days 18–24 implement the **remote care-delivery infrastructure** (WebRTC browser video rooms, virtual waiting room state machine, connection watchdog, in-call controls) on top of the already channel-neutral clinical core — NOT creating a disconnected parallel clinical system. All clinical charting, orders, prescriptions, and billing continue using the single canonical clinical core.
 
 ### Day 18: Virtual Appointment Scheduling (Sunday, Sep 20, 2026)
 * **Features**:
@@ -361,3 +364,375 @@ bun run build
 git tag -a "deploy-YYYY-MM-DD" -m "Daily Production Release: Day [X]"
 git push origin "deploy-YYYY-MM-DD"
 ```
+
+---
+
+## ARCHITECTURAL CONSTITUTION: UNIFIED CLINICAL CORE & MULTI-CHANNEL CARE DELIVERY
+
+> **Fundamental Architectural Law of Curexal Clinic OS**:  
+> **Curexal possesses ONE clinical core with MULTIPLE care-delivery channels — NOT separate clinic and telehealth systems.**
+> - **Clinic / Organization** = Where / institutional care context
+> - **Delivery Channel** = How care is planned and delivered (`in_person`, `video`, `telephone`, `secure_message`)
+> - **Appointment** = Planned care
+> - **Attendance / Check-in** = Physical queue or virtual waiting room state
+> - **Encounter** = Care actually delivered (created only upon care initiation)
+> - **Telehealth Session** = Remote communication layer (subordinate to Encounter)
+> - **Clinical Record** = Single longitudinal source of truth shared across all channels
+
+---
+
+### 1. The Four Independent State Machines
+
+Curexal strictly avoids overloading `appointment.status` with attendance, real-time connectivity, or clinical charting state. The system enforces four decoupled, orthogonal state machines:
+
+```text
+1. APPOINTMENT (Planned Care)
+   ├── scheduled
+   ├── confirmed
+   ├── cancelled
+   ├── no_show
+   └── completed
+
+2. CHECK-IN / ATTENDANCE (Waiting & Ingestion)
+   ├── not_checked_in
+   ├── checked_in
+   ├── waiting
+   └── admitted
+
+3. ENCOUNTER (Clinical Delivery)
+   ├── open
+   ├── in_progress
+   ├── awaiting_documentation
+   ├── signed
+   ├── closed
+   └── amended
+
+4. TELEHEALTH SESSION (Connection & Stream Telemetry)
+   ├── not_started
+   ├── patient_waiting
+   ├── provider_waiting
+   ├── both_connected
+   ├── in_progress
+   ├── disconnected
+   ├── completed
+   └── failed
+```
+
+---
+
+### 2. Care Initiation Gate: When is an Encounter Created?
+
+An encounter represents **actual care delivered**, never speculative access:
+
+1. **In-Person**: Patient check-in $\to$ Triage queue $\to$ Provider admits patient into consultation room $\to$ **Care Initiation Event** creates `encounters` record.
+2. **Telehealth**: Patient check-in verifies consent $\to$ Patient placed in virtual waiting room (`telehealth_sessions.status = patient_waiting`). Provider joins $\to$ Both connected $\to$ **Care Initiation Event** atomically creates `encounters` and transitions `telehealth_sessions.status = in_progress`.
+   - If the patient waits in the virtual room but the doctor never joins, **no encounter is created**; the appointment is marked `unfulfilled` / `no_show`.
+   - If the call drops immediately before clinical consultation occurs, the session is marked `failed`, preventing erroneous billing or ghost clinical records.
+
+---
+
+### 3. Production Canonical Database Model
+
+All clinical data resides in a single canonical schema per tenant:
+
+```sql
+-- Strongly typed Delivery Channel
+CREATE TYPE delivery_channel AS ENUM (
+    'in_person',
+    'video',
+    'telephone',
+    'secure_message'
+);
+
+-- Decoupled state machines
+CREATE TYPE appointment_status AS ENUM (
+    'scheduled',
+    'confirmed',
+    'cancelled',
+    'no_show',
+    'completed'
+);
+
+CREATE TYPE attendance_status AS ENUM (
+    'not_checked_in',
+    'checked_in',
+    'waiting',
+    'admitted'
+);
+
+CREATE TYPE encounter_status AS ENUM (
+    'open',
+    'in_progress',
+    'awaiting_documentation',
+    'signed',
+    'closed',
+    'amended'
+);
+
+CREATE TYPE telehealth_session_status AS ENUM (
+    'not_started',
+    'patient_waiting',
+    'provider_waiting',
+    'both_connected',
+    'in_progress',
+    'disconnected',
+    'completed',
+    'failed'
+);
+
+CREATE TYPE care_location_type AS ENUM (
+    'physical_facility',
+    'virtual_service'
+);
+```
+
+#### Canonical Clinical Tables:
+
+```sql
+-- 1. Appointments (Planned Care)
+CREATE TABLE appointments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    provider_id UUID NOT NULL,
+    care_location_type care_location_type NOT NULL DEFAULT 'physical_facility',
+    facility_id UUID REFERENCES organization.facility_branches(id), -- NULL for virtual service
+    appointment_type_id UUID NOT NULL,
+    delivery_channel delivery_channel NOT NULL,
+    status appointment_status NOT NULL DEFAULT 'scheduled',
+    scheduled_start TIMESTAMPTZ NOT NULL,
+    scheduled_end TIMESTAMPTZ NOT NULL,
+    reason TEXT,
+    booking_source VARCHAR(50) NOT NULL,
+    created_by UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (scheduled_end > scheduled_start)
+);
+
+-- 2. Attendance & Queue Management
+CREATE TABLE attendance_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    appointment_id UUID NOT NULL REFERENCES appointments(id),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    facility_id UUID, -- NULL for virtual service
+    status attendance_status NOT NULL DEFAULT 'not_checked_in',
+    priority VARCHAR(30) NOT NULL DEFAULT 'normal',
+    checked_in_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    called_at TIMESTAMPTZ,
+    admitted_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
+);
+
+-- 3. Encounters (Delivered Care Core)
+CREATE TABLE encounters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    appointment_id UUID NOT NULL REFERENCES appointments(id),
+    provider_id UUID NOT NULL,
+    care_location_type care_location_type NOT NULL DEFAULT 'physical_facility',
+    facility_id UUID REFERENCES organization.facility_branches(id), -- NULL for virtual service
+    encounter_channel delivery_channel NOT NULL,
+    status encounter_status NOT NULL DEFAULT 'open',
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ended_at TIMESTAMPTZ,
+    signed_at TIMESTAMPTZ,
+    signed_by UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 4. Encounter Participants (Multi-party attendance)
+CREATE TABLE encounter_participants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    encounter_id UUID NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL,
+    participant_type VARCHAR(50) NOT NULL, -- 'patient', 'provider', 'nurse', 'interpreter', 'caregiver', 'observer', 'support_staff'
+    role VARCHAR(50) NOT NULL,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    left_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 5. Encounter Consents (First-Class Consent Governance)
+CREATE TABLE encounter_consents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    encounter_id UUID REFERENCES encounters(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    consent_type VARCHAR(50) NOT NULL, -- 'treatment', 'telehealth', 'diagnostic_sharing', 'document_disclosure'
+    status VARCHAR(30) NOT NULL DEFAULT 'obtained', -- 'obtained', 'refused', 'revoked'
+    obtained_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    obtained_by UUID,
+    method VARCHAR(50) NOT NULL DEFAULT 'digital_signature', -- 'digital_signature', 'verbal', 'written_form'
+    version VARCHAR(20) NOT NULL DEFAULT '1.0',
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 6. Telehealth Sessions (Subordinate to Encounter - Operational Telemetry Only)
+-- Rule: Do NOT store raw WebRTC credentials/secrets in database.
+CREATE TABLE telehealth_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    encounter_id UUID NOT NULL UNIQUE REFERENCES encounters(id) ON DELETE CASCADE,
+    room_reference VARCHAR(255) NOT NULL,
+    session_token_ref VARCHAR(255),
+    status telehealth_session_status NOT NULL DEFAULT 'not_started',
+    consent_id UUID REFERENCES encounter_consents(id),
+    patient_joined_at TIMESTAMPTZ,
+    provider_joined_at TIMESTAMPTZ,
+    started_at TIMESTAMPTZ,
+    ended_at TIMESTAMPTZ,
+    last_connected_at TIMESTAMPTZ,
+    disconnect_count INT NOT NULL DEFAULT 0,
+    connection_failure_reason TEXT,
+    termination_reason TEXT,
+    network_quality_summary JSONB,
+    fallback_used BOOLEAN NOT NULL DEFAULT FALSE,
+    recording_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    recording_reference VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 7. Care Continuations (Escalation & Care Journey Linkage)
+CREATE TABLE care_continuations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_encounter_id UUID NOT NULL REFERENCES encounters(id),
+    target_appointment_id UUID REFERENCES appointments(id),
+    reason TEXT NOT NULL,
+    created_by UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 8. Observations with Provenance
+CREATE TABLE observations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    encounter_id UUID NOT NULL REFERENCES encounters(id),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    code VARCHAR(100) NOT NULL,
+    value_numeric NUMERIC,
+    value_text TEXT,
+    unit VARCHAR(50),
+    source VARCHAR(50) NOT NULL, -- staff_measured, patient_reported, device_reported, provider_observed, external_source
+    observed_at TIMESTAMPTZ NOT NULL,
+    recorded_by UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+---
+
+### 4. Master Patient Index (MPI) as a Platform Utility
+
+Patient identification must happen first as a shared platform utility across all clinical touchpoints:
+
+```text
+Booking / Walk-in / Telehealth Portal / Labs / Billing
+                          │
+                          ▼
+            Patient Identity / MPI Engine
+                          │
+     ┌────────────────────┼────────────────────┐
+     ▼                    ▼                    ▼
+Exact Match          Probable Match         No Match
+(Score ≥ 80)          (Score 50-79)        (Score < 50)
+     │                    │                    │
+Use Existing          Staff Resolve        Register Patient
+```
+
+The MPI prevents fragmented patient profiles across branches and channels, maintaining a single longitudinal health record.
+
+---
+
+### 5. Decoupling the Clinical Core from Operational UI Views
+
+The backend clinical core has zero concept of "telehealth SOAP" vs "clinic SOAP". It exposes uniform, channel-neutral REST APIs:
+
+```http
+POST /api/v1/encounters/{id}/notes
+POST /api/v1/encounters/{id}/observations
+POST /api/v1/encounters/{id}/diagnoses
+POST /api/v1/encounters/{id}/treatment-plan
+POST /api/v1/encounters/{id}/prescriptions
+POST /api/v1/encounters/{id}/diagnostic-requests
+POST /api/v1/encounters/{id}/follow-ups
+```
+
+The frontend adapts its layout to the operational context:
+- **In-Person Workspace**: Full-width longitudinal visit timeline, multi-tab SOAP note editor, physical triage vitals intake.
+- **Telehealth Workspace**: Split-screen canvas with WebRTC audio/video stream on the left and identical SOAP charting, e-prescribing, and lab orders on the right.
+
+---
+
+### 6. 35-Day Phased Architecture Strategy
+
+- **Days 1 – 17**: Build all primitives as **channel-neutral foundations** (`Patient`, `Appointment`, `Encounter`, `SOAP Notes`, `Observations with Provenance`, `ICD-10`, `e-Prescriptions`, `POS Settlement`, `MPI`, `Consent`).
+- **Days 18 – 24**: Implement the **telehealth delivery infrastructure** (WebRTC browser video rooms, virtual waiting rooms, connection watchdog, in-call controls) on top of this already channel-neutral clinical core — NOT creating a second clinical system.
+
+---
+
+### 7. Final Production Relationship Architecture
+
+```text
+                         CUREXAL CLINICAL CORE
+
+                                PATIENT
+                                   │
+                                   ▼
+                              APPOINTMENT
+                                   │
+                    ┌──────────────┴──────────────┐
+                    │                             │
+               IN-PERSON                       REMOTE
+                    │                             │
+              Check-in                       Check-in
+                    │                             │
+                Queue                        Consent
+                    │                             │
+                Triage                    Waiting Room
+                    │                             │
+                    └──────────────┬──────────────┘
+                                   │
+                                   ▼
+                              ENCOUNTER
+                                   │
+                 ┌─────────────────┼─────────────────┐
+                 │                 │                 │
+                 ▼                 ▼                 ▼
+          Clinical Record    Telehealth Session   Participants
+                 │
+       ┌─────────┼─────────┬──────────┬──────────┐
+       ▼         ▼         ▼          ▼          ▼
+      SOAP    Diagnosis     Rx      Orders    Follow-up
+       │         │         │          │
+       └─────────┴─────────┴──────────┘
+                         │
+                         ▼
+                  Care Continuation
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+       In-person visit         Remote follow-up
+             │
+             ▼
+         New Encounter
+```
+
+```text
+                    ENCOUNTER
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+       Billing       Orders      Notifications
+          │            │
+       Invoice      Laboratory
+          │          Radiology
+       Payment          │
+          │             ▼
+          └──────► Results
+                       │
+                       ▼
+                Patient Record
+```
+
+> **Architectural Law**: Appointment determines planned delivery channel. Encounter represents actual care delivered. Telehealth Session represents the remote session layer. Clinical records belong to the encounter and are identical regardless of delivery channel.
+

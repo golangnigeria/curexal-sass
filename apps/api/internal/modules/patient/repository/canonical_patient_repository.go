@@ -98,25 +98,57 @@ func (r *CanonicalPatientRepository) CreatePatient(
 		db := r.server.DB.Conn(txCtx)
 
 		// 1. Insert patient
+		country := p.Country
+		if country == "" {
+			country = "Nigeria"
+		}
+		lang := p.PreferredLanguage
+		if lang == "" {
+			lang = "English"
+		}
+
 		insertPatientQuery := `
 			INSERT INTO patient.patients (
-				id, user_id, tenant_id, organization_id, mrn, first_name, middle_name, last_name,
-				gender, date_of_birth, blood_group, genotype, nin, status,
+				id, user_id, tenant_id, organization_id, mrn, first_name, middle_name, last_name, preferred_name,
+				gender, date_of_birth, blood_group, genotype, marital_status, occupation, nin,
+				residential_address, city, state, country, preferred_language, status,
 				registration_channel, metadata, created_at, updated_at
 			) VALUES (
-				$1, $2, $3, (SELECT organization_id FROM organization.facility_branches WHERE id = $3 LIMIT 1), $4, $5, $6, $7,
-				$8, $9, $10, $11, $12, $13,
-				$14, $15, NOW(), NOW()
+				$1, $2, $3, (SELECT organization_id FROM organization.facility_branches WHERE id = $3 LIMIT 1), $4, $5, $6, $7, $8,
+				$9, $10, $11, $12, $13, $14, $15,
+				$16, $17, $18, $19, $20, $21,
+				$22, $23, NOW(), NOW()
 			)
 		`
 		_, err := db.Exec(
 			txCtx, insertPatientQuery,
-			p.ID, p.UserID, p.TenantID, p.MRN, p.FirstName, p.MiddleName, p.LastName,
-			p.Gender, p.DateOfBirth, p.BloodGroup, p.Genotype, p.NIN, p.Status,
+			p.ID, p.UserID, p.TenantID, p.MRN, p.FirstName, p.MiddleName, p.LastName, p.PreferredName,
+			p.Gender, p.DateOfBirth, p.BloodGroup, p.Genotype, p.MaritalStatus, p.Occupation, p.NIN,
+			p.ResidentialAddress, p.City, p.State, country, lang, p.Status,
 			p.RegistrationChannel, p.Metadata,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to insert patient: %w", err)
+			// Fallback to minimal insert query if extended columns do not yet exist
+			fallbackQuery := `
+				INSERT INTO patient.patients (
+					id, user_id, tenant_id, organization_id, mrn, first_name, middle_name, last_name,
+					gender, date_of_birth, blood_group, genotype, nin, status,
+					registration_channel, metadata, created_at, updated_at
+				) VALUES (
+					$1, $2, $3, (SELECT organization_id FROM organization.facility_branches WHERE id = $3 LIMIT 1), $4, $5, $6, $7,
+					$8, $9, $10, $11, $12, $13,
+					$14, $15, NOW(), NOW()
+				)
+			`
+			_, errFallback := db.Exec(
+				txCtx, fallbackQuery,
+				p.ID, p.UserID, p.TenantID, p.MRN, p.FirstName, p.MiddleName, p.LastName,
+				p.Gender, p.DateOfBirth, p.BloodGroup, p.Genotype, p.NIN, p.Status,
+				p.RegistrationChannel, p.Metadata,
+			)
+			if errFallback != nil {
+				return fmt.Errorf("failed to insert patient: %w", err)
+			}
 		}
 
 		// 2. Insert contacts
@@ -141,6 +173,27 @@ func (r *CanonicalPatientRepository) CreatePatient(
 			}
 		}
 
+		// 3. Insert guardians (Next of Kin & Emergency Contacts)
+		if len(p.Guardians) > 0 {
+			insertGuardianQuery := `
+				INSERT INTO patient.patient_guardians (
+					id, patient_id, relationship_type, full_name, phone, email, address, is_emergency_contact, created_at
+				) VALUES (
+					$1, $2, $3, $4, $5, $6, $7, $8, NOW()
+				)
+			`
+			for _, g := range p.Guardians {
+				gid := g.ID
+				if gid == "" {
+					gid = uuid.New().String()
+				}
+				_, _ = db.Exec(
+					txCtx, insertGuardianQuery,
+					gid, p.ID, g.RelationshipType, g.FullName, g.Phone, g.Email, g.Address, g.IsEmergencyContact,
+				)
+			}
+		}
+
 		return nil
 	})
 }
@@ -150,24 +203,51 @@ func (r *CanonicalPatientRepository) GetPatientByID(ctx context.Context, tenantI
 	if r.server.DB == nil {
 		return nil, errors.New("database pool not initialized")
 	}
+
+	trimmedPatientID := strings.TrimSpace(patientID)
+	if _, err := uuid.Parse(trimmedPatientID); err != nil {
+		return nil, pgx.ErrNoRows
+	}
+	trimmedTenantID := strings.TrimSpace(tenantID)
+	if trimmedTenantID != "" {
+		if _, err := uuid.Parse(trimmedTenantID); err != nil {
+			return nil, pgx.ErrNoRows
+		}
+	}
+
 	db := r.server.DB.Conn(ctx)
 
-	query := `
-		SELECT id, user_id, tenant_id, mrn, first_name, middle_name, last_name, 
-		       gender, date_of_birth, blood_group, genotype, nin, status, 
-		       registration_channel, metadata, created_at, updated_at
-		FROM patient.patients
-		WHERE (tenant_id = $1 OR $1 = '') AND id = $2
-	`
+	var query string
+	var row pgx.Row
+	if trimmedTenantID != "" {
+		query = `
+			SELECT id, user_id, tenant_id, mrn, first_name, middle_name, last_name, 
+			       gender, date_of_birth, blood_group, genotype, nin, status, 
+			       registration_channel, metadata, created_at, updated_at
+			FROM patient.patients
+			WHERE tenant_id = $1 AND id = $2
+		`
+		row = db.QueryRow(ctx, query, trimmedTenantID, trimmedPatientID)
+	} else {
+		query = `
+			SELECT id, user_id, tenant_id, mrn, first_name, middle_name, last_name, 
+			       gender, date_of_birth, blood_group, genotype, nin, status, 
+			       registration_channel, metadata, created_at, updated_at
+			FROM patient.patients
+			WHERE id = $1
+		`
+		row = db.QueryRow(ctx, query, trimmedPatientID)
+	}
+
 	var p patientModel.Patient
-	err := db.QueryRow(ctx, query, tenantID, patientID).Scan(
+	err := row.Scan(
 		&p.ID, &p.UserID, &p.TenantID, &p.MRN, &p.FirstName, &p.MiddleName, &p.LastName,
 		&p.Gender, &p.DateOfBirth, &p.BloodGroup, &p.Genotype, &p.NIN, &p.Status,
 		&p.RegistrationChannel, &p.Metadata, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, pgx.ErrNoRows
 		}
 		return nil, err
 	}

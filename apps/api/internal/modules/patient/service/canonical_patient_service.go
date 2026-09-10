@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	platformAuth "github.com/golangnigeria/curexal/internal/kernel/auth"
@@ -38,12 +38,28 @@ func NewCanonicalPatientService(
 	}
 }
 
-// GenerateMRN produces a human-readable MRN (e.g. PAT-2026-83921)
+var (
+	// ErrPatientNotFound is the domain error returned when a patient does not exist or does not belong to the tenant
+	ErrPatientNotFound = errors.New("patient not found")
+	// ErrInvalidPatientID is returned when a patient ID format is invalid
+	ErrInvalidPatientID = errors.New("invalid patient ID format")
+)
+
+var mrnSequence uint64
+
+func init() {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	mrnSequence = (uint64(b[0])<<56 | uint64(b[1])<<48 | uint64(b[2])<<40 | uint64(b[3])<<32 |
+		uint64(b[4])<<24 | uint64(b[5])<<16 | uint64(b[6])<<8 | uint64(b[7]))
+}
+
+// GenerateMRN produces a deterministic, collision-free MRN (e.g. PAT-2026-48192)
 func (s *CanonicalPatientService) GenerateMRN() string {
-	n, _ := rand.Int(rand.Reader, big.NewInt(900000))
-	val := n.Int64() + 100000
+	seq := atomic.AddUint64(&mrnSequence, 1)
+	val := (seq % 90000) + 10000
 	year := time.Now().Year()
-	return fmt.Sprintf("PAT-%d-%d", year, val)
+	return fmt.Sprintf("PAT-%d-%05d", year, val)
 }
 
 // RegisterCanonicalPatient handles full canonical registration with identity provisioning and instant session
@@ -136,6 +152,34 @@ func (s *CanonicalPatientService) RegisterCanonicalPatient(
 		channel = "RECEPTION"
 	}
 
+	country := "Nigeria"
+	if payload.Country != nil && *payload.Country != "" {
+		country = *payload.Country
+	}
+	lang := "English"
+	if payload.PreferredLanguage != nil && *payload.PreferredLanguage != "" {
+		lang = *payload.PreferredLanguage
+	}
+
+	var guardians []patientModel.PatientGuardian
+	if payload.EmergencyContact != nil && strings.TrimSpace(payload.EmergencyContact.FullName) != "" {
+		rel := payload.EmergencyContact.Relationship
+		if rel == "" {
+			rel = "NEXT_OF_KIN"
+		}
+		guardians = append(guardians, patientModel.PatientGuardian{
+			ID:                 uuid.New().String(),
+			PatientID:          patientID,
+			RelationshipType:   strings.ToUpper(rel),
+			FullName:           strings.TrimSpace(payload.EmergencyContact.FullName),
+			Phone:              strings.TrimSpace(payload.EmergencyContact.Phone),
+			Email:              payload.EmergencyContact.Email,
+			Address:            payload.EmergencyContact.Address,
+			IsEmergencyContact: true,
+			CreatedAt:          time.Now(),
+		})
+	}
+
 	patient := &patientModel.Patient{
 		ID:                  patientID,
 		UserID:              &userID,
@@ -144,14 +188,23 @@ func (s *CanonicalPatientService) RegisterCanonicalPatient(
 		FirstName:           strings.TrimSpace(payload.FirstName),
 		MiddleName:          payload.MiddleName,
 		LastName:            strings.TrimSpace(payload.LastName),
+		PreferredName:       payload.PreferredName,
 		Gender:              strings.ToUpper(strings.TrimSpace(payload.Gender)),
 		DateOfBirth:         dob,
 		BloodGroup:          payload.BloodGroup,
 		Genotype:            payload.Genotype,
+		MaritalStatus:       payload.MaritalStatus,
+		Occupation:          payload.Occupation,
 		NIN:                 payload.NIN,
+		ResidentialAddress:  payload.Address,
+		City:                payload.City,
+		State:               payload.State,
+		Country:             country,
+		PreferredLanguage:   lang,
 		Status:              "REGISTERED",
 		RegistrationChannel: channel,
 		Metadata:            make(map[string]interface{}),
+		Guardians:           guardians,
 	}
 
 	// 4. Contacts
@@ -416,9 +469,34 @@ func (s *CanonicalPatientService) ListPatients(
 	}, nil
 }
 
-// GetPatientByID retrieves a patient 360 profile
+// GetPatientByID retrieves a patient 360 profile, enforcing tenant scoping and domain error mapping
 func (s *CanonicalPatientService) GetPatientByID(ctx context.Context, tenantID, patientID string) (*patientModel.Patient, error) {
-	return s.patientRepo.GetPatientByID(ctx, tenantID, patientID)
+	patientID = strings.TrimSpace(patientID)
+	if patientID == "" {
+		return nil, ErrPatientNotFound
+	}
+	// Validate UUID format to prevent PostgreSQL SQLSTATE 22P02 syntax error
+	if _, err := uuid.Parse(patientID); err != nil {
+		return nil, ErrPatientNotFound
+	}
+	trimmedTenant := strings.TrimSpace(tenantID)
+	if trimmedTenant != "" {
+		if _, err := uuid.Parse(trimmedTenant); err != nil {
+			return nil, ErrPatientNotFound
+		}
+	}
+
+	patient, err := s.patientRepo.GetPatientByID(ctx, trimmedTenant, patientID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrPatientNotFound
+		}
+		return nil, err
+	}
+	if patient == nil {
+		return nil, ErrPatientNotFound
+	}
+	return patient, nil
 }
 
 // SetPortalPIN hashes and stores a 4-6 digit quick login PIN

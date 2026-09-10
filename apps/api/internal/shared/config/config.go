@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -163,8 +164,13 @@ func getEnvInt(key string, defaultVal int) int {
 }
 
 func LoadConfig() (*Config, error) {
-	for _, envPath := range []string{".env", "../.env", "../../.env"} {
-		_ = godotenv.Overload(envPath)
+	curr := "."
+	for i := 0; i < 8; i++ {
+		envPath := filepath.Join(curr, ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			_ = godotenv.Overload(envPath)
+		}
+		curr = filepath.Join("..", curr)
 	}
 	fmt.Println("Config validation passed")
 	return &Config{

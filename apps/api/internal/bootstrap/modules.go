@@ -19,6 +19,7 @@ import (
 	"github.com/golangnigeria/curexal/internal/modules/identity/model"
 	"github.com/golangnigeria/curexal/internal/modules/identity/repository"
 	"github.com/golangnigeria/curexal/internal/modules/notification"
+	"github.com/golangnigeria/curexal/internal/modules/operations"
 	"github.com/golangnigeria/curexal/internal/modules/orchestration"
 	"github.com/golangnigeria/curexal/internal/modules/organization"
 	"github.com/golangnigeria/curexal/internal/modules/organization/infrastructure/postgres"
@@ -62,6 +63,7 @@ type ModuleRegistry struct {
 	Billing        *billing.Module
 	Settings       *settings.Module
 	Patient        *patient.Module
+	Operations     *operations.Module
 	Orchestration  *orchestration.Module
 	Encounter      *encounter.Module
 	Notification   *notification.Module
@@ -74,6 +76,7 @@ type ModuleRegistry struct {
 func InitModules(s *server.Server) *ModuleRegistry {
 	userRepo := repository.NewUserRepository(s)
 	patientMod := patient.NewModule(s, userRepo)
+	operationsMod := operations.NewModule(s)
 	orchestrationMod := orchestration.NewModule(s)
 	encounterMod := encounter.NewModule(s)
 	orgTenantRepo := postgres.NewTenantRepository(s)
@@ -103,6 +106,7 @@ func InitModules(s *server.Server) *ModuleRegistry {
 	reg := &ModuleRegistry{
 		Identity:       identityMod,
 		Patient:        patientMod,
+		Operations:     operationsMod,
 		Orchestration:  orchestrationMod,
 		Encounter:      encounterMod,
 		Notification:   notifMod,
@@ -212,6 +216,10 @@ func (r *ModuleRegistry) RegisterRoutes(s *server.Server) {
 
 	if r.Patient != nil {
 		r.Patient.RegisterRoutes(api)
+	}
+
+	if r.Operations != nil {
+		r.Operations.RegisterRoutes(api)
 	}
 
 	if r.Orchestration != nil {

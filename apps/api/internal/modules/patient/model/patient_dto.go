@@ -2,21 +2,38 @@ package patient
 
 import "time"
 
+// EmergencyContactPayload for next of kin and emergency contact
+type EmergencyContactPayload struct {
+	FullName     string  `json:"fullName" validate:"required"`
+	Relationship string  `json:"relationship" validate:"required"` // SPOUSE, PARENT, CHILD, SIBLING, GUARDIAN, NEXT_OF_KIN, OTHER
+	Phone        string  `json:"phone" validate:"required"`
+	Email        *string `json:"email,omitempty"`
+	Address      *string `json:"address,omitempty"`
+}
+
 // RegisterCanonicalPatientPayload is the request payload for registering a new patient
 type RegisterCanonicalPatientPayload struct {
-	FirstName           string  `json:"firstName" validate:"required,min=2,max=100"`
-	MiddleName          *string `json:"middleName,omitempty"`
-	LastName            string  `json:"lastName" validate:"required,min=2,max=100"`
-	Gender              string  `json:"gender" validate:"required,oneof=MALE FEMALE OTHER male female other"`
-	DateOfBirth         string  `json:"dateOfBirth" validate:"required"` // "YYYY-MM-DD"
-	Phone               string  `json:"phone" validate:"required,min=7,max=20"`
-	Email               *string `json:"email,omitempty" validate:"omitempty,email"`
-	BloodGroup          *string `json:"bloodGroup,omitempty"`
-	Genotype            *string `json:"genotype,omitempty"`
-	NIN                 *string `json:"nin,omitempty"`
-	Address             *string `json:"address,omitempty"`
-	RegistrationChannel string  `json:"registrationChannel"` // RECEPTION, PORTAL, REFERRAL, API
-	ForceRegistration   bool    `json:"forceRegistration"`   // Proceed even if probable duplicates exist
+	FirstName           string                   `json:"firstName" validate:"required,min=2,max=100"`
+	MiddleName          *string                  `json:"middleName,omitempty"`
+	LastName            string                   `json:"lastName" validate:"required,min=2,max=100"`
+	PreferredName       *string                  `json:"preferredName,omitempty"`
+	Gender              string                   `json:"gender" validate:"required,oneof=MALE FEMALE OTHER male female other"`
+	DateOfBirth         string                   `json:"dateOfBirth" validate:"required"` // "YYYY-MM-DD"
+	Phone               string                   `json:"phone" validate:"required,min=7,max=20"`
+	Email               *string                  `json:"email,omitempty" validate:"omitempty,email"`
+	BloodGroup          *string                  `json:"bloodGroup,omitempty"`
+	Genotype            *string                  `json:"genotype,omitempty"`
+	MaritalStatus       *string                  `json:"maritalStatus,omitempty"`
+	Occupation          *string                  `json:"occupation,omitempty"`
+	NIN                 *string                  `json:"nin,omitempty"`
+	Address             *string                  `json:"address,omitempty"`
+	City                *string                  `json:"city,omitempty"`
+	State               *string                  `json:"state,omitempty"`
+	Country             *string                  `json:"country,omitempty"`
+	PreferredLanguage   *string                  `json:"preferredLanguage,omitempty"`
+	EmergencyContact    *EmergencyContactPayload `json:"emergencyContact,omitempty"`
+	RegistrationChannel string                   `json:"registrationChannel"` // RECEPTION, PORTAL, TELEHEALTH, EMERGENCY
+	ForceRegistration   bool                     `json:"forceRegistration"`   // Proceed even if probable duplicates exist
 }
 
 // SendPortalOTPPayload request payload to send a login OTP

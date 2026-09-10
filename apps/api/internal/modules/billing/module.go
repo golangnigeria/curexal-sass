@@ -16,6 +16,8 @@ type Module struct {
 	PricingHandler      *api.PlatformPricingHandler
 	VaultService        *application.PaymentGatewayVaultService
 	GatewayVaultHandler *api.PaymentGatewayVaultHandler
+	POSService          *application.POSService
+	POSHandler          *api.POSHandler
 }
 
 func NewModule(s *server.Server) *Module {
@@ -40,6 +42,10 @@ func NewModule(s *server.Server) *Module {
 	vaultService := application.NewPaymentGatewayVaultService(billingRepo, auditRepo, masterKey)
 	vaultHandler := api.NewPaymentGatewayVaultHandler(vaultService)
 
+	posRepo := billingPostgres.NewPOSRepository(s)
+	posService := application.NewPOSService(s, posRepo)
+	posHandler := api.NewPOSHandler(posService)
+
 	return &Module{
 		AppService:          appService,
 		MarketplaceHandler:  mpHandler,
@@ -47,6 +53,8 @@ func NewModule(s *server.Server) *Module {
 		PricingHandler:      pricingHandler,
 		VaultService:        vaultService,
 		GatewayVaultHandler: vaultHandler,
+		POSService:          posService,
+		POSHandler:          posHandler,
 	}
 }
 
@@ -65,5 +73,14 @@ func (m *Module) RegisterRoutes(apiGroup *echo.Group) {
 		pltGroup.GET("/payment-gateways", m.GatewayVaultHandler.ListGateways)
 		pltGroup.GET("/payment-gateways/:provider", m.GatewayVaultHandler.GetGateway)
 		pltGroup.PUT("/payment-gateways/:provider", m.GatewayVaultHandler.UpdateGateway)
+	}
+
+	// Clinic Cashier POS Settlement routes
+	if m.POSHandler != nil {
+		billingGroup := apiGroup.Group("/billing")
+		billingGroup.GET("/invoices", m.POSHandler.ListInvoices)
+		billingGroup.GET("/invoices/:id", m.POSHandler.GetInvoiceByID)
+		billingGroup.POST("/invoices/:id/payments", m.POSHandler.ProcessPayment)
+		billingGroup.GET("/receipts/:receiptNumber", m.POSHandler.GetPaymentReceipt)
 	}
 }

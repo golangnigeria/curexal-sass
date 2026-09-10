@@ -142,7 +142,7 @@ func (h *AuditHandler) GetPatientDisclosures(c echo.Context) error {
 	patientIDStr := c.Param("patientId")
 	patientID, err := uuid.Parse(patientIDStr)
 	if err != nil {
-		return errs.NewBadRequestError("invalid patient id format: must be a valid UUID", false, nil, nil, nil)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid patient id format: must be a valid UUID")
 	}
 
 	limit := 50
